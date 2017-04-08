@@ -165,7 +165,7 @@ static void gen_node_literal(astwalker_t *self, node_literal_t *node)
     case LITERAL_STR:
     {
         emit_bytes(&CODE_R, OP_LOADK, (uint8_t)vector_size(AS_GEN(self)->constants));
-        value_t str = value_from_string(node->u.s);
+        value_t str = FROM_CSTR(node->u.s);
         vector_push(value_t, AS_GEN(self)->constants, str);
         break;
     }

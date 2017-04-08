@@ -8,13 +8,13 @@
 #define STACK_PUSH(x)   vector_push(value_t, vm->stack, x)
 #define STACK_PEEK      vector_peek(vm->stack)
 #define BINARY_OP(op)   do {                                                         \
-                            int b = val_as_int(STACK_POP), a = val_as_int(STACK_POP);\
-                            STACK_PUSH(value_from_int(a op b));                                      \
+                            int b = AS_INT(STACK_POP), a = AS_INT(STACK_POP);        \
+                            STACK_PUSH(FROM_INT(a op b));                            \
                         } while (0)                                                  \
 
 #define UNARY_OP(op)    do {                                                         \
-                            int a = val_as_int(STACK_POP);                           \
-                            STACK_PUSH(value_from_int(op a));                                        \
+                            int a = AS_INT(STACK_POP);                               \
+                            STACK_PUSH(FROM_INT(op a));                              \
                         } while (0)                                                  \
 
 vm_t vm_create(vector_t(uint8_t) *code, value_r constants)
@@ -40,7 +40,7 @@ static void stack_dump(value_r *stack)
         switch (v.type)
         {
         case VAL_INT: printf("%d\n", v.i); break;
-        case VAL_STRING: printf("%s\n", v.o); break;
+        case VAL_STR: printf("%s\n", v.o); break;
         default: break;
         }
     }
@@ -59,7 +59,7 @@ void vm_run(vm_t *vm)
         case OP_NOP: continue;
 
         case OP_LOAD: STACK_PUSH(vector_get(vm->stack, READ_BYTE)); break;
-        case OP_LOADI: STACK_PUSH(value_from_int(READ_BYTE)); break;
+        case OP_LOADI: STACK_PUSH(FROM_INT(READ_BYTE)); break;
         case OP_LOADK: STACK_PUSH(vector_get(vm->constants, READ_BYTE)); break;
         case OP_STORE: vector_set(vm->stack, READ_BYTE, STACK_PEEK); break;
 
@@ -69,7 +69,7 @@ void vm_run(vm_t *vm)
             switch (v.type)
             {
             case VAL_INT: printf("%d\n", v.i); break;
-            case VAL_STRING: printf("%s\n", v.o); break;
+            case VAL_STR: printf("%s\n", v.o); break;
             default: break;
             }
             break;
@@ -77,7 +77,7 @@ void vm_run(vm_t *vm)
         case OP_JMP: vm->ip += *vm->ip; break;
         case OP_LOOP: vm->ip -= *vm->ip; break;
         case OP_JIF: {
-            if (!val_as_int(STACK_POP)) vm->ip += *vm->ip;
+            if (!AS_INT(STACK_POP)) vm->ip += *vm->ip;
             else vm->ip++;
 
             break;

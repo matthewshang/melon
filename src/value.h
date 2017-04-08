@@ -5,7 +5,7 @@
 
 typedef enum
 {
-    VAL_INT, VAL_FLOAT, VAL_STRING
+    VAL_INT, VAL_FLOAT, VAL_STR
 } value_e;
 
 
@@ -22,10 +22,10 @@ typedef struct
 
 typedef vector_t(value_t) value_r;
 
-value_t value_from_int(int val);
-value_t value_from_float(float val);
-value_t value_from_string(const char* val);
+#define FROM_INT(x) (value_t){.type = VAL_INT, .i = x}
+#define FROM_FLOAT(x) (value_t){.type = VAL_FLOAT, .f = x}
+#define FROM_CSTR(x) (value_t){.type = VAL_STR, .o = x}
 
-int val_as_int(value_t val);
+#define AS_INT(x) (x).i
 
 #endif
