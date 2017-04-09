@@ -113,11 +113,13 @@ static token_type get_keyword(charstream_t *source, int start, int bytes)
     if (bytes == 4)
     {
         if (strequals(iden, bytes, "else")) return TOK_ELSE;
+        if (strequals(iden, bytes, "true")) return TOK_TRUE;
     }
     if (bytes == 5)
     {
         if (strequals(iden, bytes, "print")) return TOK_PRINT;
         if (strequals(iden, bytes, "while")) return TOK_WHILE;
+        if (strequals(iden, bytes, "false")) return TOK_FALSE;
     }
     return TOK_IDENTIFIER;
 }
@@ -127,7 +129,8 @@ static token_t scan_identifier(charstream_t *source)
     int start = source->offset;
     int bytes = 0;
 
-    while (is_identifier(charstream_peek(source)))
+    while (is_identifier(charstream_peek(source)) || 
+        is_digit(charstream_peek(source)))
     {
         charstream_next(source);
         bytes++;

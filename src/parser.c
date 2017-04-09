@@ -65,6 +65,11 @@ static node_t *parse_str(lexer_t *lexer, token_t token)
     return node_literal_str_new((const char*)str, token.length);
 }
 
+static node_t *parse_bool(lexer_t *lexer, token_t token)
+{
+    return node_literal_bool_new(token.type == TOK_TRUE);
+}
+
 static node_t *parse_identifier(lexer_t *lexer, token_t token)
 {
     char *name = substr(lexer->source.buffer, token.offset, token.length);
@@ -135,6 +140,8 @@ static void init_parse_rules()
 
     rules[TOK_OPEN_PAREN] = PREFIX_RULE(PREC_UNARY, parse_open_paren);
 
+    rules[TOK_TRUE] = PREFIX_RULE(PREC_LOWEST, parse_bool);
+    rules[TOK_FALSE] = PREFIX_RULE(PREC_LOWEST, parse_bool);
     rules[TOK_NUM] = PREFIX_RULE(PREC_LOWEST, parse_num);
     rules[TOK_STR] = PREFIX_RULE(PREC_LOWEST, parse_str);
     rules[TOK_IDENTIFIER] = PREFIX_RULE(PREC_LOWEST, parse_identifier);

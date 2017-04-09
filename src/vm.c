@@ -6,16 +6,21 @@
 #define READ_BYTE       *vm->ip++
 #define STACK_POP       vector_pop(vm->stack)
 #define STACK_PUSH(x)   vector_push(value_t, vm->stack, x)
-#define STACK_PEEK      vector_peek(vm->stack)
-#define BINARY_OP(op)   do {                                                         \
+#define STACK_PEEK      vector_peek(vm->stack)  
+#define BINOP_INT(op)   do {                                                         \
                             int b = AS_INT(STACK_POP), a = AS_INT(STACK_POP);        \
                             STACK_PUSH(FROM_INT(a op b));                            \
                         } while (0)                                                  \
 
-#define UNARY_OP(op)    do {                                                         \
+#define UNAOP_INT(op)   do {                                                         \
                             int a = AS_INT(STACK_POP);                               \
                             STACK_PUSH(FROM_INT(op a));                              \
                         } while (0)                                                  \
+
+#define BINCOMP(op)     do {                                                         \
+                            int b = AS_INT(STACK_POP), a = AS_INT(STACK_POP);        \
+                            STACK_PUSH(FROM_BOOL(a op b));                           \
+                        } while (0)
 
 vm_t vm_create(vector_t(uint8_t) *code, value_r constants)
 {
@@ -39,6 +44,7 @@ static void stack_dump(value_r *stack)
         value_t v = vector_get(*stack, i);
         switch (v.type)
         {
+        case VAL_BOOL: printf("%s\n", v.i == 1 ? "true" : "false"); break;
         case VAL_INT: printf("%d\n", v.i); break;
         case VAL_STR: printf("%s\n", v.o); break;
         default: break;
@@ -68,6 +74,7 @@ void vm_run(vm_t *vm)
             value_t v = STACK_POP;
             switch (v.type)
             {
+            case VAL_BOOL: printf("%s\n", v.i == 1 ? "true" : "false"); break;
             case VAL_INT: printf("%d\n", v.i); break;
             case VAL_STR: printf("%s\n", v.o); break;
             default: break;
@@ -77,25 +84,37 @@ void vm_run(vm_t *vm)
         case OP_JMP: vm->ip += *vm->ip; break;
         case OP_LOOP: vm->ip -= *vm->ip; break;
         case OP_JIF: {
-            if (!AS_INT(STACK_POP)) vm->ip += *vm->ip;
+            if (!AS_BOOL(STACK_POP)) vm->ip += *vm->ip;
             else vm->ip++;
 
             break;
         }
 
-        case OP_ADD: BINARY_OP(+); break;
-        case OP_SUB: BINARY_OP(-); break;
-        case OP_MUL: BINARY_OP(*); break;
-        case OP_MOD: BINARY_OP(%); break;
+        case OP_ADD: BINOP_INT(+); break;
+        case OP_SUB: BINOP_INT(-); break;
+        case OP_MUL: BINOP_INT(*); break;
+        case OP_MOD: BINOP_INT(%); break;
       
-        case OP_AND: BINARY_OP(&&); break;
-        case OP_OR: BINARY_OP(||); break;
-        case OP_LT: BINARY_OP(<); break;
-        case OP_GT: BINARY_OP(>); break;
-        case OP_NOT: UNARY_OP(!); break;
-        case OP_NEG: UNARY_OP(-); break;
-        case OP_EQ: BINARY_OP(==); break;
-        case OP_NEQ: BINARY_OP(!=); break;
+        case OP_AND: BINCOMP(&&); break;
+        case OP_OR: BINCOMP(||); break;
+        case OP_LT: BINCOMP(<); break;
+        case OP_GT: BINCOMP(>); break;
+        case OP_EQ: BINCOMP(== ); break;
+        case OP_NEQ: BINCOMP(!= ); break;
+
+        case OP_NOT: 
+        {
+            int v = AS_BOOL(STACK_POP);
+            STACK_PUSH(FROM_BOOL(!v));
+            break;
+        }
+        case OP_NEG: 
+        {
+            int v = AS_INT(STACK_POP);                               
+            STACK_PUSH(FROM_INT(-v)); 
+            break;
+        }
+
 
         case OP_HALT: return;
         default: continue;

@@ -26,6 +26,15 @@ node_t *node_literal_str_new(const char *value, int len)
     return (node_t*)node;
 }
 
+node_t * node_literal_bool_new(bool value)
+{
+    node_literal_t *node = (node_literal_t*)calloc(1, sizeof(node_literal_t));
+    NODE_SETBASE(node, NODE_LITERAL);
+    node->type = LITERAL_BOOL;
+    node->u.i = value;
+    return (node_t*)node;
+}
+
 node_t *node_var_new(const char *identifier)
 {
     node_var_t *node = (node_var_t*)calloc(1, sizeof(node_var_t));
@@ -347,6 +356,7 @@ static void print_node_literal(astwalker_t *self, node_literal_t *node)
     switch (node->type)
     {
     case LITERAL_BOOL:
+    {printf("[literal] bool: %s\n", node->u.i ? "true" : "false"); break; }
     case LITERAL_INT:
     {printf("[literal] int: %d\n", node->u.i); break; }
     case LITERAL_STR:

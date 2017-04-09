@@ -104,6 +104,7 @@ typedef struct
 
 node_t *node_literal_int_new(int value);
 node_t *node_literal_str_new(const char *value, int len);
+node_t *node_literal_bool_new(bool value);
 node_t *node_var_new(const char *identifier);
 node_t *node_lambda_new(vector_t(char*) *vars, vector_t(node_t*) *body);
 node_t *node_call_new(const char *func, vector_t(node_t*) *args);

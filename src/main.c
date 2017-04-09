@@ -26,7 +26,7 @@ int main(int argc, char **argv)
     {
         lexer_t lexer = lexer_create(file);
         node_t *ast = parse(&lexer);
-        //ast_print(ast);
+        ast_print(ast);
         codegen_t gen = codegen_create();
         codegen_run(&gen, ast);
 

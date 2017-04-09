@@ -6,10 +6,13 @@
 #include "astwalker.h"
 #include "opcodes.h"
 
-#define CODE_R ((codegen_t*)self->data)->code
+#define CODE ((codegen_t*)self->data)->code
 #define LOCALS ((codegen_t*)self->data)->locals
+#define CONSTANTS ((codegen_t*)self->data)->constants
 
 #define AS_GEN(self) ((codegen_t*)self->data)
+
+#define MAX_LITERAL_INT 256
 
 static void emit_byte(byte_r *code, uint8_t b)
 {
@@ -34,43 +37,43 @@ static void gen_node_prog(astwalker_t *self, node_prog_t *node)
 static void gen_node_if(astwalker_t *self, node_if_t *node)
 {
     walk_ast(self, node->cond);
-    emit_bytes(&CODE_R, (uint8_t)OP_JIF, 0);
-    int idx = vector_size(CODE_R) - 1;
+    emit_bytes(&CODE, (uint8_t)OP_JIF, 0);
+    int idx = vector_size(CODE) - 1;
     walk_ast(self, node->then);
     
     if (node->els)
     {
         // + 2 to skip (jmp n) instruction
-        int jmp = vector_size(CODE_R) - idx + 2;
-        vector_set(CODE_R, idx, (uint8_t)jmp);
+        int jmp = vector_size(CODE) - idx + 2;
+        vector_set(CODE, idx, (uint8_t)jmp);
 
-        emit_bytes(&CODE_R, (uint8_t)OP_JMP, 0);
-        int idx2 = vector_size(CODE_R) - 1;
+        emit_bytes(&CODE, (uint8_t)OP_JMP, 0);
+        int idx2 = vector_size(CODE) - 1;
         walk_ast(self, node->els);
-        jmp = vector_size(CODE_R) - idx2;
-        vector_set(CODE_R, idx2, (uint8_t)jmp);
+        jmp = vector_size(CODE) - idx2;
+        vector_set(CODE, idx2, (uint8_t)jmp);
     }
     else
     {
-        int jmp = vector_size(CODE_R) - idx;
-        vector_set(CODE_R, idx, (uint8_t)jmp);
+        int jmp = vector_size(CODE) - idx;
+        vector_set(CODE, idx, (uint8_t)jmp);
     }
 }
 
 static void gen_node_loop(astwalker_t *self, node_loop_t *node)
 {
-    int loop_idx = vector_size(CODE_R) - 1;
+    int loop_idx = vector_size(CODE) - 1;
     walk_ast(self, node->cond);
 
-    emit_bytes(&CODE_R, (uint8_t)OP_JIF, 0);
-    int jif_idx = vector_size(CODE_R) - 1;
+    emit_bytes(&CODE, (uint8_t)OP_JIF, 0);
+    int jif_idx = vector_size(CODE) - 1;
     walk_ast(self, node->body);
-    int loop_jmp = vector_size(CODE_R) - loop_idx;
+    int loop_jmp = vector_size(CODE) - loop_idx;
 
-    emit_bytes(&CODE_R, (uint8_t)OP_LOOP, (uint8_t)loop_jmp);
+    emit_bytes(&CODE, (uint8_t)OP_LOOP, (uint8_t)loop_jmp);
 
-    int jif_jmp = vector_size(CODE_R) - jif_idx;
-    vector_set(CODE_R, jif_idx, (uint8_t)jif_jmp);
+    int jif_jmp = vector_size(CODE) - jif_idx;
+    vector_set(CODE, jif_idx, (uint8_t)jif_jmp);
 }
 
 static bool identifier_is_unique(string_r *vars, const char *identifier)
@@ -104,7 +107,7 @@ static void gen_node_var_decl(astwalker_t *self, node_var_decl_t *node)
     if (node->init) 
     {
         walk_ast(self, node->init);
-        emit_bytes(&CODE_R, (uint8_t)OP_STORE, (uint8_t)vector_size(LOCALS) - 1);
+        emit_bytes(&CODE, (uint8_t)OP_STORE, (uint8_t)vector_size(LOCALS) - 1);
     }
 }
 
@@ -119,13 +122,13 @@ static void gen_node_binary(astwalker_t *self, node_binary_t *node)
     }
     walk_ast(self, node->left);
     walk_ast(self, node->right);
-    emit_byte(&CODE_R, (uint8_t)token_to_binary_op(node->op));
+    emit_byte(&CODE, (uint8_t)token_to_binary_op(node->op));
 }
 
 static void gen_node_unary(astwalker_t *self, node_unary_t *node)
 {
     walk_ast(self, node->right);
-    emit_byte(&CODE_R, (uint8_t)token_to_unary_op(node->op));
+    emit_byte(&CODE, (uint8_t)token_to_unary_op(node->op));
 }
 
 static void gen_node_call(astwalker_t *self, node_call_t *node)
@@ -134,7 +137,7 @@ static void gen_node_call(astwalker_t *self, node_call_t *node)
     {
         walk_ast(self, vector_get(*node->args, i));
     }
-    emit_byte(&CODE_R, (uint8_t)OP_CALL);
+    emit_byte(&CODE, (uint8_t)OP_CALL);
 }
 
 static void gen_node_var(astwalker_t *self, node_var_t *node)
@@ -147,9 +150,9 @@ static void gen_node_var(astwalker_t *self, node_var_t *node)
     }
 
     if (node->base.is_assign)
-        emit_bytes(&CODE_R, (uint8_t)OP_STORE, (uint8_t)index);
+        emit_bytes(&CODE, (uint8_t)OP_STORE, (uint8_t)index);
     else
-        emit_bytes(&CODE_R, (uint8_t)OP_LOAD, (uint8_t)index);
+        emit_bytes(&CODE, (uint8_t)OP_LOAD, (uint8_t)index);
 }
 
 static void gen_node_literal(astwalker_t *self, node_literal_t *node)
@@ -157,14 +160,27 @@ static void gen_node_literal(astwalker_t *self, node_literal_t *node)
     switch (node->type)
     {
     case LITERAL_BOOL:
+    {
+        emit_bytes(&CODE, OP_LOADK, (uint8_t)vector_size(CONSTANTS));
+        vector_push(value_t, CONSTANTS, FROM_BOOL(node->u.i));
+        break;
+    }
     case LITERAL_INT:
     {
-        emit_bytes(&CODE_R, OP_LOADI, (uint8_t)node->u.i);
+        if (node->u.i < MAX_LITERAL_INT)
+        {
+            emit_bytes(&CODE, OP_LOADI, (uint8_t)node->u.i);
+        }
+        else
+        {
+            emit_bytes(&CODE, OP_LOADK, (uint8_t)vector_size(CONSTANTS));
+            vector_push(value_t, CONSTANTS, FROM_INT(node->u.i));
+        }
         break;
     }
     case LITERAL_STR:
     {
-        emit_bytes(&CODE_R, OP_LOADK, (uint8_t)vector_size(AS_GEN(self)->constants));
+        emit_bytes(&CODE, OP_LOADK, (uint8_t)vector_size(CONSTANTS));
         value_t str = FROM_CSTR(node->u.s);
         vector_push(value_t, AS_GEN(self)->constants, str);
         break;
