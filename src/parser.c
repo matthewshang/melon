@@ -94,6 +94,14 @@ static node_t *parse_infix(lexer_t *lexer, node_t *node, token_t token)
     //printf("parse_infix: %d %.*s\n", token.type, token.length, lexer->source.buffer + token.offset);
 
     node_t *right = parse_precedence(lexer, rules[token.type].prec);
+
+    if (token_is_op_assign(token))
+    {
+        token.type = token_op_assign_to_op(token);
+        right = node_binary_new(token, node, right);
+        token.type = TOK_EQ;
+    }
+
     return node_binary_new(token, node, right);
 }
 
@@ -147,6 +155,9 @@ static void init_parse_rules()
     rules[TOK_IDENTIFIER] = PREFIX_RULE(PREC_LOWEST, parse_identifier);
 
     rules[TOK_EQ] = INFIX_OP(PREC_ASSIGN);
+    rules[TOK_ADDEQ] = INFIX_OP(PREC_ASSIGN);
+    rules[TOK_SUBEQ] = INFIX_OP(PREC_ASSIGN);
+    rules[TOK_MULEQ] = INFIX_OP(PREC_ASSIGN);
 
     rules[TOK_BANG] = PREFIX_OP(PREC_UNARY);
     rules[TOK_SUB] = RULE(parse_unary, parse_infix, PREC_TERM);

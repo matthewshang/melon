@@ -64,3 +64,21 @@ opcode token_to_unary_op(token_t token)
     printf("Unrecognized token type %d\n", token.type);
     return OP_NOP;
 }
+
+token_type token_op_assign_to_op(token_t token)
+{
+    switch (token.type)
+    {
+    case TOK_ADDEQ: return TOK_ADD;
+    case TOK_SUBEQ: return TOK_SUB;
+    case TOK_MULEQ: return TOK_MUL;
+    default: printf("Token %d is not of op assign type\n", token.type); break;
+    }
+
+    return TOK_ERROR;
+}
+
+bool token_is_op_assign(token_t token)
+{
+    return token.type > TOK_EQ && token.type <= TOK_MULEQ;
+}

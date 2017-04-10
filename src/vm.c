@@ -48,7 +48,7 @@ void vm_destroy(vm_t *vm)
 
 static void stack_dump(value_r *stack)
 {
-    printf("Dumping stack\n");
+    printf("----Dumping stack----\n");
     for (int i = 0; i < vector_size(*stack); i++)
     {
         value_t v = vector_get(*stack, i);
@@ -142,7 +142,7 @@ void vm_run(vm_t *vm)
 
 void vm_dump_constants(vm_t *vm)
 {
-    printf("Dumping VM constants\n");
+    printf("----Dumping VM constants----\n");
     for (int i = 0; i < vector_size(vm->constants); i++)
     {
         value_t v = vector_get(vm->constants, i);
@@ -154,4 +154,5 @@ void vm_dump_constants(vm_t *vm)
         default: break;
         }
     }
+    printf("\n");
 }

@@ -165,12 +165,20 @@ static token_type get_op(charstream_t *source, int start, int bytes)
     {
         char c1 = source->buffer[start];
         char c2 = source->buffer[start + 1];
-        if (c1 == '=' && c2 == '=') return TOK_EQEQ;
-        if (c1 == '!' && c2 == '=') return TOK_NEQ;
+        if (c2 == '=')
+        {
+            if (c1 == '=') return TOK_EQEQ;
+            if (c1 == '!') return TOK_NEQ;
+            if (c1 == '<') return TOK_LTE;
+            if (c1 == '>') return TOK_GTE;
+            if (c1 == '+') return TOK_ADDEQ;
+            if (c1 == '-') return TOK_SUBEQ;
+            if (c1 == '*') return TOK_MULEQ;
+        }
+
         if (c1 == '&' && c2 == '&') return TOK_AND;
         if (c1 == '|' && c2 == '|') return TOK_OR;
-        if (c1 == '<' && c2 == '=') return TOK_LTE;
-        if (c1 == '>' && c2 == '=') return TOK_GTE;
+
     }
     return TOK_OP;
 }

@@ -29,6 +29,8 @@ const char *op_to_str(opcode op)
     case OP_OR: return "or";
     case OP_LT: return "lt";
     case OP_GT: return "gt";
+    case OP_LTE: return "lte";
+    case OP_GTE: return "gte";
     case OP_NOT: return "not";
     case OP_EQ: return "eq";
     case OP_NEQ: return "neq";
@@ -42,6 +44,7 @@ const char *op_to_str(opcode op)
 
 void disassemble_code(byte_r *code)
 {
+    printf("----Disassembled bytecode----\n");
     for (int i = 0; i < vector_size(*code); i++)
     {
         uint8_t op = vector_get(*code, i);
@@ -53,4 +56,5 @@ void disassemble_code(byte_r *code)
         }
         printf("\n");
     }
+    printf("\n");
 }
