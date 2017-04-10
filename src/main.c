@@ -26,20 +26,22 @@ int main(int argc, char **argv)
     {
         lexer_t lexer = lexer_create(file);
         node_t *ast = parse(&lexer);
-        ast_print(ast);
+        //ast_print(ast);
         codegen_t gen = codegen_create();
         codegen_run(&gen, ast);
 
         //disassemble_code(&gen.code);
       
-        vm_t vm = vm_create(&gen.code, gen.constants);
-        vm_run(&vm);
-        vm_destroy(&vm);
+        vm_t vm = vm_create(gen.code, gen.constants);
+        vm_dump_constants(&vm);
 
         ast_free(ast);
         codegen_destroy(&gen);
         lexer_destroy(&lexer);
         free(file);
+
+        vm_run(&vm);
+        vm_destroy(&vm);
     }
     else
     {

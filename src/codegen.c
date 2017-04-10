@@ -23,7 +23,6 @@ static void emit_bytes(byte_r *code, uint8_t b1, uint8_t b2)
 {
     vector_push(uint8_t, *code, b1);
     vector_push(uint8_t, *code, b2);
-
 }
 
 static void gen_node_prog(astwalker_t *self, node_prog_t *node)
@@ -155,8 +154,49 @@ static void gen_node_var(astwalker_t *self, node_var_t *node)
         emit_bytes(&CODE, (uint8_t)OP_LOAD, (uint8_t)index);
 }
 
+static int constant_exists(value_r *constants, node_literal_t *node)
+{
+    value_e type = node->type;
+    for (int i = 0; i < vector_size(*constants); i++)
+    {
+        value_t val = vector_get(*constants, i);
+        if (val.type == type)
+        {
+            switch (val.type)
+            {
+            case VAL_STR:
+            {
+                if (strcmp(node->u.s, val.o) == 0) return i;
+                break;
+            }
+            case VAL_BOOL:
+            case VAL_INT:
+            {
+                if (node->u.i == val.i) return i;
+                break;
+            }
+            case VAL_FLOAT:
+            {
+                if (node->u.f == val.f) return i;
+                break;
+            }
+            default: break;
+            }
+        }
+    }
+
+    return -1;
+}
+
 static void gen_node_literal(astwalker_t *self, node_literal_t *node)
 {
+    int index = constant_exists(&CONSTANTS, node);
+    if (index != -1)
+    {
+        emit_bytes(&CODE, OP_LOADK, (uint8_t)index);
+        return;
+    }
+
     switch (node->type)
     {
     case LITERAL_BOOL:
@@ -181,8 +221,8 @@ static void gen_node_literal(astwalker_t *self, node_literal_t *node)
     case LITERAL_STR:
     {
         emit_bytes(&CODE, OP_LOADK, (uint8_t)vector_size(CONSTANTS));
-        value_t str = FROM_CSTR(node->u.s);
-        vector_push(value_t, AS_GEN(self)->constants, str);
+        value_t str = FROM_CSTR(strdup(node->u.s));
+        vector_push(value_t, CONSTANTS, str);
         break;
     }
     default: break;

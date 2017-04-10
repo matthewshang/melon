@@ -22,18 +22,28 @@
                             STACK_PUSH(FROM_BOOL(a op b));                           \
                         } while (0)
 
-vm_t vm_create(vector_t(uint8_t) *code, value_r constants)
+vm_t vm_create(byte_r code, value_r constants)
 {
     vm_t vm;
-    vm.constants = constants;
+    vector_copy(value_t, constants, vm.constants);
     vector_init(vm.stack);
-    vm.ip = &vector_get(*code, 0);
+    vector_copy(uint8_t, code, vm.bytecode);
+    vm.ip = &vector_get(vm.bytecode, 0);
     return vm;
 }
 
 void vm_destroy(vm_t *vm)
 {
     vector_destroy(vm->stack);
+    for (int i = 0; i < vector_size(vm->constants); i++)
+    {
+        if (vector_get(vm->constants, i).type == VAL_STR)
+        {
+            free(vector_get(vm->constants, i).o);
+        }
+    }
+    vector_destroy(vm->bytecode);
+    vector_destroy(vm->constants);
 }
 
 static void stack_dump(value_r *stack)
@@ -125,5 +135,21 @@ void vm_run(vm_t *vm)
         //stack_dump(&vm->stack);
         //printf("\n");
 
+    }
+}
+
+void vm_dump_constants(vm_t *vm)
+{
+    printf("Dumping VM constants\n");
+    for (int i = 0; i < vector_size(vm->constants); i++)
+    {
+        value_t v = vector_get(vm->constants, i);
+        switch (v.type)
+        {
+        case VAL_BOOL: printf("\t%s\n", v.i == 1 ? "true" : "false"); break;
+        case VAL_INT: printf("\t%d\n", v.i); break;
+        case VAL_STR: printf("\t%s\n", v.o); break;
+        default: break;
+        }
     }
 }

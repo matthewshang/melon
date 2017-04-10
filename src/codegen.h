@@ -7,7 +7,6 @@
 #include "value.h"
 #include "vector.h"
 
-typedef vector_t(uint8_t) byte_r;
 typedef vector_t(const char*) string_r;
 
 typedef struct

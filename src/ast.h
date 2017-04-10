@@ -17,7 +17,7 @@ typedef enum
 
 typedef enum
 {
-    LITERAL_BOOL, LITERAL_INT, LITERAL_STR, LITERAL_FLOAT
+    LITERAL_BOOL, LITERAL_INT, LITERAL_FLOAT, LITERAL_STR
 } literal_type;
 
 typedef struct
