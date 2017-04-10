@@ -109,6 +109,8 @@ void vm_run(vm_t *vm)
         case OP_OR: BINCOMP(||); break;
         case OP_LT: BINCOMP(<); break;
         case OP_GT: BINCOMP(>); break;
+        case OP_LTE: BINCOMP(<= ); break;
+        case OP_GTE: BINCOMP(>= ); break;
         case OP_EQ: BINCOMP(== ); break;
         case OP_NEQ: BINCOMP(!= ); break;
 

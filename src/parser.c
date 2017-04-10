@@ -12,7 +12,7 @@ typedef enum {
     PREC_AND,       // &&
     PREC_COMP,      // < > <= >= == !=
     PREC_TERM,      // + -
-    PREC_FACTOR,    // * /
+    PREC_FACTOR,    // * / %
     PREC_UNARY,     // ! -
     PREC_CALL,      // 
 } precedence_t;
@@ -159,6 +159,8 @@ static void init_parse_rules()
     rules[TOK_NEQ] = INFIX_OP(PREC_COMP);
     rules[TOK_LT] = INFIX_OP(PREC_COMP);
     rules[TOK_GT] = INFIX_OP(PREC_COMP);
+    rules[TOK_LTE] = INFIX_OP(PREC_COMP);
+    rules[TOK_GTE] = INFIX_OP(PREC_COMP);
 
     rules[TOK_ADD] = INFIX_OP(PREC_TERM);
 

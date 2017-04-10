@@ -15,7 +15,7 @@ typedef enum
 
     TOK_OP, 
     TOK_EQ, TOK_ADD, TOK_SUB, TOK_MUL, TOK_MOD, TOK_BANG /*!*/, TOK_EQEQ, TOK_NEQ,
-    TOK_LT, TOK_GT, TOK_AND, TOK_OR,
+    TOK_LT, TOK_GT, TOK_LTE, TOK_GTE, TOK_AND, TOK_OR,
     
     TOK_ERROR, TOK_EOF,
 

@@ -27,6 +27,8 @@ typedef enum
     OP_NEG,
     OP_LT,
     OP_GT,
+    OP_LTE,
+    OP_GTE,
 
     OP_EQ,
     OP_NEQ,

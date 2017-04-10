@@ -43,6 +43,8 @@ opcode token_to_binary_op(token_t token)
     case TOK_NEQ: return OP_NEQ;
     case TOK_LT: return OP_LT;
     case TOK_GT: return OP_GT;
+    case TOK_LTE: return OP_LTE;
+    case TOK_GTE: return OP_GTE;
     case TOK_AND: return OP_AND;
     case TOK_OR: return OP_OR;
     }
