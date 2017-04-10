@@ -112,6 +112,7 @@ static token_type get_keyword(charstream_t *source, int start, int bytes)
     }
     if (bytes == 4)
     {
+        if (strequals(iden, bytes, "func")) return TOK_FUNC;
         if (strequals(iden, bytes, "else")) return TOK_ELSE;
         if (strequals(iden, bytes, "true")) return TOK_TRUE;
     }
@@ -201,12 +202,12 @@ static token_t scan_op(charstream_t *source)
 static token_t read_next(lexer_t *lexer)
 {
     token_t token = token_error();
+
     if (charstream_eof(&lexer->source)) token = token_create(TOK_EOF, -1, 0);
 
     while (!charstream_eof(&lexer->source))
     {
         char c = charstream_peek(&lexer->source);
-
 
         if (is_space(c)) { charstream_next(&lexer->source); continue; }
         if (is_comment(c)) { scan_comment(&lexer->source); continue; }
@@ -234,8 +235,8 @@ lexer_t lexer_create(const char *source)
     token_t current = read_next(&lexer);
     while (current.type != TOK_EOF)
     {
-        //printf("arg: %d %.*s\n", current.type, current.length, source + current.offset);
-        vector_push(token_t, tokens, current);
+        printf("arg: %d %.*s\n", current.type, current.length, source + current.offset);
+        if (current.type != TOK_ERROR) vector_push(token_t, tokens, current);
         current = read_next(&lexer);
     }
 

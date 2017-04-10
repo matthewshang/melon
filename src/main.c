@@ -7,7 +7,6 @@
 #include "debug.h"
 #include "utils.h"
 #include "lexer.h"
-#include "token.h"
 #include "vector.h"
 #include "vm.h"
 #include "parser.h"
@@ -26,26 +25,26 @@ int main(int argc, char **argv)
     {
         lexer_t lexer = lexer_create(file);
         node_t *ast = parse(&lexer);
-        //ast_print(ast);
-        codegen_t gen = codegen_create();
-        codegen_run(&gen, ast);
+        ast_print(ast);
+        //codegen_t gen = codegen_create();
+        //codegen_run(&gen, ast);
 
         //disassemble_code(&gen.code);
       
-        vm_t vm = vm_create(gen.code, gen.constants);
-        vm_dump_constants(&vm);
+        //vm_t vm = vm_create(gen.code, gen.constants);
+        //vm_dump_constants(&vm);
 
         ast_free(ast);
-        codegen_destroy(&gen);
+        //codegen_destroy(&gen);
         lexer_destroy(&lexer);
         free(file);
 
-        vm_run(&vm);
-        vm_destroy(&vm);
+        //vm_run(&vm);
+        //vm_destroy(&vm);
     }
     else
     {
-        printf("Could not load file\n");
+        printf("Could not load file %s\n", argv[1]);
     }
 
 	return 0;

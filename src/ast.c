@@ -43,12 +43,13 @@ node_t *node_var_new(const char *identifier)
     return (node_t*)node;
 }
 
-node_t *node_lambda_new(vector_t(char*) *vars, vector_t(node_t*) *body)
+node_t *node_func_decl_new(const char *identifier, vector_t(node_var_t*) *params, node_block_t *body)
 {
-    node_lambda_t *node = (node_lambda_t*)calloc(1, sizeof(node_lambda_t));
-    NODE_SETBASE(node, NODE_LAMBDA);
+    node_func_decl_t *node = (node_func_decl_t*)calloc(1, sizeof(node_func_decl_t));
+    NODE_SETBASE(node, NODE_FUNC_DECL);
+    node->identifier = identifier;
     node->body = body;
-    node->vars = vars;
+    node->params = params;
     return (node_t*)node;
 }
 
@@ -58,6 +59,15 @@ node_t *node_call_new(const char *func, vector_t(node_t*) *args)
     NODE_SETBASE(node, NODE_CALL);
     node->args = args;
     node->func = func;
+    return (node_t*)node;
+}
+
+node_t *node_postfix_new(node_t *target, vector_t(node_t *) *args)
+{
+    node_postfix_t *node = (node_postfix_t*)calloc(1, sizeof(node_postfix_t));
+    NODE_SETBASE(node, NODE_POSTFIX);
+    node->args = args;
+    node->target = target;
     return (node_t*)node;
 }
 
@@ -108,29 +118,26 @@ node_t *node_unary_new(token_t op, node_t *right)
     return (node_t*)node;
 }
 
-node_t* node_prog_new(vector_t(node_t *) *stmts)
+node_t* node_block_new(vector_t(node_t *) *stmts)
 {
-    node_prog_t *node = (node_prog_t*)calloc(1, sizeof(node_prog_t));
-    NODE_SETBASE(node, NODE_PROG);
+    node_block_t *node = (node_block_t*)calloc(1, sizeof(node_block_t));
+    NODE_SETBASE(node, NODE_BLOCK);
     node->stmts = stmts;
     return (node_t*)node;
 }
 
-static void free_node_prog(astwalker_t *self, node_prog_t *node)
+static void free_node_block(astwalker_t *self, node_block_t *node)
 {
-    if (node)
+    if (node->stmts)
     {
-        if (node->stmts)
+        for (int i = 0; i < vector_size(*node->stmts); i++)
         {
-            for (int i = 0; i < vector_size(*node->stmts); i++)
-            {
-                walk_ast(self, vector_get(*node->stmts, i));
-            }
-            vector_destroy(*node->stmts);
-            free(node->stmts);
+            walk_ast(self, vector_get(*node->stmts, i));
         }
-        free(node);
+        vector_destroy(*node->stmts);
+        free(node->stmts);
     }
+    free(node);
 }
 
 static void free_node_if(astwalker_t *self, node_if_t *node)
@@ -155,22 +162,50 @@ static void free_node_var_decl(astwalker_t *self, node_var_decl_t *node)
     free(node);
 }
 
+static void free_node_func_decl(astwalker_t *self, node_func_decl_t *node)
+{
+    if (node->body) walk_ast(self, node->body);
+    if (node->params)
+    {
+        for (int i = 0; i < vector_size(*node->params); i++)
+        {
+            walk_ast(self, vector_get(*node->params, i));
+        }
+        vector_destroy(*node->params);
+        free(node->params);
+    }
+    if (node->identifier) free(node->identifier);
+    free(node);
+}
+
 static void free_node_call(astwalker_t *self, node_call_t *node)
 {
-    if (node)
+    if (node->args)
     {
-        if (node->args)
+        for (int i = 0; i < vector_size(*node->args); i++)
         {
-            for (int i = 0; i < vector_size(*node->args); i++)
-            {
-                walk_ast(self, vector_get(*node->args, i));
-            }
-            vector_destroy(*node->args);
-            free(node->args);
+            walk_ast(self, vector_get(*node->args, i));
         }
-        if (node->func) free(node->func);
-        free(node);
+        vector_destroy(*node->args);
+        free(node->args);
     }
+    if (node->func) free(node->func);
+    free(node);
+}
+
+static void free_node_postfix(astwalker_t *self, node_postfix_t *node)
+{
+    if (node->args)
+    {
+        for (int i = 0; i < vector_size(*node->args); i++)
+        {
+            walk_ast(self, vector_get(*node->args, i));
+        }
+        vector_destroy(*node->args);
+        free(node->args);
+    }
+    if (node->target) free(node->target);
+    free(node);
 }
 
 static void free_node_var(astwalker_t *self, node_var_t *node)
@@ -181,44 +216,37 @@ static void free_node_var(astwalker_t *self, node_var_t *node)
 
 static void free_node_literal(astwalker_t *self, node_literal_t *node)
 {
-    if (node)
-    {
-        if (node->type == LITERAL_STR) free(node->u.s);
-        free(node);
-    }
+    if (node->type == LITERAL_STR) free(node->u.s);
+    free(node);
 }
 
 static void free_node_binary(astwalker_t *self, node_binary_t *node)
 {
-    if (node)
-    {
-        if (node->left) walk_ast(self, node->left);
-        if (node->right) walk_ast(self, node->right);
-        free(node);
-    }
+    if (node->left) walk_ast(self, node->left);
+    if (node->right) walk_ast(self, node->right);
+    free(node); 
 }
 
 static void free_node_unary(astwalker_t *self, node_unary_t *node)
 {
-    if (node)
-    {
-        if (node->right) walk_ast(self, node->right);
-        free(node);
-    }
+    if (node->right) walk_ast(self, node->right);
+    free(node);
 }
 
 void ast_free(node_t *root)
 {
     astwalker_t visitor = {
-        .visit_prog = free_node_prog,
+        .visit_block = free_node_block,
         .visit_if = free_node_if,
         .visit_loop = free_node_loop,
 
         .visit_var_decl = free_node_var_decl,
+        .visit_func_decl = free_node_func_decl,
 
         .visit_binary = free_node_binary,
         .visit_unary = free_node_unary,
         .visit_call = free_node_call,
+        .visit_postfix = free_node_postfix,
         .visit_var = free_node_var,
         .visit_literal = free_node_literal
     };
@@ -233,9 +261,9 @@ static void print_tabs(int depth)
     }
 }
 
-static void print_node_prog(astwalker_t *self, node_prog_t *node)
+static void print_node_block(astwalker_t *self, node_block_t *node)
 {
-    printf("[prog] nstmts: %d\n", vector_size(*node->stmts));
+    printf("[block] nstmts: %d\n", vector_size(*node->stmts));
     int depth = self->depth;
 
     for (int i = 0; i < vector_size(*node->stmts); i++)
@@ -303,6 +331,31 @@ static void print_node_var_decl(astwalker_t *self, node_var_decl_t *node)
     }
 }
 
+static void print_node_func_decl(astwalker_t *self, node_func_decl_t *node)
+{
+    printf("[func_decl] ident: %s\n", node->identifier);
+    int depth = self->depth;
+
+    if (node->params)
+    {
+        print_tabs(depth); printf("func-params: ");
+        int param_size = vector_size(*node->params);
+        for (int i = 0; i < param_size; i++)
+        {
+            node_var_t *var = vector_get(*node->params, i);
+            printf("%s", var->identifier);
+            if (i < param_size - 1) printf(", ");
+        }
+        printf("\n");
+    }
+
+    print_tabs(depth); printf("func-body: ");
+    self->depth = depth + 1;
+    walk_ast(self, node->body);
+
+    self->depth = depth;
+}
+
 static void print_node_binary(astwalker_t *self, node_binary_t *node)
 {
     printf("[binary] op: %d\n", node->op.type);
@@ -346,6 +399,29 @@ static void print_node_call(astwalker_t *self, node_call_t *node)
     self->depth = depth;
 }
 
+static void print_node_postfix(astwalker_t *self, node_postfix_t *node)
+{
+    printf("[postfix] nargs: %d\n", node->args ? vector_size(*node->args) : 0);
+    int depth = self->depth;
+
+    print_tabs(depth); printf("postfix-target: ");
+    self->depth = depth + 1;
+    walk_ast(self, node->target);
+
+    if (node->args)
+    {
+        print_tabs(depth); printf("postfix-args:\n");
+        for (int i = 0; i < vector_size(*node->args); i++)
+        {
+            print_tabs(depth + 1);
+            self->depth = depth + 1;
+            walk_ast(self, vector_get(*node->args, i));
+        }
+    }
+
+    self->depth = depth;
+}
+
 static void print_node_var(astwalker_t *self, node_var_t *node)
 {
     printf("[var] name: %s\n", node->identifier);
@@ -373,15 +449,17 @@ void ast_print(node_t *root)
     astwalker_t visitor = {
         .depth = 1,
 
-        .visit_prog = print_node_prog,
+        .visit_block = print_node_block,
         .visit_if = print_node_if,
         .visit_loop = print_node_loop,
 
         .visit_var_decl = print_node_var_decl,
+        .visit_func_decl = print_node_func_decl,
 
         .visit_binary = print_node_binary,
         .visit_unary = print_node_unary,
         .visit_call = print_node_call,
+        .visit_postfix = print_node_postfix,
         .visit_var = print_node_var,
         .visit_literal = print_node_literal
     };

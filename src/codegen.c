@@ -25,7 +25,7 @@ static void emit_bytes(byte_r *code, uint8_t b1, uint8_t b2)
     vector_push(uint8_t, *code, b2);
 }
 
-static void gen_node_prog(astwalker_t *self, node_prog_t *node)
+static void gen_node_block(astwalker_t *self, node_block_t *node)
 {
     for (int i = 0; i < vector_size(*node->stmts); i++)
     {
@@ -251,7 +251,7 @@ void codegen_run(codegen_t *gen, node_t *ast)
         .depth = 0,
         .data = (void*)gen,
 
-        .visit_prog = gen_node_prog,
+        .visit_block = gen_node_block,
         .visit_if = gen_node_if,
         .visit_loop = gen_node_loop,
 

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 typedef vector_t(node_t*) node_r;
+typedef vector_t(node_var_t*) node_var_r;
 
 typedef enum {
     PREC_LOWEST,    // literals
@@ -14,7 +15,7 @@ typedef enum {
     PREC_TERM,      // + -
     PREC_FACTOR,    // * / %
     PREC_UNARY,     // ! -
-    PREC_CALL,      // 
+    PREC_CALL,      // ()
 } precedence_t;
 
 typedef node_t *(*prefix_func)(lexer_t *lexer, token_t token);
@@ -76,11 +77,29 @@ static node_t *parse_identifier(lexer_t *lexer, token_t token)
     return node_var_new((const char*)name);
 }
 
-static node_t *parse_open_paren(lexer_t *lexer, token_t token)
+static node_t *parse_nested_expr(lexer_t *lexer, token_t token)
 {
     node_t *expr = parse_expression(lexer);
     lexer_consume(lexer, TOK_CLOSED_PAREN, ")");
     return expr;
+}
+
+static node_t *parse_postfix(lexer_t *lexer, node_t *node, token_t token)
+{
+    if (lexer_match(lexer, TOK_CLOSED_PAREN))
+    {
+        return node_postfix_new(node, NULL);
+    }
+
+    node_r *args = (node_r*)calloc(1, sizeof(node_r));
+
+    do
+    {
+        vector_push(node_t*, *args, parse_expression(lexer));
+    } while (lexer_match(lexer, TOK_COMMA));
+    
+    lexer_consume(lexer, TOK_CLOSED_PAREN, ")");
+    return node_postfix_new(node, args);
 }
 
 static node_t *parse_unary(lexer_t *lexer, token_t token)
@@ -146,7 +165,7 @@ static void init_parse_rules()
 {
     if (rules_initialized) return;
 
-    rules[TOK_OPEN_PAREN] = PREFIX_RULE(PREC_UNARY, parse_open_paren);
+    rules[TOK_OPEN_PAREN] = RULE(parse_nested_expr, parse_postfix, PREC_CALL);
 
     rules[TOK_TRUE] = PREFIX_RULE(PREC_LOWEST, parse_bool);
     rules[TOK_FALSE] = PREFIX_RULE(PREC_LOWEST, parse_bool);
@@ -276,10 +295,43 @@ static node_t *parse_var_decl(lexer_t *lexer)
     return node_var_decl_new((const char*)ident, init);
 }
 
+static node_var_r *parse_func_params(lexer_t *lexer)
+{
+    if (lexer_check(lexer, TOK_CLOSED_PAREN)) return NULL;
+
+    node_var_r *params = (node_var_r*)calloc(1, sizeof(node_var_r));
+
+    if (!lexer_check(lexer, TOK_CLOSED_PAREN))
+    {
+        do
+        {
+            vector_push(node_var_t*, *params, (node_var_t*)parse_expression(lexer));
+        } while (lexer_match(lexer, TOK_COMMA));
+    }
+
+    return params;
+}
+
+static node_t *parse_func_decl(lexer_t *lexer)
+{
+    token_t token = lexer_consume(lexer, TOK_IDENTIFIER, "variable name");
+    char *ident = substr(lexer->source.buffer, token.offset, token.length);
+
+    lexer_consume(lexer, TOK_OPEN_PAREN, "(");
+    vector_t(node_var_t*) *params = parse_func_params(lexer);
+    lexer_consume(lexer, TOK_CLOSED_PAREN, ")");
+
+    node_t *body = parse_block(lexer);
+
+    return node_func_decl_new((const char*)ident, params, (node_block_t*)body);
+}
+
 static node_t *parse_decl(lexer_t *lexer)
 {
     if (lexer_match(lexer, TOK_VAR)) 
         return parse_var_decl(lexer);
+    if (lexer_match(lexer, TOK_FUNC))
+        return parse_func_decl(lexer);
 
     return parse_stmt(lexer);
 }
@@ -298,7 +350,7 @@ static node_t *parse_block(lexer_t *lexer)
 
     lexer_consume(lexer, TOK_CLOSED_BRACE, "}");
 
-    return node_prog_new(stmts);
+    return node_block_new(stmts);
 }
 
 node_t *parse(lexer_t *lexer)
@@ -313,5 +365,5 @@ node_t *parse(lexer_t *lexer)
         vector_push(node_t*, *stmts, parse_decl(lexer));
     }
 
-    return node_prog_new(stmts);
+    return node_block_new(stmts);
 }
