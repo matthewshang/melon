@@ -235,7 +235,7 @@ lexer_t lexer_create(const char *source)
     token_t current = read_next(&lexer);
     while (current.type != TOK_EOF)
     {
-        printf("arg: %d %.*s\n", current.type, current.length, source + current.offset);
+        //printf("arg: %d %.*s\n", current.type, current.length, source + current.offset);
         if (current.type != TOK_ERROR) vector_push(token_t, tokens, current);
         current = read_next(&lexer);
     }

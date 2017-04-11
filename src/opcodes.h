@@ -11,6 +11,7 @@ typedef enum
     OP_LOADK,
     OP_STORE,
 
+    OP_PRINT,
     OP_CALL,
     OP_JMP,
     OP_LOOP,

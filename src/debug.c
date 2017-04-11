@@ -14,6 +14,7 @@ const char *op_to_str(opcode op)
     case OP_LOADK: return "loadk";
     case OP_STORE: return "store";
 
+    case OP_PRINT: return "print";
     case OP_CALL: return "call";
     case OP_JMP: return "jmp";
     case OP_LOOP: return "loop";
@@ -39,22 +40,4 @@ const char *op_to_str(opcode op)
     }
     printf("Unrecognized op %d\n", op);
     return "";
-}
-
-
-void disassemble_code(byte_r *code)
-{
-    printf("----Disassembled bytecode----\n");
-    for (int i = 0; i < vector_size(*code); i++)
-    {
-        uint8_t op = vector_get(*code, i);
-        printf("%s", op_to_str((opcode)op));
-        if (op == OP_LOADI || op == OP_STORE || op == OP_LOAD || op == OP_JIF
-            || op == OP_JMP || op == OP_LOOP || op == OP_LOADK)
-        {
-            printf(" %d", vector_get(*code, ++i));
-        }
-        printf("\n");
-    }
-    printf("\n");
 }

@@ -11,12 +11,13 @@ typedef vector_t(const char*) string_r;
 
 typedef struct
 {
-    byte_r code;
+    byte_r *code;
     string_r locals;
-    value_r constants;
+    value_r *constants;
+    function_t *func;
 } codegen_t;
 
-codegen_t codegen_create();
+codegen_t codegen_create(function_t *f);
 void codegen_destroy(codegen_t *gen);
 void codegen_run(codegen_t *gen, node_t *ast);
 

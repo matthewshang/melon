@@ -22,28 +22,49 @@
                             STACK_PUSH(FROM_BOOL(a op b));                           \
                         } while (0)
 
-vm_t vm_create(byte_r code, value_r constants)
+void callstack_push(callframe_t **top, uint8_t *ret, function_t *func)
+{
+    callframe_t *newframe = (callframe_t*)calloc(1, sizeof(callframe_t));
+    newframe->last = *top;
+    newframe->ret = ret;
+    newframe->func = func;
+    *top = newframe;
+}
+
+uint8_t *callstack_ret(callframe_t **top, function_t **cur_func)
+{
+    callframe_t *frame = *top;
+    *top = frame->last;
+    uint8_t *ret = frame->ret;
+    *cur_func = frame->func;
+    free(frame);
+    return ret;
+}
+
+vm_t vm_create(function_t *f)
 {
     vm_t vm;
-    vector_copy(value_t, constants, vm.constants);
     vector_init(vm.stack);
-    vector_copy(uint8_t, code, vm.bytecode);
-    vm.ip = &vector_get(vm.bytecode, 0);
+    vm.main_func = f;
+    vm.ip = &vector_get(vm.main_func->bytecode, 0);
+
+    vm.callstack = (callframe_t*)calloc(1, sizeof(callframe_t));
+    vm.callstack->ret = NULL;
+    vm.callstack->last = NULL;
+
     return vm;
 }
 
 void vm_destroy(vm_t *vm)
 {
     vector_destroy(vm->stack);
-    for (int i = 0; i < vector_size(vm->constants); i++)
+    callframe_t *frame = vm->callstack;
+    while (frame)
     {
-        if (vector_get(vm->constants, i).type == VAL_STR)
-        {
-            free(vector_get(vm->constants, i).o);
-        }
+        callframe_t *prev = frame->last;
+        free(frame);
+        frame = prev;
     }
-    vector_destroy(vm->bytecode);
-    vector_destroy(vm->constants);
 }
 
 static void stack_dump(value_r *stack)
@@ -54,9 +75,10 @@ static void stack_dump(value_r *stack)
         value_t v = vector_get(*stack, i);
         switch (v.type)
         {
-        case VAL_BOOL: printf("%s\n", v.i == 1 ? "true" : "false"); break;
-        case VAL_INT: printf("%d\n", v.i); break;
-        case VAL_STR: printf("%s\n", v.o); break;
+        case VAL_BOOL: printf("[bool]: %s\n", v.i == 1 ? "true" : "false"); break;
+        case VAL_INT: printf("[int]: %d\n", v.i); break;
+        case VAL_STR: printf("[string]: %s\n", v.s); break;
+        case VAL_FUNC: printf("[function]: %s\n", v.fn->identifier); break;
         default: break;
         }
     }
@@ -65,30 +87,43 @@ static void stack_dump(value_r *stack)
 void vm_run(vm_t *vm)
 {
     uint8_t inst;
+    function_t *cur_func = vm->main_func;
 
     while (1)
     {
         inst = *vm->ip++;
         switch ((opcode)inst)
         {
-        case OP_RET0: break;
+        case OP_RET0: 
+        {
+            vm->ip = callstack_ret(&vm->callstack, &cur_func);
+            break;
+        }
         case OP_NOP: continue;
 
         case OP_LOAD: STACK_PUSH(vector_get(vm->stack, READ_BYTE)); break;
         case OP_LOADI: STACK_PUSH(FROM_INT(READ_BYTE)); break;
-        case OP_LOADK: STACK_PUSH(vector_get(vm->constants, READ_BYTE)); break;
+        case OP_LOADK: STACK_PUSH(function_cpool_get(cur_func, READ_BYTE)); break;
         case OP_STORE: vector_set(vm->stack, READ_BYTE, STACK_PEEK); break;
 
-        case OP_CALL: {
+        case OP_PRINT: {
 
             value_t v = STACK_POP;
             switch (v.type)
             {
             case VAL_BOOL: printf("%s\n", v.i == 1 ? "true" : "false"); break;
             case VAL_INT: printf("%d\n", v.i); break;
-            case VAL_STR: printf("%s\n", v.o); break;
+            case VAL_STR: printf("%s\n", v.s); break;
             default: break;
             }
+            break;
+        }
+        case OP_CALL:
+        {
+            function_t *f = AS_FUNC(STACK_POP);
+            callstack_push(&vm->callstack, vm->ip, cur_func);
+            cur_func = f;
+            vm->ip = &vector_get(f->bytecode, 0);
             break;
         }
         case OP_JMP: vm->ip += *vm->ip; break;
@@ -138,21 +173,4 @@ void vm_run(vm_t *vm)
         //printf("\n");
 
     }
-}
-
-void vm_dump_constants(vm_t *vm)
-{
-    printf("----Dumping VM constants----\n");
-    for (int i = 0; i < vector_size(vm->constants); i++)
-    {
-        value_t v = vector_get(vm->constants, i);
-        switch (v.type)
-        {
-        case VAL_BOOL: printf("\t%s\n", v.i == 1 ? "true" : "false"); break;
-        case VAL_INT: printf("\t%d\n", v.i); break;
-        case VAL_STR: printf("\t%s\n", v.o); break;
-        default: break;
-        }
-    }
-    printf("\n");
 }
