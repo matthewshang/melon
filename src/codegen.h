@@ -4,10 +4,9 @@
 #include <stdint.h>
 
 #include "ast.h"
+#include "symtable.h"
 #include "value.h"
 #include "vector.h"
-
-typedef vector_t(const char*) string_r;
 
 typedef struct
 {
@@ -15,6 +14,7 @@ typedef struct
     string_r locals;
     value_r *constants;
     function_t *func;
+    symtable_t *symtable;
 } codegen_t;
 
 codegen_t codegen_create(function_t *f);

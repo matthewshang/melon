@@ -32,5 +32,6 @@
                  } while (0)
 
 typedef vector_t(uint8_t) byte_r;
+typedef vector_t(const char*) string_r;
 
 #endif

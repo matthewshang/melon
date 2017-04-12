@@ -38,7 +38,7 @@ value_t function_cpool_get(function_t *func, int idx)
 
 void function_cpool_dump(function_t *func)
 {
-    printf("----Dumping function constants of %s---\n", func->identifier);
+    printf("----Dumping function constants of %s----\n", func->identifier);
     for (int i = 0; i < vector_size(func->constpool); i++)
     {
         value_t v = vector_get(func->constpool, i);
@@ -51,7 +51,7 @@ void function_cpool_dump(function_t *func)
         default: break;
         }
     }
-    printf("----End constants of function %s\n\n", func->identifier);
+    printf("----\n\n", func->identifier);
 
 }
 
@@ -70,5 +70,5 @@ void function_disassemble(function_t *func)
         }
         printf("\n");
     }
-    printf("----End disassembly of function %s\n\n", func->identifier);
+    printf("----\n\n", func->identifier);
 }

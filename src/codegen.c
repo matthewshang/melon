@@ -9,6 +9,7 @@
 #define CODE ((codegen_t*)self->data)->code
 #define LOCALS ((codegen_t*)self->data)->locals
 #define CONSTANTS ((codegen_t*)self->data)->constants
+#define SYMTABLE ((codegen_t*)self->data)->symtable
 
 #define AS_GEN(self) ((codegen_t*)self->data)
 
@@ -75,34 +76,14 @@ static void gen_node_loop(astwalker_t *self, node_loop_t *node)
     vector_set(*CODE, jif_idx, (uint8_t)jif_jmp);
 }
 
-static bool identifier_is_unique(string_r *vars, const char *identifier)
-{
-    for (int i = 0; i < vector_size(*vars); i++)
-    {
-        if (strcmp(vector_get(*vars, i), identifier) == 0) return false;
-    }
-
-    return true;
-}
-
-static int identifier_index(string_r *vars, const char *identifier)
-{
-    for (int i = 0; i < vector_size(*vars); i++)
-    {
-        if (strcmp(vector_get(*vars, i), identifier) == 0) return i;
-    }
-
-    return -1;
-}
-
 static void gen_node_var_decl(astwalker_t *self, node_var_decl_t *node)
 {
-    if (!identifier_is_unique(&LOCALS, node->ident))
+    if (symtable_index(SYMTABLE, node->ident) != -1)
     {
         printf("Variable %s already defined\n", node->ident);
         return;
     }
-    vector_push(const char*, LOCALS, node->ident);
+    symtable_add_local(SYMTABLE, node->ident);
     if (node->init) 
     {
         walk_ast(self, node->init);
@@ -112,12 +93,12 @@ static void gen_node_var_decl(astwalker_t *self, node_var_decl_t *node)
 
 static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
 {
-    if (!identifier_is_unique(&LOCALS, node->identifier))
+    if (symtable_index(SYMTABLE, node->identifier) != -1)
     {
         printf("Function %s already defined\n", node->identifier);
         return;
     }
-    vector_push(const char*, LOCALS, node->identifier);
+    symtable_add_local(SYMTABLE, node->identifier);
 
     function_t *f = function_new(strdup(node->identifier));
     codegen_t *gen = (codegen_t*)self->data;
@@ -132,7 +113,7 @@ static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
     gen->constants = &parent->constpool;
     vector_push(value_t, parent->constpool, FROM_FUNC(f));
     emit_bytes(CODE, (uint8_t)OP_LOADK, vector_size(parent->constpool) - 1);
-    emit_bytes(CODE, (uint8_t)OP_STORE, identifier_index(&LOCALS, node->identifier));
+    emit_bytes(CODE, (uint8_t)OP_STORE, symtable_index(SYMTABLE, node->identifier));
 }
 
 static void gen_node_binary(astwalker_t *self, node_binary_t *node)
@@ -172,7 +153,7 @@ static void gen_node_postfix(astwalker_t *self, node_postfix_t *node)
 
 static void gen_node_var(astwalker_t *self, node_var_t *node)
 {
-    int index = identifier_index(&LOCALS, node->identifier);
+    int index = symtable_index(SYMTABLE, node->identifier);
     if (index == -1)
     {
         printf("Unknown identifier %s\n", node->identifier);
@@ -249,6 +230,8 @@ static void gen_node_literal(astwalker_t *self, node_literal_t *node)
 codegen_t codegen_create(function_t *f)
 {
     codegen_t gen;
+    gen.symtable = symtable_new();
+
     vector_init(gen.locals);
     gen.func = f;
     gen.code = &gen.func->bytecode;
@@ -259,6 +242,7 @@ codegen_t codegen_create(function_t *f)
 void codegen_destroy(codegen_t *gen)
 {
     vector_destroy(gen->locals);
+    symtable_free(gen->symtable);
 }
 
 void codegen_run(codegen_t *gen, node_t *ast)
@@ -284,4 +268,6 @@ void codegen_run(codegen_t *gen, node_t *ast)
 
     walk_ast(&walker, ast);
     emit_byte(gen->code, (uint8_t)OP_HALT);
+    symtable_dump(gen->symtable);
+
 }

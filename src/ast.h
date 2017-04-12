@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 
+#include "symtable.h"
 #include "token.h"
 #include "vector.h"
 
@@ -30,6 +31,7 @@ typedef struct
 {
     node_t base;
     vector_t(node_t*) *stmts;
+    symtable_t *table;
 } node_block_t;
 
 typedef struct
@@ -49,6 +51,7 @@ typedef struct
 {
     node_t base;
     const char *identifier;
+    uint16_t local_idx;
 } node_var_t;
 
 typedef struct
