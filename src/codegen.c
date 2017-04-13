@@ -113,6 +113,17 @@ static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
 
     symtable_enter_scope(SYMTABLE);
 
+    if (node->params)
+    {
+        for (size_t i = 0; i < vector_size(*node->params); i++)
+        {
+            node_var_t *param = vector_get(*node->params, i);
+            param->local_idx = i;
+            symtable_add_local(SYMTABLE, param->identifier, param);
+        }
+    }
+    symtable_dump(SYMTABLE);
+
     function_t *f = function_new(strdup(node->identifier));
     codegen_t *gen = (codegen_t*)self->data;
     function_t *parent = gen->func;
@@ -165,8 +176,20 @@ static void gen_node_call(astwalker_t *self, node_call_t *node)
 
 static void gen_node_postfix(astwalker_t *self, node_postfix_t *node)
 {
-    walk_ast(self, node->target);
-    emit_byte(CODE, (uint8_t)OP_CALL);
+    if (node->args)
+    {
+        for (size_t i = 0; i < vector_size(*node->args); i++)
+        {
+            walk_ast(self, vector_get(*node->args, i));
+        }
+        walk_ast(self, node->target);
+        emit_bytes(CODE, (uint8_t)OP_CALL, vector_size(*node->args));
+    }
+    else
+    {
+        walk_ast(self, node->target);
+        emit_bytes(CODE, (uint8_t)OP_CALL, 0);
+    }
 }
 
 static void gen_node_var(astwalker_t *self, node_var_t *node)
@@ -183,10 +206,12 @@ static void gen_node_var(astwalker_t *self, node_var_t *node)
     int idx;
     if (env->type == NODE_VAR_DECL) idx = ((node_var_decl_t*)env)->idx;
     else if (env->type == NODE_FUNC_DECL) idx = ((node_func_decl_t*)env)->idx;
+    else if (env->type == NODE_VAR) idx = ((node_var_t*)env)->local_idx;
 
     bool is_global;
     if (env->type == NODE_VAR_DECL) is_global = ((node_var_decl_t*)env)->is_global;
     else if (env->type == NODE_FUNC_DECL) is_global = ((node_func_decl_t*)env)->is_global;
+    else if (env->type == NODE_VAR) is_global = false;
 
     if (node->base.is_assign)
         emit_bytes(CODE, is_global ? OP_STOREG : OP_STORE, (uint8_t)idx);

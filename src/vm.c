@@ -130,10 +130,10 @@ void vm_run(vm_t *vm)
         case OP_CALL:
         {
             function_t *f = AS_FUNC(STACK_POP);
+            bp = vector_size(vm->stack) - READ_BYTE;
             callstack_push(&vm->callstack, vm->ip, cur_func, bp);
             cur_func = f;
             vm->ip = &vector_get(f->bytecode, 0);
-            bp = vector_size(vm->stack);
             break;
         }
         case OP_JMP: vm->ip += *vm->ip; break;
