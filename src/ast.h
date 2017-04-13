@@ -3,9 +3,10 @@
 
 #include <stdbool.h>
 
-#include "symtable.h"
 #include "token.h"
 #include "vector.h"
+
+typedef struct symtable_t symtable_t;
 
 typedef enum
 {
@@ -89,6 +90,9 @@ typedef struct
     const char *identifier;
     vector_t(node_var_t*) *params;
     node_block_t *body;
+
+    bool is_global;
+    int idx;
 } node_func_decl_t;
 
 typedef struct
@@ -96,6 +100,9 @@ typedef struct
     node_t base;
     const char *ident;
     node_t *init;
+
+    bool is_global;
+    int idx;
 } node_var_decl_t;
 
 typedef struct

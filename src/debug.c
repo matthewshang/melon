@@ -12,7 +12,9 @@ const char *op_to_str(opcode op)
     case OP_LOAD: return "load";
     case OP_LOADI: return "loadi";
     case OP_LOADK: return "loadk";
+    case OP_LOADG: return "loadg";
     case OP_STORE: return "store";
+    case OP_STOREG: return "storeg";
 
     case OP_PRINT: return "print";
     case OP_CALL: return "call";

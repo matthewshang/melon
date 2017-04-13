@@ -20,6 +20,7 @@ typedef struct
     uint8_t *ip;
     callframe_t *callstack;
 
+    value_r globals;
     function_t *main_func;
 } vm_t;
 

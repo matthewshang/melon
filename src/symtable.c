@@ -8,9 +8,9 @@ symtable_t *symtable_new()
     symtable_t *table = (symtable_t*)calloc(1, sizeof(symtable_t));
     vector_init(table->stack);
     table->top = 0;
-    string_r *first_scope = (string_r*)calloc(1, sizeof(string_r));
+    decl_r *first_scope = (decl_r*)calloc(1, sizeof(decl_r));
     vector_init(*first_scope);
-    vector_push(string_r*, table->stack, first_scope);
+    vector_push(decl_r*, table->stack, first_scope);
     return table;
 }
 
@@ -25,50 +25,65 @@ void symtable_free(symtable_t *table)
     free(table);
 }
 
-int symtable_index(symtable_t *table, const char *symbol)
+node_t *symtable_lookup(symtable_t *table, const char *symbol)
 {
-    string_r *scope = vector_get(table->stack, table->top);
-    for (size_t i = 0; i < vector_size(*scope); i++)
+    for (int j = table->top; j >= 0; j--)
     {
-        if (strcmp(symbol, vector_get(*scope, i)) == 0) return i;
+        decl_r *scope = vector_get(table->stack, j);
+        for (size_t i = 0; i < vector_size(*scope); i++)
+        {
+            decl_t decl = vector_get(*scope, i);
+            if (strcmp(symbol, decl.identifier) == 0) return decl.node;
+        }
     }
-    return -1;
+    return NULL;
 }
 
-void symtable_add_local(symtable_t *table, const char *symbol)
+int symtable_add_local(symtable_t *table, const char *symbol, node_t *node)
 {
-    if (symtable_index(table, symbol) != -1)
+    node_t *check = symtable_lookup(table, symbol);
+    if (check)
     {
         printf("Symbol %s already defined\n", symbol);
-        return;
+        if (node->type == NODE_VAR_DECL) return ((node_var_decl_t*)node)->idx;
+        else if (node->type == NODE_FUNC_DECL) return ((node_func_decl_t*)node)->idx;
+        else return -1;
     }
 
-    string_r *scope = vector_get(table->stack, table->top);
-    vector_push(const char*, *scope, symbol);
+    decl_r *scope = vector_get(table->stack, table->top);
+    vector_push(decl_t, *scope, ((decl_t) { .identifier = symbol, .node = node }));
+    return vector_size(*scope) - 1;
 }
 
 void symtable_enter_scope(symtable_t *table)
 {
     table->top++;
-    string_r *new_scope = (string_r*)calloc(1, sizeof(string_r));
+    decl_r *new_scope = (decl_r*)calloc(1, sizeof(decl_r));
     vector_init(*new_scope);
-    vector_push(string_r*, table->stack, new_scope);
+    vector_push(decl_r*, table->stack, new_scope);
 }
 
 void symtable_exit_scope(symtable_t *table)
 {
-    vector_destroy(*vector_get(table->stack, table->top));
-    free(vector_get(table->stack, table->top));
+    decl_r *scope = vector_get(table->stack, table->top);
+    vector_destroy(*scope);
+    free(scope);
+    vector_pop(table->stack);
     table->top--;
+}
+
+bool symtable_is_global(symtable_t *table)
+{
+    return table->top == 0;
 }
 
 void symtable_dump(symtable_t *table)
 {
     printf("----Dumping symtable----\n");
-    string_r *scope = vector_get(table->stack, table->top);
+    decl_r *scope = vector_get(table->stack, table->top);
     for (size_t i = 0; i < vector_size(*scope); i++)
     {
-        printf("%s\n", vector_get(*scope, i));
+        printf("%s\n", vector_get(*scope, i).identifier);
     }
     printf("----\n");
 }

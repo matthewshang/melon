@@ -64,7 +64,8 @@ void function_disassemble(function_t *func)
         uint8_t op = vector_get(func->bytecode, i);
         printf("%s", op_to_str((opcode)op));
         if (op == OP_LOADI || op == OP_STORE || op == OP_LOAD || op == OP_JIF
-            || op == OP_JMP || op == OP_LOOP || op == OP_LOADK)
+            || op == OP_JMP || op == OP_LOOP || op == OP_LOADK || op == OP_LOADG
+            || op == OP_STOREG)
         {
             printf(" %d", vector_get(func->bytecode, ++i));
         }

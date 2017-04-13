@@ -9,7 +9,9 @@ typedef enum
     OP_LOAD,
     OP_LOADI,
     OP_LOADK,
+    OP_LOADG,
     OP_STORE,
+    OP_STOREG,
 
     OP_PRINT,
     OP_CALL,

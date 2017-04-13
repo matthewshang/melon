@@ -78,27 +78,34 @@ static void gen_node_loop(astwalker_t *self, node_loop_t *node)
 
 static void gen_node_var_decl(astwalker_t *self, node_var_decl_t *node)
 {
-    if (symtable_index(SYMTABLE, node->ident) != -1)
+    if (symtable_lookup(SYMTABLE, node->ident))
     {
         printf("Variable %s already defined\n", node->ident);
         return;
     }
-    symtable_add_local(SYMTABLE, node->ident);
+    int idx = symtable_add_local(SYMTABLE, node->ident, node);
+    node->is_global = symtable_is_global(SYMTABLE);
+    node->idx = idx;
+
     if (node->init) 
     {
         walk_ast(self, node->init);
-        emit_bytes(CODE, (uint8_t)OP_STORE, (uint8_t)vector_size(LOCALS) - 1);
+        emit_bytes(CODE, node->is_global? OP_STOREG : OP_STORE, (uint8_t)idx);
     }
 }
 
 static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
 {
-    if (symtable_index(SYMTABLE, node->identifier) != -1)
+    if (symtable_lookup(SYMTABLE, node->identifier))
     {
         printf("Function %s already defined\n", node->identifier);
         return;
     }
-    symtable_add_local(SYMTABLE, node->identifier);
+    int idx = symtable_add_local(SYMTABLE, node->identifier, node);
+    node->idx = idx;
+    node->is_global = symtable_is_global(SYMTABLE);
+
+    symtable_enter_scope(SYMTABLE);
 
     function_t *f = function_new(strdup(node->identifier));
     codegen_t *gen = (codegen_t*)self->data;
@@ -111,9 +118,13 @@ static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
     gen->func = parent;
     gen->code = &parent->bytecode;
     gen->constants = &parent->constpool;
+
+    symtable_exit_scope(SYMTABLE);
+
     vector_push(value_t, parent->constpool, FROM_FUNC(f));
+
     emit_bytes(CODE, (uint8_t)OP_LOADK, vector_size(parent->constpool) - 1);
-    emit_bytes(CODE, (uint8_t)OP_STORE, symtable_index(SYMTABLE, node->identifier));
+    emit_bytes(CODE, symtable_is_global(SYMTABLE) ? OP_STOREG : OP_STORE, idx);
 }
 
 static void gen_node_binary(astwalker_t *self, node_binary_t *node)
@@ -153,17 +164,27 @@ static void gen_node_postfix(astwalker_t *self, node_postfix_t *node)
 
 static void gen_node_var(astwalker_t *self, node_var_t *node)
 {
-    int index = symtable_index(SYMTABLE, node->identifier);
-    if (index == -1)
+    //printf("----GEN_NODE_VAR----\n");
+    //symtable_dump(SYMTABLE);
+    node_t *env = symtable_lookup(SYMTABLE, node->identifier);
+    if (!env)
     {
         printf("Unknown identifier %s\n", node->identifier);
         return;
     }
 
+    int idx;
+    if (env->type == NODE_VAR_DECL) idx = ((node_var_decl_t*)env)->idx;
+    else if (env->type == NODE_FUNC_DECL) idx = ((node_func_decl_t*)env)->idx;
+
+    bool is_global;
+    if (env->type == NODE_VAR_DECL) is_global = ((node_var_decl_t*)env)->is_global;
+    else if (env->type == NODE_FUNC_DECL) is_global = ((node_func_decl_t*)env)->is_global;
+
     if (node->base.is_assign)
-        emit_bytes(CODE, (uint8_t)OP_STORE, (uint8_t)index);
+        emit_bytes(CODE, is_global ? OP_STOREG : OP_STORE, (uint8_t)idx);
     else
-        emit_bytes(CODE, (uint8_t)OP_LOAD, (uint8_t)index);
+        emit_bytes(CODE, is_global ? OP_LOADG : OP_LOAD, (uint8_t)idx);
 }
 
 static int constant_exists(value_r *constants, node_literal_t *node)
@@ -268,6 +289,4 @@ void codegen_run(codegen_t *gen, node_t *ast)
 
     walk_ast(&walker, ast);
     emit_byte(gen->code, (uint8_t)OP_HALT);
-    symtable_dump(gen->symtable);
-
 }

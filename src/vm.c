@@ -47,7 +47,8 @@ vm_t vm_create(function_t *f)
     vector_init(vm.stack);
     vm.main_func = f;
     vm.ip = &vector_get(vm.main_func->bytecode, 0);
-
+    vector_init(vm.globals);
+    for (size_t i = 0; i < 10; i++) vector_push(value_t, vm.globals, FROM_INT(0));
     vm.callstack = (callframe_t*)calloc(1, sizeof(callframe_t));
     vm.callstack->ret = NULL;
     vm.callstack->last = NULL;
@@ -58,6 +59,7 @@ vm_t vm_create(function_t *f)
 void vm_destroy(vm_t *vm)
 {
     vector_destroy(vm->stack);
+    vector_destroy(vm->globals);
     callframe_t *frame = vm->callstack;
     while (frame)
     {
@@ -104,7 +106,9 @@ void vm_run(vm_t *vm)
         case OP_LOAD: STACK_PUSH(vector_get(vm->stack, READ_BYTE)); break;
         case OP_LOADI: STACK_PUSH(FROM_INT(READ_BYTE)); break;
         case OP_LOADK: STACK_PUSH(function_cpool_get(cur_func, READ_BYTE)); break;
+        case OP_LOADG: STACK_PUSH(vector_get(vm->globals, READ_BYTE)); break;
         case OP_STORE: vector_set(vm->stack, READ_BYTE, STACK_PEEK); break;
+        case OP_STOREG: vector_set(vm->globals, READ_BYTE, STACK_PEEK); break;
 
         case OP_PRINT: {
 
