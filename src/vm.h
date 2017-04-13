@@ -10,6 +10,7 @@ typedef struct callframe_s
 {
     uint8_t *ret;
     function_t *func;
+    uint16_t bp;
 
     struct callframe_s *last;
 } callframe_t;

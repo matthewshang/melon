@@ -22,21 +22,23 @@
                             STACK_PUSH(FROM_BOOL(a op b));                           \
                         } while (0)
 
-void callstack_push(callframe_t **top, uint8_t *ret, function_t *func)
+void callstack_push(callframe_t **top, uint8_t *ret, function_t *func, uint16_t bp)
 {
     callframe_t *newframe = (callframe_t*)calloc(1, sizeof(callframe_t));
     newframe->last = *top;
     newframe->ret = ret;
     newframe->func = func;
+    newframe->bp = bp;
     *top = newframe;
 }
 
-uint8_t *callstack_ret(callframe_t **top, function_t **cur_func)
+uint8_t *callstack_ret(callframe_t **top, function_t **cur_func, uint16_t *bp)
 {
     callframe_t *frame = *top;
     *top = frame->last;
     uint8_t *ret = frame->ret;
     *cur_func = frame->func;
+    *bp = frame->bp;
     free(frame);
     return ret;
 }
@@ -52,6 +54,7 @@ vm_t vm_create(function_t *f)
     vm.callstack = (callframe_t*)calloc(1, sizeof(callframe_t));
     vm.callstack->ret = NULL;
     vm.callstack->last = NULL;
+    vm.callstack->bp = 0;
 
     return vm;
 }
@@ -90,6 +93,7 @@ void vm_run(vm_t *vm)
 {
     uint8_t inst;
     function_t *cur_func = vm->main_func;
+    uint16_t bp = 0;
 
     while (1)
     {
@@ -98,16 +102,17 @@ void vm_run(vm_t *vm)
         {
         case OP_RET0: 
         {
-            vm->ip = callstack_ret(&vm->callstack, &cur_func);
+            vm->ip = callstack_ret(&vm->callstack, &cur_func, &bp);
+            vector_popn(vm->stack, vector_size(vm->stack) - bp - 1);
             break;
         }
         case OP_NOP: continue;
 
-        case OP_LOAD: STACK_PUSH(vector_get(vm->stack, READ_BYTE)); break;
+        case OP_LOAD: STACK_PUSH(vector_get(vm->stack, bp + READ_BYTE)); break;
         case OP_LOADI: STACK_PUSH(FROM_INT(READ_BYTE)); break;
         case OP_LOADK: STACK_PUSH(function_cpool_get(cur_func, READ_BYTE)); break;
         case OP_LOADG: STACK_PUSH(vector_get(vm->globals, READ_BYTE)); break;
-        case OP_STORE: vector_set(vm->stack, READ_BYTE, STACK_PEEK); break;
+        case OP_STORE: vector_set(vm->stack, bp + READ_BYTE, STACK_PEEK); break;
         case OP_STOREG: vector_set(vm->globals, READ_BYTE, STACK_PEEK); break;
 
         case OP_PRINT: {
@@ -125,17 +130,26 @@ void vm_run(vm_t *vm)
         case OP_CALL:
         {
             function_t *f = AS_FUNC(STACK_POP);
-            callstack_push(&vm->callstack, vm->ip, cur_func);
+            callstack_push(&vm->callstack, vm->ip, cur_func, bp);
             cur_func = f;
             vm->ip = &vector_get(f->bytecode, 0);
+            bp = vector_size(vm->stack);
             break;
         }
         case OP_JMP: vm->ip += *vm->ip; break;
         case OP_LOOP: vm->ip -= *vm->ip; break;
-        case OP_JIF: {
+        case OP_JIF: 
+        {
             if (!AS_BOOL(STACK_POP)) vm->ip += *vm->ip;
             else vm->ip++;
 
+            break;
+        }
+        case OP_RETURN:
+        {
+            vector_set(vm->stack, bp, STACK_PEEK);
+            vector_popn(vm->stack, vector_size(vm->stack) - bp - 1);
+            vm->ip = callstack_ret(&vm->callstack, &cur_func, &bp);
             break;
         }
 
@@ -173,6 +187,7 @@ void vm_run(vm_t *vm)
         }
 
         //printf("Instruction: %s\n", op_to_str(inst));
+        //printf("bp: %d\n", bp);
         //stack_dump(&vm->stack);
         //printf("\n");
 

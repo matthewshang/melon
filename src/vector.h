@@ -13,6 +13,7 @@
 #define vector_set(v, i, x)       (v).a[i] = (x)
 #define vector_size(v)            ((v).n)
 #define vector_pop(v)             ((v).a[--(v).n])
+#define vector_popn(v, p)         ((v).n -= (p))
 #define vector_peek(v)            ((v).a[(v).n - 1])
 
 #define vector_push(type, v, x)   do {                                                  \

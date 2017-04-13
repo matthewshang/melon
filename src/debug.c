@@ -21,6 +21,7 @@ const char *op_to_str(opcode op)
     case OP_JMP: return "jmp";
     case OP_LOOP: return "loop";
     case OP_JIF: return "jif";
+    case OP_RETURN: return "return";
 
     case OP_ADD: return "add";
     case OP_SUB: return "sub";

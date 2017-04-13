@@ -264,6 +264,13 @@ static node_t *parse_while(lexer_t *lexer)
     return node_loop_new(cond, body);
 }
 
+static node_t *parse_return(lexer_t *lexer)
+{
+    node_t *expr = parse_expression(lexer);
+    lexer_consume(lexer, TOK_SEMICOLON, ";");
+    return node_return_new(expr);
+}
+
 static node_t *parse_expr_stmt(lexer_t *lexer)
 {
     node_t *node = parse_expression(lexer);
@@ -276,6 +283,7 @@ static node_t *parse_stmt(lexer_t *lexer)
     if (lexer_match(lexer, TOK_PRINT)) return parse_call(lexer, lexer_previous(lexer));
     else if (lexer_match(lexer, TOK_IF)) return parse_if(lexer);
     else if (lexer_match(lexer, TOK_WHILE)) return parse_while(lexer);
+    else if (lexer_match(lexer, TOK_RETURN)) return parse_return(lexer);
     else return parse_expr_stmt(lexer);
 }
 
@@ -314,7 +322,7 @@ static node_var_r *parse_func_params(lexer_t *lexer)
 
 static node_t *parse_func_decl(lexer_t *lexer)
 {
-    token_t token = lexer_consume(lexer, TOK_IDENTIFIER, "variable name");
+    token_t token = lexer_consume(lexer, TOK_IDENTIFIER, "identifier");
     char *ident = substr(lexer->source.buffer, token.offset, token.length);
 
     lexer_consume(lexer, TOK_OPEN_PAREN, "(");

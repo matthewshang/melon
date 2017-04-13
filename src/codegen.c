@@ -76,6 +76,12 @@ static void gen_node_loop(astwalker_t *self, node_loop_t *node)
     vector_set(*CODE, jif_idx, (uint8_t)jif_jmp);
 }
 
+static void gen_node_return(astwalker_t *self, node_return_t *node)
+{
+    walk_ast(self, node->expr);
+    emit_byte(CODE, (uint8_t)OP_RETURN);
+}
+
 static void gen_node_var_decl(astwalker_t *self, node_var_decl_t *node)
 {
     if (symtable_lookup(SYMTABLE, node->ident))
@@ -114,7 +120,8 @@ static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
     gen->code = &f->bytecode;
     gen->constants = &f->constpool;
     walk_ast(self, node->body);
-    emit_byte(CODE, (uint8_t)OP_RET0);
+    if (vector_get(*gen->code, vector_size(*gen->code) - 1) != OP_RETURN)
+        emit_byte(CODE, (uint8_t)OP_RET0);
     gen->func = parent;
     gen->code = &parent->bytecode;
     gen->constants = &parent->constpool;
@@ -275,6 +282,7 @@ void codegen_run(codegen_t *gen, node_t *ast)
         .visit_block = gen_node_block,
         .visit_if = gen_node_if,
         .visit_loop = gen_node_loop,
+        .visit_return = gen_node_return,
 
         .visit_var_decl = gen_node_var_decl,
         .visit_func_decl = gen_node_func_decl,

@@ -90,6 +90,14 @@ node_t *node_loop_new(node_t *cond, node_t *body)
     return (node_t*)node;
 }
 
+node_t *node_return_new(node_t *expr)
+{
+    node_return_t *node = (node_return_t*)calloc(1, sizeof(node_return_t));
+    NODE_SETBASE(node, NODE_RETURN);
+    node->expr = expr;
+    return (node_t*)node;
+}
+
 node_t *node_var_decl_new(const char *ident, node_t *init)
 {
     node_var_decl_t *node = (node_var_decl_t*)calloc(1, sizeof(node_var_decl_t));
@@ -152,6 +160,12 @@ static void free_node_loop(astwalker_t *self, node_loop_t *node)
 {
     if (node->cond) walk_ast(self, node->cond);
     if (node->body) walk_ast(self, node->body);
+    free(node);
+}
+
+static void free_node_return(astwalker_t *self, node_return_t *node)
+{
+    if (node->expr) walk_ast(self, node->expr);
     free(node);
 }
 
@@ -239,6 +253,7 @@ void ast_free(node_t *root)
         .visit_block = free_node_block,
         .visit_if = free_node_if,
         .visit_loop = free_node_loop,
+        .visit_return = free_node_return,
 
         .visit_var_decl = free_node_var_decl,
         .visit_func_decl = free_node_func_decl,
@@ -316,6 +331,17 @@ static void print_node_loop(astwalker_t *self, node_loop_t *node)
     self->depth = depth;
 }
 
+static void print_node_return(astwalker_t *self, node_return_t *node)
+{
+    printf("[return]: ");
+    int depth = self->depth;
+
+    self->depth = depth + 1;
+    walk_ast(self, node->expr);
+
+    self->depth = depth;
+}
+
 static void print_node_var_decl(astwalker_t *self, node_var_decl_t *node)
 {
     printf("[var_decl] ident: %s\n", node->ident);
@@ -323,7 +349,7 @@ static void print_node_var_decl(astwalker_t *self, node_var_decl_t *node)
     {
         int depth = self->depth;
 
-        print_tabs(depth);
+        print_tabs(depth); printf("var-init: ");
         self->depth = depth + 1;
         walk_ast(self, node->init);
 
@@ -452,6 +478,7 @@ void ast_print(node_t *root)
         .visit_block = print_node_block,
         .visit_if = print_node_if,
         .visit_loop = print_node_loop,
+        .visit_return = print_node_return,
 
         .visit_var_decl = print_node_var_decl,
         .visit_func_decl = print_node_func_decl,

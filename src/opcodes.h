@@ -18,6 +18,7 @@ typedef enum
     OP_JMP,
     OP_LOOP,
     OP_JIF,
+    OP_RETURN,
 
     OP_ADD,
     OP_SUB,
