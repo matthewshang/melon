@@ -233,6 +233,7 @@ lexer_t lexer_create(const char *source)
 {
     lexer_t lexer;
     lexer.source = charstream_create(source);
+    lexer.nerrors = 0;
 
     vector_t(token_t) tokens;
     vector_init(tokens);
@@ -241,6 +242,7 @@ lexer_t lexer_create(const char *source)
     {
         //printf("arg: %d %.*s\n", current.type, current.length, source + current.offset);
         if (current.type != TOK_ERROR) vector_push(token_t, tokens, current);
+        else lexer.nerrors++;
         current = read_next(&lexer);
     }
 
@@ -263,8 +265,18 @@ token_t lexer_consume(lexer_t *lexer, token_type type, const char *msg)
 {
     if (lexer_check(lexer, type)) return lexer_advance(lexer);
     token_t error = lexer_peek(lexer);
-    printf("Error: expected token %s but got token %.*s\n", 
-        msg, error.length, lexer->source.buffer + error.offset);
+    if (lexer_end(lexer))
+    {
+        charstream_error(&lexer->source, "Unexpected eof");
+    }
+    else
+    {
+        printf("Error: expected token %s but got token %.*s at",
+            msg, error.length, lexer->source.buffer + error.offset);
+        charstream_error(&lexer->source, "");
+        lexer_advance(lexer);
+    }
+    lexer->nerrors++;
     return token_error();
 }
 

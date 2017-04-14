@@ -122,7 +122,7 @@ static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
             symtable_add_local(SYMTABLE, param->identifier, param);
         }
     }
-    symtable_dump(SYMTABLE);
+    //symtable_dump(SYMTABLE);
 
     function_t *f = function_new(strdup(node->identifier));
     codegen_t *gen = (codegen_t*)self->data;

@@ -1,0 +1,20 @@
+func fact(x)
+{
+	if (x > 0)
+	{
+		return x * fact(x - 1);
+	}
+	else
+	{
+		return 1;
+	}
+}
+
+print("The factorial of 1 is:");
+print(fact(1));
+print("The factorial of 4 is:");
+print(fact(4));
+print("The factorial of 6 is:");
+print(fact(6));
+print("The factorial of 9 is:");
+print(fact(9));

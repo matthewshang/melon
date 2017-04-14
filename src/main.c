@@ -20,36 +20,38 @@ int main(int argc, char **argv)
     }
 
     const char *file = file_read(argv[1]);
-
-    if (file)
+    if (!file)
     {
-        lexer_t lexer = lexer_create(file);
-        node_t *ast = parse(&lexer);
-        //ast_print(ast);
+        printf("Could not load file at %s\n", argv[1]);
+        goto abort_file;
+    }
+
+    lexer_t lexer = lexer_create(file);
+    node_t *ast = parse(&lexer);
+    //ast_print(ast);
+
+    if (lexer.nerrors > 0) goto abort_compile;
      
-        function_t *main_func = function_new(strdup("$main"));
-        codegen_t gen = codegen_create(main_func);
-        codegen_run(&gen, ast);
+    function_t *main_func = function_new(strdup("$main"));
+    codegen_t gen = codegen_create(main_func);
+    codegen_run(&gen, ast);
 
-        //function_disassemble(main_func);
-        //function_cpool_dump(main_func);
+    //function_disassemble(main_func);
+    //function_cpool_dump(main_func);
 
-        vm_t vm = vm_create(main_func);
+    vm_t vm = vm_create(main_func);
 
-        ast_free(ast);
-        codegen_destroy(&gen);
-        lexer_destroy(&lexer);
-        free(file);
+    vm_run(&vm);
+    vm_destroy(&vm);
 
-        vm_run(&vm);
-        vm_destroy(&vm);
+    function_free(main_func);
+    codegen_destroy(&gen);
 
-        function_free(main_func);
-    }
-    else
-    {
-        printf("Could not load file %s\n", argv[1]);
-    }
+abort_compile:
+    ast_free(ast);
+    lexer_destroy(&lexer);
+    free(file);
+abort_file:
 
 	return 0;
 }

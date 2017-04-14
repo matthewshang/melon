@@ -10,6 +10,7 @@ typedef struct
     int current;
     token_t *tokens;
     int ntokens;
+    int nerrors;
 } lexer_t;
 
 lexer_t lexer_create(const char *source);

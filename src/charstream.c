@@ -41,5 +41,5 @@ bool charstream_eof(charstream_t *stream)
 
 void charstream_error(charstream_t *stream, const char *msg)
 {
-    printf("%s (%d:%d) [%c]\n", msg, stream->line, stream->col, *stream->pos);
+    printf("%s (line %d: col %d) [%c]\n", msg, stream->line, stream->col, *stream->pos);
 }
