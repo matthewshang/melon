@@ -43,6 +43,17 @@ uint8_t *callstack_ret(callframe_t **top, function_t **cur_func, uint16_t *bp)
     return ret;
 }
 
+void callstack_print(callframe_t *top)
+{
+    printf("Printing callstack\n");
+    callframe_t *prev = top;
+    while (prev)
+    {
+        printf("frame - bp: %d\n", prev->bp);
+        prev = prev->last;
+    }
+}
+
 vm_t vm_create(function_t *f)
 {
     vm_t vm;
@@ -51,11 +62,11 @@ vm_t vm_create(function_t *f)
     vm.ip = &vector_get(vm.main_func->bytecode, 0);
     vector_init(vm.globals);
     for (size_t i = 0; i < 10; i++) vector_push(value_t, vm.globals, FROM_INT(0));
-    vm.callstack = (callframe_t*)calloc(1, sizeof(callframe_t));
-    vm.callstack->ret = NULL;
-    vm.callstack->last = NULL;
-    vm.callstack->bp = 0;
-
+    //vm.callstack = (callframe_t*)calloc(1, sizeof(callframe_t));
+    //vm.callstack->ret = NULL;
+    //vm.callstack->last = NULL;
+    //vm.callstack->bp = 0;
+    vm.callstack = NULL;
     return vm;
 }
 
@@ -130,8 +141,8 @@ void vm_run(vm_t *vm)
         case OP_CALL:
         {
             function_t *f = AS_FUNC(STACK_POP);
-            bp = vector_size(vm->stack) - READ_BYTE;
             callstack_push(&vm->callstack, vm->ip, cur_func, bp);
+            bp = vector_size(vm->stack) - READ_BYTE;
             cur_func = f;
             vm->ip = &vector_get(f->bytecode, 0);
             break;
@@ -186,6 +197,7 @@ void vm_run(vm_t *vm)
 
         }
 
+        //callstack_print(vm->callstack);
         //printf("Instruction: %s\n", op_to_str(inst));
         //printf("bp: %d\n", bp);
         //stack_dump(&vm->stack);

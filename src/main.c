@@ -25,14 +25,14 @@ int main(int argc, char **argv)
     {
         lexer_t lexer = lexer_create(file);
         node_t *ast = parse(&lexer);
-        ast_print(ast);
+        //ast_print(ast);
      
         function_t *main_func = function_new(strdup("$main"));
         codegen_t gen = codegen_create(main_func);
         codegen_run(&gen, ast);
 
-        function_disassemble(main_func);
-        function_cpool_dump(main_func);
+        //function_disassemble(main_func);
+        //function_cpool_dump(main_func);
 
         vm_t vm = vm_create(main_func);
 
