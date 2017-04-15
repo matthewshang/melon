@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 #include "ast.h"
+#include "clioptions.h"
 #include "codegen.h"
 #include "debug.h"
 #include "utils.h"
@@ -11,47 +12,57 @@
 #include "vm.h"
 #include "parser.h"
 
-int main(int argc, char **argv)
+int melon_compile(const char *file, function_t *func, cli_options_t *options)
 {
-    if (argc < 2)
+    if (!file) return 1;
+    lexer_t lexer = lexer_create(file);
+    node_t *ast = parse(&lexer);
+
+    if (options->c_print_ast) ast_print(ast);
+
+    if (lexer.nerrors > 0)
     {
-        printf("Usage: lang.exe <source>\n");
-        return 0;
+        ast_free(ast);
+        lexer_destroy(&lexer);
+        return 1;
     }
 
-    const char *file = file_read(argv[1]);
+    codegen_t gen = codegen_create(func);
+    codegen_run(&gen, ast);
+
+    if (options->c_func_disasm) function_disassemble(func);
+    if (options->c_dump_cpool) function_cpool_dump(func);
+
+    ast_free(ast);
+    lexer_destroy(&lexer);
+    codegen_destroy(&gen);
+    return 0;
+}
+
+int main(int argc, char **argv)
+{
+    cli_options_t options = parse_cli_options(argc, argv);
+    if (options.opt_exit) goto abort_file;
+
+    const char *file = file_read(options.c_input);
     if (!file)
     {
-        printf("Could not load file at %s\n", argv[1]);
+        printf("melon fatal : Could not load file at %s\n", options.c_input);
         goto abort_file;
     }
 
-    lexer_t lexer = lexer_create(file);
-    node_t *ast = parse(&lexer);
-    //ast_print(ast);
-
-    if (lexer.nerrors > 0) goto abort_compile;
-     
     function_t *main_func = function_new(strdup("$main"));
-    codegen_t gen = codegen_create(main_func);
-    codegen_run(&gen, ast);
-
-    //function_disassemble(main_func);
-    //function_cpool_dump(main_func);
-
-    vm_t vm = vm_create(main_func);
-
-    vm_run(&vm);
-    vm_destroy(&vm);
-
-    function_free(main_func);
-    codegen_destroy(&gen);
+    if (melon_compile(file, main_func, &options)) goto abort_compile;
+     
+    if (options.r_run)
+    {
+        vm_t vm = vm_create(main_func);
+        vm_run(&vm);
+        vm_destroy(&vm);
+    }
 
 abort_compile:
-    ast_free(ast);
-    lexer_destroy(&lexer);
-    free(file);
+    function_free(main_func);
 abort_file:
-
 	return 0;
 }
