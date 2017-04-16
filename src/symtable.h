@@ -8,24 +8,30 @@
 
 typedef struct
 {
-    const char *identifier;
-    node_t *node;
-} decl_t;
+    bool is_global;
+    uint8_t idx;
+} decl_info_t;
 
-typedef vector_t(decl_t) decl_r;
+typedef struct
+{
+    const char *identifier;
+    decl_info_t decl;
+} symtable_entry_t;
+
+typedef vector_t(symtable_entry_t) symtable_entry_r;
 
 typedef struct symtable_t
 {
     // linear search for now
-    vector_t(decl_r*) stack;
+    vector_t(symtable_entry_r*) stack;
     uint32_t top;
 } symtable_t;
 
 symtable_t *symtable_new();
 void symtable_free(symtable_t *table);
 
-node_t *symtable_lookup(symtable_t *table, const char *symbol);
-int symtable_add_local(symtable_t *table, const char *symbol, node_t *node);
+bool symtable_lookup(symtable_t *table, const char *symbol, decl_info_t *ret);
+uint8_t symtable_add_local(symtable_t *table, const char *symbol);
 void symtable_enter_scope(symtable_t *table);
 void symtable_exit_scope(symtable_t *table);
 

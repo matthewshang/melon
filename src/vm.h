@@ -26,6 +26,7 @@ typedef struct
 } vm_t;
 
 vm_t vm_create(function_t *f);
+void vm_set_global(vm_t *vm, value_t val, uint16_t idx);
 void vm_destroy(vm_t *vm);
 void vm_run(vm_t *vm);
 

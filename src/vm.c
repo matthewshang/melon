@@ -1,7 +1,10 @@
 #include "vm.h"
 
+#include "core.h"
 #include "debug.h"
 #include "opcodes.h"
+
+#define VM_GLOBALS_SIZE 2048
 
 #define READ_BYTE       *vm->ip++
 #define STACK_POP       vector_pop(vm->stack)
@@ -61,13 +64,17 @@ vm_t vm_create(function_t *f)
     vm.main_func = f;
     vm.ip = &vector_get(vm.main_func->bytecode, 0);
     vector_init(vm.globals);
-    for (size_t i = 0; i < 10; i++) vector_push(value_t, vm.globals, FROM_INT(0));
-    //vm.callstack = (callframe_t*)calloc(1, sizeof(callframe_t));
-    //vm.callstack->ret = NULL;
-    //vm.callstack->last = NULL;
-    //vm.callstack->bp = 0;
+    vector_realloc(value_t, vm.globals, VM_GLOBALS_SIZE);
+
+    core_register_vm(&vm);
+
     vm.callstack = NULL;
     return vm;
+}
+
+void vm_set_global(vm_t *vm, value_t val, uint16_t idx)
+{
+    vector_set(vm->globals, idx, val);
 }
 
 void vm_destroy(vm_t *vm)
@@ -94,7 +101,13 @@ static void stack_dump(value_r *stack)
         case VAL_BOOL: printf("[bool]: %s\n", v.i == 1 ? "true" : "false"); break;
         case VAL_INT: printf("[int]: %d\n", v.i); break;
         case VAL_STR: printf("[string]: %s\n", v.s); break;
-        case VAL_FUNC: printf("[function]: %s\n", v.fn->identifier); break;
+        case VAL_FUNC: {
+            if (v.fn->type == FUNC_MELON)
+                printf("[function]: %s\n", v.fn->identifier);
+            else
+                printf("[native function]\n");
+            break;
+        }
         default: break;
         }
     }
@@ -141,10 +154,21 @@ void vm_run(vm_t *vm)
         case OP_CALL:
         {
             function_t *f = AS_FUNC(STACK_POP);
-            callstack_push(&vm->callstack, vm->ip + 1, cur_func, bp);
-            bp = vector_size(vm->stack) - READ_BYTE;
-            cur_func = f;
-            vm->ip = &vector_get(f->bytecode, 0);
+            if (f->type == FUNC_MELON)
+            {
+                callstack_push(&vm->callstack, vm->ip + 1, cur_func, bp);
+                bp = vector_size(vm->stack) - READ_BYTE;
+                cur_func = f;
+                vm->ip = &vector_get(f->bytecode, 0);
+            }
+            else if (f->type == FUNC_NATIVE)
+            {
+                uint8_t nargs = READ_BYTE;
+                value_t *adr = &STACK_PEEK;
+                adr -= nargs == 0 ? 0 : nargs - 1;
+                f->cfunc(adr, nargs);
+                vector_popn(vm->stack, nargs);
+            }
             break;
         }
         case OP_JMP: vm->ip += *vm->ip; break;

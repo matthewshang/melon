@@ -4,6 +4,7 @@
 #include <stdbool.h>
 
 #include "astwalker.h"
+#include "core.h"
 #include "opcodes.h"
 
 #define CODE ((codegen_t*)self->data)->code
@@ -84,32 +85,29 @@ static void gen_node_return(astwalker_t *self, node_return_t *node)
 
 static void gen_node_var_decl(astwalker_t *self, node_var_decl_t *node)
 {
-    if (symtable_lookup(SYMTABLE, node->ident))
+    if (symtable_lookup(SYMTABLE, node->ident, NULL))
     {
         printf("Variable %s already defined\n", node->ident);
         return;
     }
-    int idx = symtable_add_local(SYMTABLE, node->ident, node);
-    node->is_global = symtable_is_global(SYMTABLE);
-    node->idx = idx;
+    uint8_t idx = symtable_add_local(SYMTABLE, node->ident);
+    bool is_global = symtable_is_global(SYMTABLE);
 
     if (node->init) 
     {
         walk_ast(self, node->init);
-        emit_bytes(CODE, node->is_global? OP_STOREG : OP_STORE, (uint8_t)idx);
+        emit_bytes(CODE, is_global? OP_STOREG : OP_STORE, idx);
     }
 }
 
 static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
 {
-    if (symtable_lookup(SYMTABLE, node->identifier))
+    if (symtable_lookup(SYMTABLE, node->identifier, NULL))
     {
         printf("Function %s already defined\n", node->identifier);
         return;
     }
-    int idx = symtable_add_local(SYMTABLE, node->identifier, node);
-    node->idx = idx;
-    node->is_global = symtable_is_global(SYMTABLE);
+    uint8_t idx = symtable_add_local(SYMTABLE, node->identifier);
 
     symtable_enter_scope(SYMTABLE);
 
@@ -118,8 +116,7 @@ static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
         for (size_t i = 0; i < vector_size(*node->params); i++)
         {
             node_var_t *param = vector_get(*node->params, i);
-            param->local_idx = i;
-            symtable_add_local(SYMTABLE, param->identifier, param);
+            symtable_add_local(SYMTABLE, param->identifier);
         }
     }
     //symtable_dump(SYMTABLE);
@@ -196,27 +193,17 @@ static void gen_node_var(astwalker_t *self, node_var_t *node)
 {
     //printf("----GEN_NODE_VAR----\n");
     //symtable_dump(SYMTABLE);
-    node_t *env = symtable_lookup(SYMTABLE, node->identifier);
-    if (!env)
+    decl_info_t decl;
+    if (!symtable_lookup(SYMTABLE, node->identifier, &decl))
     {
         printf("Unknown identifier %s\n", node->identifier);
         return;
     }
 
-    int idx;
-    if (env->type == NODE_VAR_DECL) idx = ((node_var_decl_t*)env)->idx;
-    else if (env->type == NODE_FUNC_DECL) idx = ((node_func_decl_t*)env)->idx;
-    else if (env->type == NODE_VAR) idx = ((node_var_t*)env)->local_idx;
-
-    bool is_global;
-    if (env->type == NODE_VAR_DECL) is_global = ((node_var_decl_t*)env)->is_global;
-    else if (env->type == NODE_FUNC_DECL) is_global = ((node_func_decl_t*)env)->is_global;
-    else if (env->type == NODE_VAR) is_global = false;
-
     if (node->base.is_assign)
-        emit_bytes(CODE, is_global ? OP_STOREG : OP_STORE, (uint8_t)idx);
+        emit_bytes(CODE, decl.is_global ? OP_STOREG : OP_STORE, decl.idx);
     else
-        emit_bytes(CODE, is_global ? OP_LOADG : OP_LOAD, (uint8_t)idx);
+        emit_bytes(CODE, decl.is_global ? OP_LOADG : OP_LOAD, decl.idx);
 }
 
 static int constant_exists(value_r *constants, node_literal_t *node)
@@ -300,6 +287,8 @@ void codegen_destroy(codegen_t *gen)
 
 void codegen_run(codegen_t *gen, node_t *ast)
 {
+    core_register_codegen(gen);
+
     astwalker_t walker = {
         .depth = 0,
         .data = (void*)gen,

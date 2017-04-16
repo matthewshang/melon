@@ -24,11 +24,27 @@ typedef struct
 
 typedef vector_t(value_t) value_r;
 
+typedef enum
+{
+    FUNC_MELON, FUNC_NATIVE
+} function_e;
+
+typedef void(*melon_c_func)(value_t *args, uint8_t nargs);
+
 typedef struct function_s
 {
-    const char *identifier;
-    value_r constpool;
-    byte_r bytecode;
+    function_e type;
+    union
+    {
+        struct
+        {
+            const char *identifier;
+            value_r constpool;
+            byte_r bytecode;
+        };
+
+        melon_c_func cfunc;
+    };
 } function_t;
 
 #define FROM_BOOL(x) (value_t){.type = VAL_BOOL, .i = x}
@@ -43,6 +59,7 @@ typedef struct function_s
 
 void value_destroy(value_t val);
 
+function_t *function_native_new(melon_c_func func);
 function_t *function_new(const char *identifier);
 void function_free(function_t *func);
 value_t function_cpool_get(function_t *func, int idx);

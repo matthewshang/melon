@@ -17,6 +17,6 @@ func fib(n)
 var i = 1;
 while (i <= 10)
 {
-	print(fib(i));
+	println(fib(i));
 	i += 1;
 }

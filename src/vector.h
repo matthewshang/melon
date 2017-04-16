@@ -32,6 +32,12 @@
                      memcpy((dest).a, (v).a, (v).m * sizeof(type));                     \
                  } while (0)
 
+#define vector_realloc(type, v, size) do {                                              \
+                     (v).n = 0;                                                         \
+                     (v).m = size;                                                      \
+                     (v).a = (type*) realloc((v).a, sizeof(type) * (v).m);              \
+                 } while (0)
+
 typedef vector_t(uint8_t) byte_r;
 typedef vector_t(const char*) string_r;
 

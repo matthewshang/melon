@@ -10,11 +10,11 @@ func fact(x)
 	}
 }
 
-print("The factorial of 1 is:");
-print(fact(1));
-print("The factorial of 4 is:");
-print(fact(4));
-print("The factorial of 6 is:");
-print(fact(6));
-print("The factorial of 9 is:");
-print(fact(9));
+println("The factorial of 1 is:");
+println(fact(1));
+println("The factorial of 4 is:");
+println(fact(4));
+println("The factorial of 6 is:");
+println(fact(6));
+println("The factorial of 9 is:");
+println(fact(9));

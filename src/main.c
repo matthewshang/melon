@@ -22,6 +22,7 @@ int melon_compile(const char *file, function_t *func, cli_options_t *options)
 
     if (lexer.nerrors > 0)
     {
+        printf("melon fatal  : Errors in compilation\n");
         ast_free(ast);
         lexer_destroy(&lexer);
         return 1;
