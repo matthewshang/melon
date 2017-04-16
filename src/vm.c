@@ -49,7 +49,7 @@ void callstack_print(callframe_t *top)
     callframe_t *prev = top;
     while (prev)
     {
-        printf("frame - bp: %d\n", prev->bp);
+        printf("frame - bp: %d, func: %s\n", prev->bp, prev->func->identifier);
         prev = prev->last;
     }
 }
@@ -113,8 +113,8 @@ void vm_run(vm_t *vm)
         {
         case OP_RET0: 
         {
+            vector_popn(vm->stack, vector_size(vm->stack) - bp);
             vm->ip = callstack_ret(&vm->callstack, &cur_func, &bp);
-            vector_popn(vm->stack, vector_size(vm->stack) - bp - 1);
             break;
         }
         case OP_NOP: continue;
@@ -141,7 +141,7 @@ void vm_run(vm_t *vm)
         case OP_CALL:
         {
             function_t *f = AS_FUNC(STACK_POP);
-            callstack_push(&vm->callstack, vm->ip, cur_func, bp);
+            callstack_push(&vm->callstack, vm->ip + 1, cur_func, bp);
             bp = vector_size(vm->stack) - READ_BYTE;
             cur_func = f;
             vm->ip = &vector_get(f->bytecode, 0);
