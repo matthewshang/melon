@@ -16,7 +16,6 @@ const char *op_to_str(opcode op)
     case OP_STORE: return "store";
     case OP_STOREG: return "storeg";
 
-    case OP_PRINT: return "print";
     case OP_CALL: return "call";
     case OP_JMP: return "jmp";
     case OP_LOOP: return "loop";

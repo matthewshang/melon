@@ -200,29 +200,6 @@ static void init_parse_rules()
     rules_initialized = true;
 }
 
-
-static node_t *parse_call(lexer_t *lexer, token_t call)
-{
-    node_r *args = (node_r*)calloc(1, sizeof(node_r));
-
-    lexer_consume(lexer, TOK_OPEN_PAREN, "(");
-
-    if (!lexer_check(lexer, TOK_CLOSED_PAREN))
-    {
-        do 
-        {
-            vector_push(node_t*, *args, parse_expression(lexer));
-        } 
-        while (lexer_match(lexer, TOK_COMMA));
-    }
-
-    lexer_consume(lexer, TOK_CLOSED_PAREN, ")");
-    lexer_consume(lexer, TOK_SEMICOLON, ";");
-
-    char *func = substr(lexer->source.buffer, call.offset, call.length);
-    return node_call_new(func, args);
-}
-
 static node_t *parse_if(lexer_t *lexer)
 {
     node_t *cond = NULL;
@@ -280,8 +257,7 @@ static node_t *parse_expr_stmt(lexer_t *lexer)
 
 static node_t *parse_stmt(lexer_t *lexer)
 {
-    if (lexer_match(lexer, TOK_PRINT)) return parse_call(lexer, lexer_previous(lexer));
-    else if (lexer_match(lexer, TOK_IF)) return parse_if(lexer);
+    if (lexer_match(lexer, TOK_IF)) return parse_if(lexer);
     else if (lexer_match(lexer, TOK_WHILE)) return parse_while(lexer);
     else if (lexer_match(lexer, TOK_RETURN)) return parse_return(lexer);
     else return parse_expr_stmt(lexer);

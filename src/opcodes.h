@@ -13,7 +13,6 @@ typedef enum
     OP_STORE,
     OP_STOREG,
 
-    OP_PRINT,
     OP_CALL,
     OP_JMP,
     OP_LOOP,

@@ -53,15 +53,6 @@ node_t *node_func_decl_new(const char *identifier, vector_t(node_var_t*) *params
     return (node_t*)node;
 }
 
-node_t *node_call_new(const char *func, vector_t(node_t*) *args)
-{
-    node_call_t *node = (node_call_t*)calloc(1, sizeof(node_call_t));
-    NODE_SETBASE(node, NODE_CALL);
-    node->args = args;
-    node->func = func;
-    return (node_t*)node;
-}
-
 node_t *node_postfix_new(node_t *target, vector_t(node_t *) *args)
 {
     node_postfix_t *node = (node_postfix_t*)calloc(1, sizeof(node_postfix_t));
@@ -192,21 +183,6 @@ static void free_node_func_decl(astwalker_t *self, node_func_decl_t *node)
     free(node);
 }
 
-static void free_node_call(astwalker_t *self, node_call_t *node)
-{
-    if (node->args)
-    {
-        for (int i = 0; i < vector_size(*node->args); i++)
-        {
-            walk_ast(self, vector_get(*node->args, i));
-        }
-        vector_destroy(*node->args);
-        free(node->args);
-    }
-    if (node->func) free(node->func);
-    free(node);
-}
-
 static void free_node_postfix(astwalker_t *self, node_postfix_t *node)
 {
     if (node->args)
@@ -260,7 +236,6 @@ void ast_free(node_t *root)
 
         .visit_binary = free_node_binary,
         .visit_unary = free_node_unary,
-        .visit_call = free_node_call,
         .visit_postfix = free_node_postfix,
         .visit_var = free_node_var,
         .visit_literal = free_node_literal
@@ -410,21 +385,6 @@ static void print_node_unary(astwalker_t *self, node_unary_t *node)
     self->depth = depth;
 }
 
-static void print_node_call(astwalker_t *self, node_call_t *node)
-{
-    printf("[call] nargs: %d, name: %s\n", vector_size(*node->args), node->func);
-    int depth = self->depth;
-
-    for (int i = 0; i < vector_size(*node->args); i++)
-    {
-        print_tabs(depth);
-        self->depth = depth + 1;
-        walk_ast(self, vector_get(*node->args, i));
-    }
-
-    self->depth = depth;
-}
-
 static void print_node_postfix(astwalker_t *self, node_postfix_t *node)
 {
     printf("[postfix] nargs: %d\n", node->args ? vector_size(*node->args) : 0);
@@ -485,7 +445,6 @@ void ast_print(node_t *root)
 
         .visit_binary = print_node_binary,
         .visit_unary = print_node_unary,
-        .visit_call = print_node_call,
         .visit_postfix = print_node_postfix,
         .visit_var = print_node_var,
         .visit_literal = print_node_literal

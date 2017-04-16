@@ -162,15 +162,6 @@ static void gen_node_unary(astwalker_t *self, node_unary_t *node)
     emit_byte(CODE, (uint8_t)token_to_unary_op(node->op));
 }
 
-static void gen_node_call(astwalker_t *self, node_call_t *node)
-{
-    for (int i = 0; i < vector_size(*node->args); i++)
-    {
-        walk_ast(self, vector_get(*node->args, i));
-    }
-    emit_byte(CODE, (uint8_t)OP_PRINT);
-}
-
 static void gen_node_postfix(astwalker_t *self, node_postfix_t *node)
 {
     if (node->args)
@@ -303,7 +294,6 @@ void codegen_run(codegen_t *gen, node_t *ast)
 
         .visit_binary = gen_node_binary,
         .visit_unary = gen_node_unary,
-        .visit_call = gen_node_call,
         .visit_postfix = gen_node_postfix,
         .visit_var = gen_node_var,
         .visit_literal = gen_node_literal

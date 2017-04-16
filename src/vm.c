@@ -139,18 +139,6 @@ void vm_run(vm_t *vm)
         case OP_STORE: vector_set(vm->stack, bp + READ_BYTE, STACK_PEEK); break;
         case OP_STOREG: vector_set(vm->globals, READ_BYTE, STACK_PEEK); break;
 
-        case OP_PRINT: {
-
-            value_t v = STACK_POP;
-            switch (v.type)
-            {
-            case VAL_BOOL: printf("%s\n", v.i == 1 ? "true" : "false"); break;
-            case VAL_INT: printf("%d\n", v.i); break;
-            case VAL_STR: printf("%s\n", v.s); break;
-            default: break;
-            }
-            break;
-        }
         case OP_CALL:
         {
             function_t *f = AS_FUNC(STACK_POP);

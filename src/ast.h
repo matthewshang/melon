@@ -14,7 +14,7 @@ typedef enum
 
     NODE_VAR_DECL, NODE_FUNC_DECL,
 
-    NODE_BLOCK, NODE_IF, NODE_LOOP, NODE_RETURN, NODE_CALL, NODE_POSTFIX
+    NODE_BLOCK, NODE_IF, NODE_LOOP, NODE_RETURN, NODE_POSTFIX
 } node_type;
 
 typedef enum
@@ -54,13 +54,6 @@ typedef struct
     const char *identifier;
     uint16_t local_idx;
 } node_var_t;
-
-typedef struct
-{
-    node_t base;
-    const char *func;
-    vector_t(node_t*) *args;
-} node_call_t;
 
 typedef struct
 {
@@ -131,7 +124,6 @@ node_t *node_literal_str_new(const char *value, int len);
 node_t *node_literal_bool_new(bool value);
 node_t *node_var_new(const char *identifier);
 node_t *node_func_decl_new(const char *identifier, vector_t(node_var_t*) *params, node_block_t *body);
-node_t *node_call_new(const char *func, vector_t(node_t*) *args);
 node_t *node_postfix_new(node_t *target, vector_t(node_t*) *args);
 node_t *node_if_new(node_t *cond, node_t *then, node_t *els);
 node_t *node_loop_new(node_t *cond, node_t *body);
