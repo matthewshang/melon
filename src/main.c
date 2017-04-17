@@ -5,6 +5,7 @@
 #include "ast.h"
 #include "clioptions.h"
 #include "codegen.h"
+#include "core.h"
 #include "debug.h"
 #include "utils.h"
 #include "lexer.h"
@@ -60,6 +61,7 @@ int main(int argc, char **argv)
         vm_t vm = vm_create(main_func);
         vm_run(&vm);
         vm_destroy(&vm);
+        core_free();
     }
 
 abort_compile:

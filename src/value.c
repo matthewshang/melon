@@ -31,6 +31,7 @@ function_t *function_new(const char *identifier)
 
 void function_free(function_t *func)
 {
+    if (!func) return;
     if (func->type == FUNC_MELON)
     {
         free(func->identifier);
