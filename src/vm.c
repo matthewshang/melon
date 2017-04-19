@@ -10,10 +10,6 @@
 #define STACK_POP       vector_pop(vm->stack)
 #define STACK_PUSH(x)   vector_push(value_t, vm->stack, x)
 #define STACK_PEEK      vector_peek(vm->stack)  
-#define BINOP_INT(op)   do {                                                         \
-                            int b = AS_INT(STACK_POP), a = AS_INT(STACK_POP);        \
-                            STACK_PUSH(FROM_INT(a op b));                            \
-                        } while (0)                                                  \
 
 #define UNAOP_INT(op)   do {                                                         \
                             int a = AS_INT(STACK_POP);                               \
@@ -23,6 +19,49 @@
 #define BINCOMP(op)     do {                                                         \
                             int b = AS_INT(STACK_POP), a = AS_INT(STACK_POP);        \
                             STACK_PUSH(FROM_BOOL(a op b));                           \
+                        } while (0)
+
+#define INT_BIN_MATH(a, b, op) do {STACK_PUSH(FROM_INT(a op b)); break; } while (0)
+#define FLT_BIN_MATH(a, b, op) do {STACK_PUSH(FROM_FLOAT(a op b)); break; } while (0)
+#define BOOL_BIN_MATH(a, b, op) do {STACK_PUSH(FROM_BOOL(a op b)); break; } while (0)
+
+#define DO_FAST_BIN_MATH(op)  do {                                                   \
+                            value_t b = STACK_POP, a = STACK_POP;                    \
+                            if (IS_INT(a))                                           \
+                            {                                                        \
+                                if (IS_INT(b)) INT_BIN_MATH(a.i, b.i, op);           \
+                                else if (IS_FLOAT(b)) FLT_BIN_MATH((double)a.i, b.d, op); \
+                            }                                                        \
+                            else if (IS_FLOAT(a))                                    \
+                            {                                                        \
+                                if (IS_INT(b)) FLT_BIN_MATH(a.d, (double)b.i, op);   \
+                                else if (IS_FLOAT(b)) FLT_BIN_MATH(a.d, b.d, op);    \
+                            }                                                        \
+                        } while (0)
+
+#define DO_FAST_INT_MATH(op) do {                                                    \
+                            value_t b = STACK_POP, a = STACK_POP;                    \
+                            if (IS_INT(a) && IS_INT(b))                              \
+                                INT_BIN_MATH(a.i, b.i, op);                          \
+                        } while (0)
+
+#define DO_FAST_BOOL_MATH(op) do {                                                   \
+                            value_t b = STACK_POP, a = STACK_POP;                    \
+                            BOOL_BIN_MATH(a.i, b.i, op);                             \
+                        } while (0)                 
+
+#define DO_FAST_CMP_MATH(op)  do {                                                   \
+                            value_t b = STACK_POP, a = STACK_POP;                    \
+                            if (IS_INT(a))                                           \
+                            {                                                        \
+                                if (IS_INT(b)) BOOL_BIN_MATH(a.i, b.i, op);          \
+                                else if (IS_FLOAT(b)) BOOL_BIN_MATH((double)a.i, b.d, op); \
+                            }                                                        \
+                            else if (IS_FLOAT(a))                                    \
+                            {                                                        \
+                                if (IS_INT(b)) BOOL_BIN_MATH(a.d, (double)b.i, op);  \
+                                else if (IS_FLOAT(b)) BOOL_BIN_MATH(a.d, b.d, op);   \
+                            }                                                        \
                         } while (0)
 
 void callstack_push(callframe_t **top, uint8_t *ret, function_t *func, uint16_t bp)
@@ -101,6 +140,7 @@ static void stack_dump(value_r *stack)
         case VAL_BOOL: printf("[bool]: %s\n", v.i == 1 ? "true" : "false"); break;
         case VAL_INT: printf("[int]: %d\n", v.i); break;
         case VAL_STR: printf("[string]: %s\n", v.s); break;
+        case VAL_FLOAT: printf("[float]: %f\n", v.d); break;
         case VAL_FUNC: {
             if (v.fn->type == FUNC_MELON)
                 printf("[function]: %s\n", v.fn->identifier);
@@ -176,19 +216,20 @@ void vm_run(vm_t *vm)
             break;
         }
 
-        case OP_ADD: BINOP_INT(+); break;
-        case OP_SUB: BINOP_INT(-); break;
-        case OP_MUL: BINOP_INT(*); break;
-        case OP_MOD: BINOP_INT(%); break;
+        case OP_ADD: DO_FAST_BIN_MATH(+); break;
+        case OP_SUB: DO_FAST_BIN_MATH(-); break;
+        case OP_MUL: DO_FAST_BIN_MATH(*); break;
+        case OP_MOD: DO_FAST_INT_MATH(%); break;
       
-        case OP_AND: BINCOMP(&&); break;
-        case OP_OR: BINCOMP(||); break;
-        case OP_LT: BINCOMP(<); break;
-        case OP_GT: BINCOMP(>); break;
-        case OP_LTE: BINCOMP(<= ); break;
-        case OP_GTE: BINCOMP(>= ); break;
-        case OP_EQ: BINCOMP(== ); break;
-        case OP_NEQ: BINCOMP(!= ); break;
+        case OP_AND: DO_FAST_BOOL_MATH(&&); break;
+        case OP_OR: DO_FAST_BOOL_MATH(||); break;
+
+        case OP_LT: DO_FAST_CMP_MATH(<); break;
+        case OP_GT: DO_FAST_CMP_MATH(>); break;
+        case OP_LTE: DO_FAST_CMP_MATH(<= ); break;
+        case OP_GTE: DO_FAST_CMP_MATH(>= ); break;
+        case OP_EQ: DO_FAST_CMP_MATH(== ); break;
+        case OP_NEQ: DO_FAST_CMP_MATH(!= ); break;
 
         case OP_NOT: 
         {

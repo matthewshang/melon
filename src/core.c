@@ -17,6 +17,7 @@ static void melon_println(value_t *args, uint8_t nargs)
         {
         case VAL_BOOL: printf("%s\n", v.i == 1 ? "true" : "false"); break;
         case VAL_INT: printf("%d\n", v.i); break;
+        case VAL_FLOAT: printf("%f\n", v.d); break;
         case VAL_STR: printf("%s\n", v.s); break;
         default: break;
         }
@@ -36,6 +37,7 @@ static void melon_print(value_t *args, uint8_t nargs)
         {
         case VAL_BOOL: printf("%s", v.i == 1 ? "true" : "false"); break;
         case VAL_INT: printf("%d", v.i); break;
+        case VAL_FLOAT: printf("f", v.d); break;
         case VAL_STR: printf("%s", v.s); break;
         default: break;
         }

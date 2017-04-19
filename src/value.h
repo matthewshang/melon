@@ -16,7 +16,7 @@ typedef struct
     union
     {
         int i;
-        float f;
+        double d;
         const char *s;
         function_t *fn;
     };
@@ -49,13 +49,17 @@ typedef struct function_s
 
 #define FROM_BOOL(x) (value_t){.type = VAL_BOOL, .i = x}
 #define FROM_INT(x) (value_t){.type = VAL_INT, .i = x}
-#define FROM_FLOAT(x) (value_t){.type = VAL_FLOAT, .f = x}
+#define FROM_FLOAT(x) (value_t){.type = VAL_FLOAT, .d = x}
 #define FROM_CSTR(x) (value_t){.type = VAL_STR, .s = x}
 #define FROM_FUNC(x) (value_t){.type = VAL_FUNC, .fn = x}
 
 #define AS_INT(x) (x).i
 #define AS_BOOL(x) (x).i
 #define AS_FUNC(x) (x).fn
+#define AS_FLOAT(x) (x).d
+
+#define IS_INT(x) (x).type == VAL_INT
+#define IS_FLOAT(x) (x).type == VAL_FLOAT
 
 void value_destroy(value_t val);
 

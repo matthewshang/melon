@@ -56,8 +56,19 @@ node_t *parse_block(lexer_t *lexer);
 
 static node_t *parse_num(lexer_t *lexer, token_t token)
 {
-    int val = strtol(lexer->source.buffer + token.offset, NULL, 10);
-    return node_literal_int_new(val);
+    if (token.type == TOK_INT)
+    {
+        int val = strtol(lexer->source.buffer + token.offset, NULL, 10);
+        return node_literal_int_new(val);
+    }
+    else if (token.type == TOK_FLOAT)
+    {
+        double val = strtod(lexer->source.buffer + token.offset, NULL);
+        return node_literal_float_new(val);
+    }
+    
+    printf("Error: expected number\n");
+    return NULL;
 }
 
 static node_t *parse_str(lexer_t *lexer, token_t token)
@@ -169,7 +180,8 @@ static void init_parse_rules()
 
     rules[TOK_TRUE] = PREFIX_RULE(PREC_LOWEST, parse_bool);
     rules[TOK_FALSE] = PREFIX_RULE(PREC_LOWEST, parse_bool);
-    rules[TOK_NUM] = PREFIX_RULE(PREC_LOWEST, parse_num);
+    rules[TOK_INT] = PREFIX_RULE(PREC_LOWEST, parse_num);
+    rules[TOK_FLOAT] = PREFIX_RULE(PREC_LOWEST, parse_num);
     rules[TOK_STR] = PREFIX_RULE(PREC_LOWEST, parse_str);
     rules[TOK_IDENTIFIER] = PREFIX_RULE(PREC_LOWEST, parse_identifier);
 

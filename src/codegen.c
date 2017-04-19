@@ -210,7 +210,7 @@ static int constant_exists(value_r *constants, node_literal_t *node)
             if (val.type == VAL_BOOL || val.type == VAL_INT)
                 if (node->u.i == val.i) return i;
             if (val.type == VAL_FLOAT)
-                if (node->u.f == val.f) return i;
+                if (node->u.d == val.d) return i;
         }
     }
 
@@ -245,6 +245,12 @@ static void gen_node_literal(astwalker_t *self, node_literal_t *node)
             emit_bytes(CODE, OP_LOADK, (uint8_t)vector_size(*CONSTANTS));
             vector_push(value_t, *CONSTANTS, FROM_INT(node->u.i));
         }
+        break;
+    }
+    case LITERAL_FLT:
+    {
+        emit_bytes(CODE, OP_LOADK, (uint8_t)vector_size(*CONSTANTS));
+        vector_push(value_t, *CONSTANTS, FROM_FLOAT(node->u.d));
         break;
     }
     case LITERAL_STR:

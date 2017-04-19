@@ -62,6 +62,7 @@ void function_cpool_dump(function_t *func)
             {
             case VAL_BOOL: printf("\t%s\n", v.i == 1 ? "true" : "false"); break;
             case VAL_INT: printf("\t%d\n", v.i); break;
+            case VAL_FLOAT: printf("\t%f\n", v.d); break;
             case VAL_STR: printf("\t%s\n", v.s); break;
             case VAL_FUNC: function_disassemble(v.fn); function_cpool_dump(v.fn); break;
             default: break;

@@ -1,0 +1,27 @@
+println(0.5 + 2);
+println(3 + 7.12345);
+println(5 + 1);
+println(12.3456 + 8.12);
+println();
+
+println(2 - 1);
+println(2 - 0.5);
+println(0.5 - 2);
+println(0.5 - 0.1);
+println();
+
+println(2 * 7);
+println(2 * 0.6);
+println(0.7 * 4);
+println(0.5 * 0.9);
+println();
+
+println(87 % 6);
+println();
+
+println(5 < 6);
+println(7 < 1);
+println(1.2 < 3);
+println(6 < 0.5);
+println(3.6 < 9.2);
+println(7.2 < 1.2);

@@ -72,19 +72,34 @@ static token_t scan_string(charstream_t *source)
     return token_create(TOK_STR, start, bytes);
 }
 
+static bool is_number(char c)
+{
+    return isdigit(c) || c == '.'; 
+}
+
 static token_t scan_number(charstream_t *source)
 {
     int start = source->offset;
     int bytes = 0;
+    bool dot_found = false;
 
-    while (is_digit(charstream_peek(source)))
+    while (is_number(charstream_peek(source)))
     {
+        if (charstream_peek(source) == '.')
+        {
+            if (dot_found)
+            {
+                printf("Error: float cannot have more than one decimal point\n");
+                return token_error();
+            }
+            dot_found = true;
+        }
         charstream_next(source);
         bytes++;
         if (charstream_eof(source)) break;
     }
 
-    return token_create(TOK_NUM, start, bytes);
+    return token_create(dot_found ? TOK_FLOAT : TOK_INT, start, bytes);
 }
 
 static bool strequals(const char *s1, int len, const char *s2)

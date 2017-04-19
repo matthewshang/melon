@@ -16,6 +16,15 @@ node_t *node_literal_int_new(int value)
     return (node_t*)node;
 }
 
+node_t *node_literal_float_new(double value)
+{
+    node_literal_t *node = (node_literal_t*)calloc(1, sizeof(node_literal_t));
+    NODE_SETBASE(node, NODE_LITERAL);
+    node->type = LITERAL_FLT;
+    node->u.d = value;
+    return (node_t*)node;
+}
+
 node_t *node_literal_str_new(const char *value, int len)
 {
     node_literal_t *node = (node_literal_t*)calloc(1, sizeof(node_literal_t));
@@ -423,8 +432,8 @@ static void print_node_literal(astwalker_t *self, node_literal_t *node)
     {printf("[literal] int: %d\n", node->u.i); break; }
     case LITERAL_STR:
     {printf("[literal] string: %s\n", node->u.s); break; }
-    case LITERAL_FLOAT:
-    {printf("[literal] float: %f\n", node->u.f); break; }
+    case LITERAL_FLT:
+    {printf("[literal] float: %f\n", node->u.d); break; }
     default:
         break;
     }

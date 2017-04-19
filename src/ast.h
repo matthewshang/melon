@@ -19,7 +19,7 @@ typedef enum
 
 typedef enum
 {
-    LITERAL_BOOL, LITERAL_INT, LITERAL_FLOAT, LITERAL_STR
+    LITERAL_BOOL, LITERAL_INT, LITERAL_FLT, LITERAL_STR
 } literal_type;
 
 typedef struct
@@ -43,7 +43,7 @@ typedef struct
     union
     {
         int i;
-        float f;
+        double d;
         const char *s;
     } u;
 } node_literal_t;
@@ -120,6 +120,7 @@ typedef struct
 } node_unary_t;
 
 node_t *node_literal_int_new(int value);
+node_t *node_literal_float_new(double value);
 node_t *node_literal_str_new(const char *value, int len);
 node_t *node_literal_bool_new(bool value);
 node_t *node_var_new(const char *identifier);
