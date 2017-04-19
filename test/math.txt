@@ -25,3 +25,9 @@ println(1.2 < 3);
 println(6 < 0.5);
 println(3.6 < 9.2);
 println(7.2 < 1.2);
+println();
+
+println(0.5 / 2);
+println(6 / 4.0);
+println(10 / 2);
+println(1.25 / 0.25);

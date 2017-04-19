@@ -28,7 +28,7 @@ static bool is_comment(char c)
 static bool is_op(char c)
 {
     return c == '+' || c == '-' || c == '=' || c == '*' || c == '%' || c == '&' || 
-        c == '|' || c == '<' || c == '>' || c == '!'; 
+        c == '|' || c == '<' || c == '>' || c == '!' || c == '/'; 
 }
 
 static bool is_semicolon(char c)
@@ -176,6 +176,7 @@ static token_type get_op(charstream_t *source, int start, int bytes)
         if (c == '+') return TOK_ADD;
         if (c == '-') return TOK_SUB;
         if (c == '*') return TOK_MUL;
+        if (c == '/') return TOK_DIV;
         if (c == '%') return TOK_MOD;
         if (c == '<') return TOK_LT;
         if (c == '>') return TOK_GT;
@@ -193,6 +194,7 @@ static token_type get_op(charstream_t *source, int start, int bytes)
             if (c1 == '+') return TOK_ADDEQ;
             if (c1 == '-') return TOK_SUBEQ;
             if (c1 == '*') return TOK_MULEQ;
+            if (c1 == '/') return TOK_DIVEQ;
         }
 
         if (c1 == '&' && c2 == '&') return TOK_AND;

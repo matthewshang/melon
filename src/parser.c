@@ -189,6 +189,7 @@ static void init_parse_rules()
     rules[TOK_ADDEQ] = INFIX_OP(PREC_ASSIGN);
     rules[TOK_SUBEQ] = INFIX_OP(PREC_ASSIGN);
     rules[TOK_MULEQ] = INFIX_OP(PREC_ASSIGN);
+    rules[TOK_DIVEQ] = INFIX_OP(PREC_ASSIGN);
 
     rules[TOK_BANG] = PREFIX_OP(PREC_UNARY);
     rules[TOK_SUB] = RULE(parse_unary, parse_infix, PREC_TERM);
@@ -207,6 +208,7 @@ static void init_parse_rules()
     rules[TOK_ADD] = INFIX_OP(PREC_TERM);
 
     rules[TOK_MUL] = INFIX_OP(PREC_FACTOR);
+    rules[TOK_DIV] = INFIX_OP(PREC_FACTOR);
     rules[TOK_MOD] = INFIX_OP(PREC_FACTOR);
 
     rules_initialized = true;

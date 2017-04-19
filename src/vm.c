@@ -219,6 +219,7 @@ void vm_run(vm_t *vm)
         case OP_ADD: DO_FAST_BIN_MATH(+); break;
         case OP_SUB: DO_FAST_BIN_MATH(-); break;
         case OP_MUL: DO_FAST_BIN_MATH(*); break;
+        case OP_DIV: DO_FAST_BIN_MATH(/ ); break;
         case OP_MOD: DO_FAST_INT_MATH(%); break;
       
         case OP_AND: DO_FAST_BOOL_MATH(&&); break;

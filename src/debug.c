@@ -25,6 +25,7 @@ const char *op_to_str(opcode op)
     case OP_ADD: return "add";
     case OP_SUB: return "sub";
     case OP_MUL: return "mul";
+    case OP_DIV: return "div";
     case OP_MOD: return "mod";
     case OP_NEG: return "neg";
 
