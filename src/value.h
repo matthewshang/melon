@@ -58,6 +58,7 @@ typedef struct function_s
 #define AS_FUNC(x) (x).fn
 #define AS_FLOAT(x) (x).d
 
+#define IS_BOOL(x) (x).type == VAL_BOOL
 #define IS_INT(x) (x).type == VAL_INT
 #define IS_FLOAT(x) (x).type == VAL_FLOAT
 

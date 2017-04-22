@@ -113,6 +113,33 @@ static node_t *parse_postfix(lexer_t *lexer, node_t *node, token_t token)
     return node_postfix_new(node, args);
 }
 
+static node_var_r *parse_func_params(lexer_t *lexer)
+{
+    if (lexer_check(lexer, TOK_CLOSED_PAREN)) return NULL;
+
+    node_var_r *params = (node_var_r*)calloc(1, sizeof(node_var_r));
+
+    if (!lexer_check(lexer, TOK_CLOSED_PAREN))
+    {
+        do
+        {
+            vector_push(node_var_t*, *params, (node_var_t*)parse_expression(lexer));
+        } while (lexer_match(lexer, TOK_COMMA));
+    }
+
+    return params;
+}
+
+static node_t *parse_func_expr(lexer_t *lexer, token_t token)
+{
+    lexer_consume(lexer, TOK_OPEN_PAREN, "Function must have parameter list");
+    vector_t(node_var_t*) *params = parse_func_params(lexer);
+    lexer_consume(lexer, TOK_CLOSED_PAREN, ")");
+
+    node_t *body = parse_block(lexer);
+    return node_func_decl_new(strdup("{anonymous func}"), params, (node_block_t*)body);
+}
+
 static node_t *parse_unary(lexer_t *lexer, token_t token)
 {
     node_t *node = parse_precedence(lexer, PREC_UNARY);
@@ -184,6 +211,7 @@ static void init_parse_rules()
     rules[TOK_FLOAT] = PREFIX_RULE(PREC_LOWEST, parse_num);
     rules[TOK_STR] = PREFIX_RULE(PREC_LOWEST, parse_str);
     rules[TOK_IDENTIFIER] = PREFIX_RULE(PREC_LOWEST, parse_identifier);
+    rules[TOK_FUNC] = PREFIX_RULE(PREC_LOWEST, parse_func_expr);
 
     rules[TOK_EQ] = INFIX_OP(PREC_ASSIGN);
     rules[TOK_ADDEQ] = INFIX_OP(PREC_ASSIGN);
@@ -258,7 +286,8 @@ static node_t *parse_while(lexer_t *lexer)
 static node_t *parse_return(lexer_t *lexer)
 {
     node_t *expr = parse_expression(lexer);
-    lexer_consume(lexer, TOK_SEMICOLON, ";");
+    if (lexer_peek(lexer).type != TOK_CLOSED_BRACE) 
+        lexer_consume(lexer, TOK_SEMICOLON, ";");
     return node_return_new(expr);
 }
 
@@ -291,23 +320,6 @@ static node_t *parse_var_decl(lexer_t *lexer)
     lexer_consume(lexer, TOK_SEMICOLON, ";");
 
     return node_var_decl_new((const char*)ident, init);
-}
-
-static node_var_r *parse_func_params(lexer_t *lexer)
-{
-    if (lexer_check(lexer, TOK_CLOSED_PAREN)) return NULL;
-
-    node_var_r *params = (node_var_r*)calloc(1, sizeof(node_var_r));
-
-    if (!lexer_check(lexer, TOK_CLOSED_PAREN))
-    {
-        do
-        {
-            vector_push(node_var_t*, *params, (node_var_t*)parse_expression(lexer));
-        } while (lexer_match(lexer, TOK_COMMA));
-    }
-
-    return params;
 }
 
 static node_t *parse_func_decl(lexer_t *lexer)

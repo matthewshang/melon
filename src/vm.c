@@ -234,17 +234,17 @@ void vm_run(vm_t *vm)
 
         case OP_NOT: 
         {
-            int v = AS_BOOL(STACK_POP);
-            STACK_PUSH(FROM_BOOL(!v));
+            value_t val = STACK_POP;
+            if (IS_BOOL(val)) STACK_PUSH(FROM_BOOL(!val.i));
             break;
         }
         case OP_NEG: 
         {
-            int v = AS_INT(STACK_POP);                               
-            STACK_PUSH(FROM_INT(-v)); 
+            value_t val = STACK_POP;                               
+            if (IS_INT(val)) STACK_PUSH(FROM_INT(-val.i));
+            else if (IS_FLOAT(val)) STACK_PUSH(FROM_FLOAT(-val.d));
             break;
         }
-
 
         case OP_HALT: return;
         default: continue;
