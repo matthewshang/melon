@@ -15,6 +15,7 @@ typedef struct
     value_r *constants;
     function_t *func;
     symtable_t *symtable;
+    node_func_decl_t *parent;
 } codegen_t;
 
 codegen_t codegen_create(function_t *f);

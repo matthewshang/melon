@@ -85,13 +85,19 @@ typedef struct
 
 typedef struct
 {
+    bool is_direct;
+    uint8_t idx;
+    const char *symbol;
+} ast_upvalue_t;
+
+typedef struct
+{
     node_t base;
     const char *identifier;
     vector_t(node_var_t*) *params;
     node_block_t *body;
 
-    bool is_global;
-    int idx;
+    vector_t(ast_upvalue_t) *upvalues;
 } node_func_decl_t;
 
 typedef struct

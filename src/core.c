@@ -44,8 +44,11 @@ static void melon_print(value_t *args, uint8_t nargs)
     }
 }
 
+// temp stuff
 static function_t *core_println;
 static function_t *core_print;
+static closure_t *core_println_cl;
+static closure_t *core_print_cl;
 
 static bool core_codegen_inited = false;
 static bool core_vm_inited = false;
@@ -65,10 +68,12 @@ void core_register_vm(vm_t *vm)
     core_vm_inited = true;
 
     core_println = function_native_new(melon_println);
-    vm_set_global(vm, FROM_FUNC(core_println), PRINTLN_SLOT);
+    core_println_cl = closure_new(core_println);
+    vm_set_global(vm, FROM_CLOSURE(core_println_cl), PRINTLN_SLOT);
 
-    core_println = function_native_new(melon_print);
-    vm_set_global(vm, FROM_FUNC(core_println), PRINT_SLOT);
+    core_print = function_native_new(melon_print);
+    core_print_cl = closure_new(core_print);
+    vm_set_global(vm, FROM_CLOSURE(core_print_cl), PRINT_SLOT);
 }
 
 void core_free()
@@ -77,4 +82,6 @@ void core_free()
 
     function_free(core_println);
     function_free(core_print);
+    closure_free(core_println_cl);
+    closure_free(core_print_cl);
 }

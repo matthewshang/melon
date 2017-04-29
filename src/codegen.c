@@ -127,18 +127,28 @@ static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
     gen->func = f;
     gen->code = &f->bytecode;
     gen->constants = &f->constpool;
+    AS_GEN(self)->parent = node;
     walk_ast(self, node->body);
     if (vector_get(*gen->code, vector_size(*gen->code) - 1) != OP_RETURN)
         emit_byte(CODE, (uint8_t)OP_RET0);
+
     gen->func = parent;
     gen->code = &parent->bytecode;
     gen->constants = &parent->constpool;
 
     symtable_exit_scope(SYMTABLE);
 
-    vector_push(value_t, parent->constpool, FROM_FUNC(f));
+    vector_push(value_t, parent->constpool, FROM_CLOSURE(closure_new(f)));
 
     emit_bytes(CODE, (uint8_t)OP_LOADK, vector_size(parent->constpool) - 1);
+
+    vector_t(ast_upvalue_t) *upvalues = AS_GEN(self)->parent->upvalues;
+    emit_byte(CODE, (uint8_t)OP_CLOSURE);
+    for (uint8_t i = 0; i < f->nupvalues; i++)
+    {
+        ast_upvalue_t upvalue = vector_get(*upvalues, i);
+        emit_bytes(CODE, (uint8_t)OP_NEWUP, upvalue.idx);
+    }
     emit_bytes(CODE, symtable_is_global(SYMTABLE) ? OP_STOREG : OP_STORE, idx);
 }
 
@@ -180,6 +190,22 @@ static void gen_node_postfix(astwalker_t *self, node_postfix_t *node)
     }
 }
 
+static uint8_t add_upvalue(codegen_t *gen, decl_info_t decl, const char *symbol)
+{
+    vector_t(ast_upvalue_t) *upvalues = gen->parent->upvalues;
+    for (uint8_t i = 0; i < vector_size(*upvalues); i++)
+    {
+        ast_upvalue_t upvalue = vector_get(*upvalues, i);
+        if (strcmp(symbol, upvalue.symbol) == 0) return i;
+    }
+
+    gen->func->nupvalues++;
+    bool is_direct = gen->symtable->top - decl.level == 1;
+    vector_push(ast_upvalue_t, *upvalues, 
+        ((ast_upvalue_t){.is_direct = is_direct, .idx = decl.idx, .symbol = symbol }));
+    return vector_size(*upvalues) - 1;
+}
+
 static void gen_node_var(astwalker_t *self, node_var_t *node)
 {
     //printf("----GEN_NODE_VAR----\n");
@@ -190,11 +216,19 @@ static void gen_node_var(astwalker_t *self, node_var_t *node)
         printf("Unknown identifier %s\n", node->identifier);
         return;
     }
+    
+    uint8_t idx = decl.idx;
+    bool is_upvalue = SYMTABLE->top != decl.level && decl.level != 0;
+    //printf("upvalues: %s %d %d %d\n", node->identifier, SYMTABLE->top, decl.level, is_upvalue);
+    if (is_upvalue)
+        idx = add_upvalue(AS_GEN(self), decl, node->identifier);
 
     if (node->base.is_assign)
-        emit_bytes(CODE, decl.is_global ? OP_STOREG : OP_STORE, decl.idx);
+        emit_bytes(CODE, 
+            is_upvalue ? OP_STOREU : decl.is_global ? OP_STOREG : OP_STORE, idx);
     else
-        emit_bytes(CODE, decl.is_global ? OP_LOADG : OP_LOAD, decl.idx);
+        emit_bytes(CODE, 
+            is_upvalue ? OP_LOADU : decl.is_global ? OP_LOADG : OP_LOAD, idx);
 }
 
 static int constant_exists(value_r *constants, node_literal_t *node)

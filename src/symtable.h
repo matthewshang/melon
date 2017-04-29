@@ -10,6 +10,7 @@ typedef struct
 {
     bool is_global;
     uint8_t idx;
+    uint8_t level;
 } decl_info_t;
 
 typedef struct

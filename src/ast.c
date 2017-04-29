@@ -59,6 +59,9 @@ node_t *node_func_decl_new(const char *identifier, vector_t(node_var_t*) *params
     node->identifier = identifier;
     node->body = body;
     node->params = params;
+
+    node->upvalues = (vector_t(ast_upvalue_t)*)calloc(1, sizeof(*node->upvalues));
+    vector_init(*node->upvalues);
     return (node_t*)node;
 }
 
@@ -189,6 +192,11 @@ static void free_node_func_decl(astwalker_t *self, node_func_decl_t *node)
         free(node->params);
     }
     if (node->identifier) free(node->identifier);
+    if (node->upvalues)
+    {
+        vector_destroy(*node->upvalues);
+        free(node->upvalues);
+    }
     free(node);
 }
 

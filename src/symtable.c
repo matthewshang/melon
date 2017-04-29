@@ -55,7 +55,8 @@ uint8_t symtable_add_local(symtable_t *table, const char *symbol)
     symtable_entry_r *scope = vector_get(table->stack, table->top);
     decl.is_global = symtable_is_global(table);
     decl.idx = vector_size(*scope);
-    vector_push(symtable_entry_t, *scope, ((symtable_entry_t){ .identifier = symbol, .decl = decl }));
+    decl.level = table->top;
+    vector_push(symtable_entry_t, *scope, ((symtable_entry_t){ .identifier = symbol, .decl = decl}));
     return decl.idx;
 }
 
