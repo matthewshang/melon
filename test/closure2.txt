@@ -1,0 +1,28 @@
+# http://stackoverflow.com/a/111111
+
+var gLogNumber;
+var gIncreaseNumber;
+var gSetNumber;
+
+func setupGlobals()
+{
+	var num = 42;
+
+	gLogNumber = func() { println(num); }
+	gIncreaseNumber = func() { num += 1; }
+	gSetNumber = func(x) { num = x; }
+}
+
+setupGlobals();
+
+gIncreaseNumber();
+gLogNumber();
+gSetNumber(5);
+gLogNumber();
+
+var oldLog = gLogNumber;
+
+setupGlobals();
+gLogNumber();
+
+oldLog();

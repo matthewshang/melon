@@ -146,23 +146,34 @@ void vm_destroy(vm_t *vm)
 
 upvalue_t *capture_upvalue(upvalue_t **upvalues, value_t *value)
 {
-    upvalue_t *upvalue = upvalue_new(value);
-    upvalue->next = *upvalues;
-    *upvalues = upvalue;
-    return upvalue;
+    upvalue_t *prevup = NULL;
+    upvalue_t *upvalue = *upvalues;
+    while (upvalue && value > upvalue->value)
+    {
+        prevup = upvalue;
+        upvalue = upvalue->next;
+    }
+
+    if (upvalue && upvalue->value == value) return upvalue;
+
+    upvalue_t *newup = upvalue_new(value);
+    
+    if (prevup) prevup->next = newup;
+    else *upvalues = newup;
+
+    newup->next = upvalue;
+    return newup;
 }
 
 static void close_upvalues(upvalue_t **upvalues, value_t *start)
 {
     upvalue_t *upvalue = *upvalues;
-    if (!upvalue) return;
-    while (upvalue->value >= start)
+    while (upvalue && upvalue->value >= start)
     {
         upvalue->closed = *upvalue->value;
         upvalue->value = &upvalue->closed;
         *upvalues = upvalue->next;
         upvalue = upvalue->next;
-        if (!upvalue) return;
     }
 }
 
@@ -329,11 +340,11 @@ void vm_run(vm_t *vm)
 
         }
 
-        //callstack_print(vm->callstack);
-        printf("Instruction: %s\n", op_to_str(inst));
-        printf("bp: %d\n", bp);
-        stack_dump(vm);
-        printf("\n");
+        ////callstack_print(vm->callstack);
+        //printf("Instruction: %s\n", op_to_str(inst));
+        //printf("bp: %d\n", bp);
+        //stack_dump(vm);
+        //printf("\n");
 
     }
 }
