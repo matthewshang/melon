@@ -258,13 +258,9 @@ static node_t *parse_if(lexer_t *lexer)
     {
         // Handles else if {...
         if (lexer_match(lexer, TOK_IF)) 
-        {
             els = parse_if(lexer);
-        }
         else
-        {
             els = parse_block(lexer);
-        }
     }
 
     return node_if_new(cond, then, els);
@@ -294,7 +290,8 @@ static node_t *parse_return(lexer_t *lexer)
 static node_t *parse_expr_stmt(lexer_t *lexer)
 {
     node_t *node = parse_expression(lexer);
-    lexer_consume(lexer, TOK_SEMICOLON, ";");
+    if (lexer_previous(lexer).type != TOK_CLOSED_BRACE)
+        lexer_consume(lexer, TOK_SEMICOLON, ";");
     return node;
 }
 
@@ -317,7 +314,8 @@ static node_t *parse_var_decl(lexer_t *lexer)
         init = parse_expression(lexer);
     }
 
-    lexer_consume(lexer, TOK_SEMICOLON, ";");
+    if (lexer_previous(lexer).type != TOK_CLOSED_BRACE)
+        lexer_consume(lexer, TOK_SEMICOLON, ";");
 
     return node_var_decl_new((const char*)ident, init);
 }

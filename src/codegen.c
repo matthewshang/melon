@@ -102,7 +102,8 @@ static void gen_node_var_decl(astwalker_t *self, node_var_decl_t *node)
 
 static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
 {
-    if (symtable_lookup(SYMTABLE, node->identifier, NULL))
+    if (strcmp("{anonymous func}", node->identifier) != 0 &&
+        symtable_lookup(SYMTABLE, node->identifier, NULL))
     {
         printf("Function %s already defined\n", node->identifier);
         return;
@@ -149,13 +150,17 @@ static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
         ast_upvalue_t upvalue = vector_get(*upvalues, i);
         emit_bytes(CODE, (uint8_t)OP_NEWUP, upvalue.idx);
     }
-    emit_bytes(CODE, symtable_is_global(SYMTABLE) ? OP_STOREG : OP_STORE, idx);
+
+    if (!node->base.is_assign)
+        emit_bytes(CODE, symtable_is_global(SYMTABLE) ? OP_STOREG : OP_STORE, idx);
 }
 
 static void gen_node_binary(astwalker_t *self, node_binary_t *node)
 {
     if (node->op.type == TOK_EQ)
     {
+        if (node->right->type == NODE_FUNC_DECL)
+            node->right->is_assign = true;
         walk_ast(self, node->right);
         node->left->is_assign = true;
         walk_ast(self, node->left);

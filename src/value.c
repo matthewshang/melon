@@ -142,6 +142,17 @@ closure_t *closure_new(function_t *func)
 
 void closure_free(closure_t *closure)
 {
-    if (closure->upvalues) free(closure->upvalues);
+    if (closure->upvalues)
+    {
+        upvalue_t *upvalue = *closure->upvalues;
+        while (upvalue)
+        {
+            upvalue_t *next = upvalue->next;
+            if (upvalue->value == &upvalue->closed)
+                free(upvalue);
+            upvalue = next;
+        }
+        free(closure->upvalues);
+    }
     free(closure);
 }

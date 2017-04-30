@@ -21,6 +21,8 @@ typedef struct
     value_t *stacktop;
     size_t stacksize;
 
+    upvalue_t *upvalues;
+
     uint8_t *ip;
     callframe_t *callstack;
 

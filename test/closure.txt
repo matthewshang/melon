@@ -1,0 +1,12 @@
+func adder(x)
+{
+	return func(y)
+	{
+		return x + y;
+	}
+}
+
+var adder5 = adder(5);
+var adder7 = adder(7);
+println(adder5(1));
+println(adder7(1));

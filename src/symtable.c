@@ -47,10 +47,7 @@ uint8_t symtable_add_local(symtable_t *table, const char *symbol)
 {
     decl_info_t decl;
     if (symtable_lookup(table, symbol, &decl))
-    {
-        printf("Symbol %s already defined\n", symbol);
         return decl.idx;
-    }
 
     symtable_entry_r *scope = vector_get(table->stack, table->top);
     decl.is_global = symtable_is_global(table);
