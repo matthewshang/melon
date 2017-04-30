@@ -17,7 +17,10 @@ typedef struct callframe_s
 
 typedef struct
 {
-    value_r stack;
+    value_t *stack;
+    value_t *stacktop;
+    size_t stacksize;
+
     uint8_t *ip;
     callframe_t *callstack;
 

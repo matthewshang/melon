@@ -5,11 +5,13 @@
 #include "opcodes.h"
 
 #define VM_GLOBALS_SIZE 2048
+#define VM_STACK_SIZE 8
 
 #define READ_BYTE       *vm->ip++
-#define STACK_POP       vector_pop(vm->stack)
-#define STACK_PUSH(x)   vector_push(value_t, vm->stack, x)
-#define STACK_PEEK      vector_peek(vm->stack)  
+#define STACK_POP       *(--vm->stacktop)
+#define STACK_PUSH(x)   stack_push(vm, x)
+#define STACK_PEEK      *(vm->stacktop - 1)
+#define STACK_POPN(n)   vm->stacktop -= (n)
 
 #define UNAOP_INT(op)   do {                                                         \
                             int a = AS_INT(STACK_POP);                               \
@@ -99,7 +101,9 @@ void callstack_print(callframe_t *top)
 vm_t vm_create(function_t *f)
 {
     vm_t vm;
-    vector_init(vm.stack);
+    vm.stack = (value_t*)calloc(VM_STACK_SIZE, sizeof(value_t));
+    vm.stacksize = VM_STACK_SIZE;
+    vm.stacktop = vm.stack;
     vm.main_func = f;
     vm.ip = &vector_get(vm.main_func->bytecode, 0);
     vector_init(vm.globals);
@@ -118,7 +122,7 @@ void vm_set_global(vm_t *vm, value_t val, uint16_t idx)
 
 void vm_destroy(vm_t *vm)
 {
-    vector_destroy(vm->stack);
+    free(vm->stack);
     vector_destroy(vm->globals);
     callframe_t *frame = vm->callstack;
     while (frame)
@@ -152,13 +156,26 @@ static void close_upvalues(upvalue_t **upvalues, value_t *start)
     }
 }
 
-static void stack_dump(value_r *stack)
+static void stack_dump(vm_t *vm)
 {
     printf("----Dumping stack----\n");
-    for (int i = 0; i < vector_size(*stack); i++)
+    value_t *v = vm->stack;
+    while (v < vm->stacktop)
     {
-        value_print(vector_get(*stack, i));
+        value_print(*v++);
     }
+}
+
+static void stack_push(vm_t *vm, value_t value)
+{
+    if (vm->stacktop - vm->stack == vm->stacksize)
+    {
+        vm->stack = (value_t*)realloc(vm->stack, sizeof(value_t) * vm->stacksize << 1);
+        vm->stacktop = vm->stack + vm->stacksize;
+        vm->stacksize = vm->stacksize << 1;
+    }
+
+    *vm->stacktop++ = value;
 }
 
 void vm_run(vm_t *vm)
@@ -175,13 +192,13 @@ void vm_run(vm_t *vm)
         {
         case OP_RET0: 
         {
-            vector_popn(vm->stack, vector_size(vm->stack) - bp);
+            STACK_POPN((vm->stacktop - vm->stack) - bp);
             vm->ip = callstack_ret(&vm->callstack, &closure, &bp);
             break;
         }
         case OP_NOP: continue;
 
-        case OP_LOAD: STACK_PUSH(vector_get(vm->stack, bp + READ_BYTE)); break;
+        case OP_LOAD: STACK_PUSH(vm->stack[bp + READ_BYTE]); break;
         case OP_LOADI: STACK_PUSH(FROM_INT(READ_BYTE)); break;
         case OP_LOADK: STACK_PUSH(function_cpool_get(closure->f, READ_BYTE)); break;
         case OP_LOADU: 
@@ -195,14 +212,14 @@ void vm_run(vm_t *vm)
             break;
         }
         case OP_LOADG: STACK_PUSH(vector_get(vm->globals, READ_BYTE)); break;
-        case OP_STORE: vector_set(vm->stack, bp + READ_BYTE, STACK_PEEK); break;
+        case OP_STORE: vm->stack[bp + READ_BYTE] = STACK_PEEK; break;
         case OP_STOREU: 
         {
             value_t v = STACK_PEEK;
             printf("storeu: ");  value_print(v);
             //*closure->upvalues[READ_BYTE]->value = v; 
             closure->upvalues[READ_BYTE]->value->i = v.i;
-            value_t *pos = &vm->stack.a[1];
+            //value_t *pos = &vm->stack[1];
             //vm->stack.a[1].i = v.i;
             break;
         }
@@ -222,9 +239,9 @@ void vm_run(vm_t *vm)
                     printf("Runtime error: expected instruction NEWUP\n");
                     return;
                 }
-                value_t *pos = &vm->stack.a[1];
+                //value_t *pos = &vm->stack.a[1];
 
-                newclose->upvalues[i] = capture_upvalue(&upvalues, &vector_get(vm->stack, bp + READ_BYTE));
+                newclose->upvalues[i] = capture_upvalue(&upvalues, &vm->stack[bp + READ_BYTE]);
                 newclose->upvalues[i]->value->i = 1;
                 printf("wtf %d\n", newclose->upvalues[i]->value->i);
                 value_t v = *newclose->upvalues[i]->value;
@@ -240,17 +257,17 @@ void vm_run(vm_t *vm)
             if (cl->f->type == FUNC_MELON)
             {
                 callstack_push(&vm->callstack, vm->ip + 1, closure, bp);
-                bp = vector_size(vm->stack) - READ_BYTE;
+                bp = vm->stacktop - vm->stack - READ_BYTE;
                 closure = cl;
                 vm->ip = &vector_get(cl->f->bytecode, 0);
             }
             else if (cl->f->type == FUNC_NATIVE)
             {
                 uint8_t nargs = READ_BYTE;
-                value_t *adr = &STACK_PEEK;
+                value_t *adr = vm->stacktop - 1;
                 adr -= nargs == 0 ? 0 : nargs - 1;
                 cl->f->cfunc(adr, nargs);
-                vector_popn(vm->stack, nargs);
+                STACK_POPN(nargs);
             }
             break;
         }
@@ -265,9 +282,9 @@ void vm_run(vm_t *vm)
         }
         case OP_RETURN:
         {
-            close_upvalues(&upvalues, &vector_get(vm->stack, bp));
-            vector_set(vm->stack, bp, STACK_PEEK);
-            vector_popn(vm->stack, vector_size(vm->stack) - bp - 1);
+            close_upvalues(&upvalues, &vm->stack[bp]);
+            vm->stack[bp] = STACK_PEEK;
+            STACK_POPN(vm->stacktop - vm->stack - bp - 1);
             vm->ip = callstack_ret(&vm->callstack, &closure, &bp);
             break;
         }
@@ -307,11 +324,11 @@ void vm_run(vm_t *vm)
 
         }
 
-        //callstack_print(vm->callstack);
-        printf("Instruction: %s\n", op_to_str(inst));
-        printf("bp: %d\n", bp);
-        stack_dump(&vm->stack);
-        printf("\n");
+        ////callstack_print(vm->callstack);
+        //printf("Instruction: %s\n", op_to_str(inst));
+        //printf("bp: %d\n", bp);
+        //stack_dump(vm);
+        //printf("\n");
 
     }
 }
