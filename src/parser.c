@@ -282,16 +282,16 @@ static node_t *parse_while(lexer_t *lexer)
 static node_t *parse_return(lexer_t *lexer)
 {
     node_t *expr = parse_expression(lexer);
-    if (lexer_peek(lexer).type != TOK_CLOSED_BRACE) 
-        lexer_consume(lexer, TOK_SEMICOLON, ";");
+    lexer_match(lexer, TOK_SEMICOLON);
+
     return node_return_new(expr);
 }
 
 static node_t *parse_expr_stmt(lexer_t *lexer)
 {
     node_t *node = parse_expression(lexer);
-    if (lexer_previous(lexer).type != TOK_CLOSED_BRACE)
-        lexer_consume(lexer, TOK_SEMICOLON, ";");
+    lexer_match(lexer, TOK_SEMICOLON);
+
     return node;
 }
 
@@ -314,8 +314,7 @@ static node_t *parse_var_decl(lexer_t *lexer)
         init = parse_expression(lexer);
     }
 
-    if (lexer_previous(lexer).type != TOK_CLOSED_BRACE)
-        lexer_consume(lexer, TOK_SEMICOLON, ";");
+    lexer_match(lexer, TOK_SEMICOLON);
 
     return node_var_decl_new((const char*)ident, init);
 }
