@@ -120,7 +120,6 @@ static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
             symtable_add_local(SYMTABLE, param->identifier);
         }
     }
-    //symtable_dump(SYMTABLE);
 
     function_t *f = function_new(strdup(node->identifier));
     codegen_t *gen = (codegen_t*)self->data;
@@ -128,7 +127,9 @@ static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
     gen->func = f;
     gen->code = &f->bytecode;
     gen->constants = &f->constpool;
-    AS_GEN(self)->parent = node;
+
+    vector_push(node_func_decl_t*, gen->functions, node);
+    gen->parent_func = node;
     walk_ast(self, node->body);
     if (vector_get(*gen->code, vector_size(*gen->code) - 1) != OP_RETURN)
         emit_byte(CODE, (uint8_t)OP_RET0);
@@ -143,13 +144,19 @@ static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
 
     emit_bytes(CODE, (uint8_t)OP_LOADK, vector_size(parent->constpool) - 1);
 
-    vector_t(ast_upvalue_t) *upvalues = AS_GEN(self)->parent->upvalues;
+    vector_t(ast_upvalue_t) *upvalues = node->upvalues;
+    f->nupvalues = vector_size(*upvalues);
     emit_byte(CODE, (uint8_t)OP_CLOSURE);
+
+    uint8_t upindex = 0;
     for (uint8_t i = 0; i < f->nupvalues; i++)
     {
         ast_upvalue_t upvalue = vector_get(*upvalues, i);
-        emit_bytes(CODE, (uint8_t)OP_NEWUP, upvalue.idx);
+        emit_bytes(CODE, (uint8_t)OP_NEWUP, (uint8_t)upvalue.is_direct);
+        emit_byte(CODE, upvalue.is_direct ? upvalue.idx : upindex++);
     }
+
+    vector_pop(gen->functions);
 
     if (!node->base.is_assign)
         emit_bytes(CODE, symtable_is_global(SYMTABLE) ? OP_STOREG : OP_STORE, idx);
@@ -195,26 +202,24 @@ static void gen_node_postfix(astwalker_t *self, node_postfix_t *node)
     }
 }
 
-static uint8_t add_upvalue(codegen_t *gen, decl_info_t decl, const char *symbol)
+static uint8_t add_upvalue(node_func_decl_t *f, uint8_t level, decl_info_t decl, const char *symbol)
 {
-    vector_t(ast_upvalue_t) *upvalues = gen->parent->upvalues;
+    vector_t(ast_upvalue_t) *upvalues = f->upvalues;
     for (uint8_t i = 0; i < vector_size(*upvalues); i++)
     {
         ast_upvalue_t upvalue = vector_get(*upvalues, i);
         if (strcmp(symbol, upvalue.symbol) == 0) return i;
     }
 
-    gen->func->nupvalues++;
-    bool is_direct = gen->symtable->top - decl.level == 1;
-    vector_push(ast_upvalue_t, *upvalues, 
+    bool is_direct = level - decl.level == 1;
+
+    vector_push(ast_upvalue_t, *upvalues,
         ((ast_upvalue_t){.is_direct = is_direct, .idx = decl.idx, .symbol = symbol }));
     return vector_size(*upvalues) - 1;
 }
 
 static void gen_node_var(astwalker_t *self, node_var_t *node)
 {
-    //printf("----GEN_NODE_VAR----\n");
-    //symtable_dump(SYMTABLE);
     decl_info_t decl;
     if (!symtable_lookup(SYMTABLE, node->identifier, &decl))
     {
@@ -224,9 +229,20 @@ static void gen_node_var(astwalker_t *self, node_var_t *node)
     
     uint8_t idx = decl.idx;
     bool is_upvalue = SYMTABLE->top != decl.level && decl.level != 0;
-    //printf("upvalues: %s %d %d %d\n", node->identifier, SYMTABLE->top, decl.level, is_upvalue);
+    //printf("upvalues: %s %d %d %d %d\n", node->identifier, SYMTABLE->top, vector_size(AS_GEN(self)->functions), decl.level, is_upvalue);
     if (is_upvalue)
-        idx = add_upvalue(AS_GEN(self), decl, node->identifier);
+    {
+        codegen_t *gen = AS_GEN(self);
+        uint8_t i = vector_size(gen->functions);
+        idx = add_upvalue(gen->parent_func, i--, decl, node->identifier);
+
+        while (i > decl.level)
+        {
+            node_func_decl_t *f = vector_get(gen->functions, i - 1);
+            add_upvalue(f, i, decl, node->identifier);
+            i--;
+        }
+    }
 
     if (node->base.is_assign)
         emit_bytes(CODE, 
@@ -308,7 +324,7 @@ codegen_t codegen_create(function_t *f)
     codegen_t gen;
     gen.symtable = symtable_new();
 
-    vector_init(gen.locals);
+    vector_init(gen.functions);
     gen.func = f;
     gen.code = &gen.func->bytecode;
     gen.constants = &gen.func->constpool;
@@ -317,7 +333,7 @@ codegen_t codegen_create(function_t *f)
 
 void codegen_destroy(codegen_t *gen)
 {
-    vector_destroy(gen->locals);
+    vector_destroy(gen->functions);
     symtable_free(gen->symtable);
 }
 

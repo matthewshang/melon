@@ -262,7 +262,10 @@ void vm_run(vm_t *vm)
                     printf("Runtime error: expected instruction NEWUP\n");
                     return;
                 }
-                newclose->upvalues[i] = capture_upvalue(&vm->upvalues, &vm->stack[bp + READ_BYTE]);
+                uint8_t is_direct = READ_BYTE;
+                newclose->upvalues[i] = is_direct ? 
+                    capture_upvalue(&vm->upvalues, &vm->stack[bp + READ_BYTE]) : closure->upvalues[READ_BYTE];
+
             }
             STACK_PUSH(FROM_CLOSURE(newclose));
             break;

@@ -1,0 +1,18 @@
+func f(a)
+{
+	return func(b)
+	{
+		return func(c)
+		{
+			return a + b * c;
+		}
+	}
+}
+
+var test1 = f(5);
+var test2a = test1(6);
+var test2b = test1(8);
+println(test2a(2));
+println(test2b(8));
+
+println(test1(7)(2));

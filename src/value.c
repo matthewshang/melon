@@ -113,6 +113,10 @@ void function_disassemble(function_t *func)
             {
                 printf(" %d", vector_get(func->bytecode, ++i));
             }
+            if (op == OP_NEWUP)
+            {
+                printf(", %d", vector_get(func->bytecode, ++i));
+            }
             printf("\n");
         }
         printf("----\n\n", func->identifier);

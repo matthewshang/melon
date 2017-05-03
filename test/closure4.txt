@@ -1,0 +1,21 @@
+func f1(a) 
+{
+	return func(b) 
+	{
+		return func (c) 
+		{
+			return func (d)
+			 {
+				return func (e) 
+				{
+					return func (f)
+					{
+						return c + b * a + (d * e + f);
+					}
+				}
+			}
+		}
+	}
+}
+
+println(f1(10)(25)(30)(40)(5)(60));
