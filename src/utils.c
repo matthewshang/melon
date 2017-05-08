@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <Windows.h>
+
 const char *file_read(const char *path)
 {
     FILE *f = NULL;
@@ -27,42 +29,15 @@ abort_open:
     return ret;
 }
 
-//char** strsplit(const char* string, char delim_char)
-//{
-//    char* copy = _strdup(string);
-//    char** ret = NULL;
-//    int elements = 0;
-//    char* p = copy;
-//    char* last = NULL;
-//    char delim[2];
-//    delim[0] = delim_char;
-//    delim[1] = 0;
-//    while (*p)
-//    {
-//        if (*p == delim_char)
-//        {
-//            elements++;
-//            last = p;
-//        }
-//        p++;
-//    }
-//
-//    if (last < (copy + strlen(copy) - 1)) elements++;
-//    elements++;
-//    ret = calloc(elements, sizeof(char *));
-//
-//    if (ret)
-//    {
-//        int idx = 0;
-//        char* token = strtok(copy, delim);
-//
-//        while (token)
-//        {
-//            ret[idx++] = _strdup(token);
-//            token = strtok(0, delim);
-//        }
-//        ret[idx] = 0;
-//    }
-//    free(copy);
-//    return ret;
-//}
+double milliseconds()
+{
+    LARGE_INTEGER time;
+    LARGE_INTEGER frequency;
+    double pcfreq;
+
+    QueryPerformanceFrequency(&frequency);
+    QueryPerformanceCounter(&time);
+    pcfreq = (double)frequency.QuadPart / 1000.0;
+
+    return (double) time.QuadPart / pcfreq;
+}

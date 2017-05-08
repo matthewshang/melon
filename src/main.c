@@ -58,8 +58,13 @@ int main(int argc, char **argv)
      
     if (options.r_run)
     {
+        double start = milliseconds();
         vm_t vm = vm_create(main_func);
         vm_run(&vm);
+
+        double time = milliseconds() - start;
+        printf("melon run time: %f ms\n", time);
+
         vm_destroy(&vm);
         core_free();
     }
