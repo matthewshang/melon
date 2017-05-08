@@ -242,6 +242,9 @@ static token_t read_next(lexer_t *lexer)
         charstream_next(&lexer->source);
     }
 
+    if (charstream_eof(&lexer->source) && token.type == TOK_ERROR) 
+        token = token_create(TOK_EOF, -1, 0);
+
     return token;
 }
 
@@ -256,7 +259,7 @@ lexer_t lexer_create(const char *source)
     token_t current = read_next(&lexer);
     while (current.type != TOK_EOF)
     {
-        //printf("arg: %d %.*s\n", current.type, current.length, source + current.offset);
+        printf("arg: %d %.*s\n", current.type, current.length, source + current.offset);
         if (current.type != TOK_ERROR) vector_push(token_t, tokens, current);
         else lexer.nerrors++;
         current = read_next(&lexer);
