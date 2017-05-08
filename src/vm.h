@@ -12,8 +12,9 @@ typedef struct callframe_s
     closure_t *closure;
     uint16_t bp;
 
-    struct callframe_s *last;
 } callframe_t;
+
+typedef vector_t(callframe_t) callstack_t;
 
 typedef struct
 {
@@ -24,7 +25,7 @@ typedef struct
     upvalue_t *upvalues;
 
     uint8_t *ip;
-    callframe_t *callstack;
+    callstack_t callstack;
 
     value_r globals;
     function_t *main_func;

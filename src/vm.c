@@ -68,35 +68,31 @@
                             }                                                        \
                         } while (0)
 
-void callstack_push(callframe_t **top, uint8_t *ret, closure_t *closure, uint16_t bp)
+void callstack_push(callstack_t *stack, uint8_t *ret, closure_t *closure, uint16_t bp)
 {
-    callframe_t *newframe = (callframe_t*)calloc(1, sizeof(callframe_t));
-    newframe->last = *top;
-    newframe->ret = ret;
-    newframe->closure = closure;
-    newframe->bp = bp;
-    *top = newframe;
+    callframe_t newframe;
+    newframe.ret = ret;
+    newframe.closure = closure;
+    newframe.bp = bp;
+    vector_push(callframe_t, *stack, newframe);
 }
 
-uint8_t *callstack_ret(callframe_t **top, closure_t **closure, uint16_t *bp)
+uint8_t *callstack_ret(callstack_t *stack, closure_t **closure, uint16_t *bp)
 {
-    callframe_t *frame = *top;
-    *top = frame->last;
-    uint8_t *ret = frame->ret;
-    *closure = frame->closure;
-    *bp = frame->bp;
-    free(frame);
+    callframe_t frame = vector_pop(*stack);
+    uint8_t *ret = frame.ret;
+    *closure = frame.closure;
+    *bp = frame.bp;
     return ret;
 }
 
-void callstack_print(callframe_t *top)
+void callstack_print(callstack_t stack)
 {
-    printf("Printing callstack\n");
-    callframe_t *prev = top;
-    while (prev)
+    printf("Printing callstack %d\n", vector_size(stack));
+    for (size_t i = 0; i < vector_size(stack); i++)
     {
-        printf("frame - bp: %d, func: %s\n", prev->bp, prev->closure->f->identifier);
-        prev = prev->last;
+        callframe_t frame = vector_get(stack, i);
+        printf("frame - bp: %d, func: %s\n", frame.bp, frame.closure->f->identifier);
     }
 }
 
@@ -114,7 +110,7 @@ vm_t vm_create(function_t *f)
 
     core_register_vm(&vm);
 
-    vm.callstack = NULL;
+    vector_init(vm.callstack);
     return vm;
 }
 
@@ -127,13 +123,7 @@ void vm_destroy(vm_t *vm)
 {
     free(vm->stack);
     vector_destroy(vm->globals);
-    callframe_t *frame = vm->callstack;
-    while (frame)
-    {
-        callframe_t *prev = frame->last;
-        free(frame);
-        frame = prev;
-    }
+    vector_destroy(vm->callstack);
 
     upvalue_t *upvalue = vm->upvalues;
     while (upvalue)
@@ -343,7 +333,7 @@ void vm_run(vm_t *vm)
 
         }
 
-        ////callstack_print(vm->callstack);
+        //callstack_print(vm->callstack);
         //printf("Instruction: %s\n", op_to_str(inst));
         //printf("bp: %d\n", bp);
         //stack_dump(vm);
