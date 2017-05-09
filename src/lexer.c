@@ -69,7 +69,7 @@ static token_t scan_string(charstream_t *source)
     }
     charstream_next(source);
 
-    return token_create(TOK_STR, start, bytes);
+    return token_create(TOK_STR, start, bytes, source->line, source->col);
 }
 
 static bool is_number(char c)
@@ -99,7 +99,7 @@ static token_t scan_number(charstream_t *source)
         if (charstream_eof(source)) break;
     }
 
-    return token_create(dot_found ? TOK_FLOAT : TOK_INT, start, bytes);
+    return token_create(dot_found ? TOK_FLOAT : TOK_INT, start, bytes, source->line, source->col);
 }
 
 static bool strequals(const char *s1, int len, const char *s2)
@@ -145,8 +145,9 @@ static token_type get_keyword(charstream_t *source, int start, int bytes)
 
 static token_t scan_identifier(charstream_t *source)
 {
-    int start = source->offset;
-    int bytes = 0;
+    uint32_t start = source->offset;
+    uint32_t col = source->col;
+    uint32_t bytes = 0;
 
     while (is_identifier(charstream_peek(source)) || 
         is_digit(charstream_peek(source)))
@@ -156,14 +157,14 @@ static token_t scan_identifier(charstream_t *source)
         if (charstream_eof(source)) break;
     }
 
-    return token_create(get_keyword(source, start, bytes), start, bytes);
+    return token_create(get_keyword(source, start, bytes), start, bytes, source->line, col);
 }
 
 static token_t scan_punc(charstream_t *source)
 {
     char c = *source->pos;
     charstream_next(source);
-    return token_create(token_punc(c), source->offset - 1, 1);
+    return token_create(token_punc(c), source->offset - 1, 1, source->line, source->col);
 }
 
 static token_type get_op(charstream_t *source, int start, int bytes)
@@ -201,7 +202,8 @@ static token_type get_op(charstream_t *source, int start, int bytes)
         if (c1 == '|' && c2 == '|') return TOK_OR;
 
     }
-    return TOK_OP;
+    printf("Error: Unrecognized op\n");
+    return TOK_ERROR;
 }
 
 static token_t scan_op(charstream_t *source)
@@ -216,14 +218,14 @@ static token_t scan_op(charstream_t *source)
         if (charstream_eof(source)) break;
     }
 
-    return token_create(get_op(source, start, bytes), start, bytes);
+    return token_create(get_op(source, start, bytes), start, bytes, source->line, source->col);
 }
 
 static token_t read_next(lexer_t *lexer)
 {
     token_t token = token_error();
 
-    if (charstream_eof(&lexer->source)) token = token_create(TOK_EOF, -1, 0);
+    if (charstream_eof(&lexer->source)) token = token_create(TOK_EOF, 0, 0, 0, 0);
 
     while (!charstream_eof(&lexer->source))
     {
@@ -243,7 +245,7 @@ static token_t read_next(lexer_t *lexer)
     }
 
     if (charstream_eof(&lexer->source) && token.type == TOK_ERROR) 
-        token = token_create(TOK_EOF, -1, 0);
+        token = token_create(TOK_EOF, 0, 0, 0, 0);
 
     return token;
 }
@@ -259,7 +261,7 @@ lexer_t lexer_create(const char *source)
     token_t current = read_next(&lexer);
     while (current.type != TOK_EOF)
     {
-        printf("arg: %d %.*s\n", current.type, current.length, source + current.offset);
+        //printf("arg: %d %.*s\n", current.type, current.length, source + current.offset);
         if (current.type != TOK_ERROR) vector_push(token_t, tokens, current);
         else lexer.nerrors++;
         current = read_next(&lexer);
@@ -280,21 +282,10 @@ void lexer_destroy(lexer_t *lexer)
     }
 }
 
-token_t lexer_consume(lexer_t *lexer, token_type type, const char *msg)
+token_t lexer_consume(lexer_t *lexer, token_type type)
 {
     if (lexer_check(lexer, type)) return lexer_advance(lexer);
     token_t error = lexer_peek(lexer);
-    if (lexer_end(lexer))
-    {
-        charstream_error(&lexer->source, "Unexpected eof");
-    }
-    else
-    {
-        printf("Error: expected token %s but got token %.*s at",
-            msg, error.length, lexer->source.buffer + error.offset);
-        charstream_error(&lexer->source, "");
-        lexer_advance(lexer);
-    }
     lexer->nerrors++;
     return token_error();
 }

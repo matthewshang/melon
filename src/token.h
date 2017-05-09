@@ -2,6 +2,7 @@
 #define __TOKEN__
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "opcodes.h"
 
@@ -15,7 +16,6 @@ typedef enum
     TOK_IDENTIFIER, 
     TOK_VAR, TOK_IF, TOK_ELSE, TOK_WHILE, TOK_TRUE, TOK_FALSE, TOK_FUNC, TOK_RETURN,
 
-    TOK_OP, 
     TOK_EQ, TOK_ADDEQ, TOK_SUBEQ, TOK_MULEQ, TOK_DIVEQ,
     TOK_ADD, TOK_SUB, TOK_MUL, TOK_DIV, TOK_MOD, 
     TOK_BANG /*!*/, TOK_EQEQ, TOK_NEQ, TOK_LT, TOK_GT, TOK_LTE, TOK_GTE, TOK_AND, TOK_OR,
@@ -28,11 +28,13 @@ typedef enum
 typedef struct
 {
     token_type type;
-    int offset;
-    int length;
+    uint32_t offset;
+    uint32_t length;
+    uint32_t line;
+    uint32_t col;
 } token_t;
 
-token_t token_create(token_type type, int offset, int length);
+token_t token_create(token_type type, uint32_t offset, uint32_t length, uint32_t line, uint32_t col);
 token_t token_error();
 
 token_type token_punc(char c);
@@ -42,5 +44,6 @@ opcode token_to_unary_op(token_t token);
 token_type token_op_assign_to_op(token_t token);
 
 bool token_is_op_assign(token_t token);
+const char *token_type_string(token_type token);
 
 #endif

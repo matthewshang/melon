@@ -2,12 +2,14 @@
 
 #include <stdlib.h>
 
-token_t token_create(token_type type, int offset, int length)
+token_t token_create(token_type type, uint32_t offset, uint32_t length, uint32_t line, uint32_t col)
 {
     token_t tok;
     tok.type = type;
     tok.offset = offset;
     tok.length = length;
+    tok.line = line;
+    tok.col = col;
     return tok;
 }
 
@@ -83,4 +85,32 @@ token_type token_op_assign_to_op(token_t token)
 bool token_is_op_assign(token_t token)
 {
     return token.type > TOK_EQ && token.type <= TOK_DIVEQ;
+}
+
+const char *token_type_string(token_type type)
+{
+    switch (type)
+    {
+    case TOK_OPEN_PAREN: return "(";
+    case TOK_CLOSED_PAREN: return ")";
+    case TOK_SEMICOLON: return ";";
+    case TOK_COMMA: return ",";
+    case TOK_OPEN_BRACE: return "{";
+    case TOK_CLOSED_BRACE: return "}";
+
+    case TOK_INT: return "int";
+    case TOK_FLOAT: return "float";
+    case TOK_STR: return "string";
+
+    case TOK_IDENTIFIER: return "identifier";
+    case TOK_VAR: return "var";
+    case TOK_IF: return "if";
+    case TOK_ELSE: return "else";
+    case TOK_WHILE: return "while";
+    case TOK_TRUE: return "true";
+    case TOK_FALSE: return "false";
+    case TOK_FUNC: return "func";
+    case TOK_RETURN: return "return";
+    default: return "token";
+    }
 }

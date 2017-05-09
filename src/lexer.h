@@ -16,7 +16,7 @@ typedef struct
 lexer_t lexer_create(const char *source);
 void lexer_destroy(lexer_t *lexer);
 
-token_t lexer_consume(lexer_t *lexer, token_type type, const char *msg);
+token_t lexer_consume(lexer_t *lexer, token_type type);
 token_t lexer_advance(lexer_t *lexer);
 token_t lexer_peek(lexer_t *lexer);
 token_t lexer_previous(lexer_t *lexer);

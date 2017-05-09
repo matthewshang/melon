@@ -1,0 +1,6 @@
+func test(x, y)
+{
+	return x + y;
+}
+
+println(test(2, 5));

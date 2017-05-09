@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 typedef vector_t(node_t*) node_r;
 typedef vector_t(node_var_t*) node_var_r;
@@ -37,6 +38,54 @@ typedef struct
 static parse_rule rules[TOK_LAST];
 static bool rules_initialized = false;
 
+static bool whitespace_char(char c)
+{
+    return c == '\n' || c == '\t' || c == '\r';
+}
+
+static void print_error_line(const char *buffer, token_t token)
+{
+    const uint32_t max_length = 40;
+    uint32_t start = token.offset;
+    uint32_t end = token.offset;
+    while (start >= 0 && token.offset - start < max_length
+        && !whitespace_char(buffer[start]))
+    {
+        if (start == 0) break;
+        start--;
+    }
+    if (whitespace_char(buffer[start])) start++;
+    while (end < strlen(buffer) && end - token.offset < max_length
+        && !whitespace_char(buffer[end]))
+    {
+        end++;
+    }
+
+    char linestr[128];
+    sprintf(linestr, "line %d: ", token.line);
+    printf(linestr);
+    while (start < end)
+    {
+        putchar(buffer[start++]);
+    }
+    printf("\n");
+    for (uint32_t i = 0; i < strlen(linestr) + token.col - 1; i++)
+    {
+        putchar(' ');
+    }
+    printf("^\n");
+}
+
+static void report_error(const char *msg, ...)
+{
+    printf("[Error] ");
+    va_list args;
+
+    va_start(args, msg);
+    vprintf(msg, args);
+    va_end(args);
+}
+
 static char *substr(const char *s, int offset, int length)
 {
     char *sub = (const char*)calloc(length + 1, sizeof(char));
@@ -48,6 +97,21 @@ static char *substr(const char *s, int offset, int length)
     }
 
     return sub;
+}
+
+static bool parse_required(lexer_t *lexer, token_type type)
+{
+    token_t token = lexer_consume(lexer, type);
+    if (token.type == TOK_ERROR)
+    {
+        token_t next = lexer_advance(lexer);
+        const char *value = substr(lexer->source.buffer, next.offset, next.length);
+        print_error_line(lexer->source.buffer, next);
+        report_error("Expected token %s but got value %s\n\n", token_type_string(type), value);
+        free(value);
+        return false;
+    }
+    return true;
 }
 
 node_t *parse_expression(lexer_t *lexer);
@@ -67,7 +131,7 @@ static node_t *parse_num(lexer_t *lexer, token_t token)
         return node_literal_float_new(val);
     }
     
-    printf("Error: expected number\n");
+    report_error("Expected number\n");
     return NULL;
 }
 
@@ -91,7 +155,7 @@ static node_t *parse_identifier(lexer_t *lexer, token_t token)
 static node_t *parse_nested_expr(lexer_t *lexer, token_t token)
 {
     node_t *expr = parse_expression(lexer);
-    lexer_consume(lexer, TOK_CLOSED_PAREN, ")");
+    parse_required(lexer, TOK_CLOSED_PAREN);
     return expr;
 }
 
@@ -109,7 +173,7 @@ static node_t *parse_postfix(lexer_t *lexer, node_t *node, token_t token)
         vector_push(node_t*, *args, parse_expression(lexer));
     } while (lexer_match(lexer, TOK_COMMA));
     
-    lexer_consume(lexer, TOK_CLOSED_PAREN, ")");
+    parse_required(lexer, TOK_CLOSED_PAREN);
     return node_postfix_new(node, args);
 }
 
@@ -132,9 +196,9 @@ static node_var_r *parse_func_params(lexer_t *lexer)
 
 static node_t *parse_func_expr(lexer_t *lexer, token_t token)
 {
-    lexer_consume(lexer, TOK_OPEN_PAREN, "Function must have parameter list");
+    parse_required(lexer, TOK_OPEN_PAREN);
     vector_t(node_var_t*) *params = parse_func_params(lexer);
-    lexer_consume(lexer, TOK_CLOSED_PAREN, ")");
+    parse_required(lexer, TOK_CLOSED_PAREN);
 
     node_t *body = parse_block(lexer);
     return node_func_decl_new(strdup("{anonymous func}"), params, (node_block_t*)body);
@@ -177,8 +241,8 @@ static node_t *parse_precedence(lexer_t *lexer, precedence_t prec)
 
     if (!prefix)
     {
-        printf("Error: expected expression\n");
-        return;
+        report_error("Prefix parse function does not exist for token %s\n", token_type_string(token.type));
+        return NULL;
     }
 
     node_t *left = prefix(lexer, token);
@@ -248,9 +312,9 @@ static node_t *parse_if(lexer_t *lexer)
     node_t *then = NULL;
     node_t *els = NULL;
 
-    lexer_consume(lexer, TOK_OPEN_PAREN, "(");
+    parse_required(lexer, TOK_OPEN_PAREN);
     cond = parse_expression(lexer);
-    lexer_consume(lexer, TOK_CLOSED_PAREN, ")");
+    parse_required(lexer, TOK_CLOSED_PAREN);
 
     then = parse_block(lexer);
 
@@ -271,9 +335,9 @@ static node_t *parse_while(lexer_t *lexer)
     node_t *cond = NULL;
     node_t *body = NULL;
 
-    lexer_consume(lexer, TOK_OPEN_PAREN, "(");
+    parse_required(lexer, TOK_OPEN_PAREN);
     cond = parse_expression(lexer);
-    lexer_consume(lexer, TOK_CLOSED_PAREN, ")");
+    parse_required(lexer, TOK_CLOSED_PAREN);
 
     body = parse_block(lexer);
     return node_loop_new(cond, body);
@@ -305,7 +369,13 @@ static node_t *parse_stmt(lexer_t *lexer)
 
 static node_t *parse_var_decl(lexer_t *lexer)
 {
-    token_t token = lexer_consume(lexer, TOK_IDENTIFIER, "variable name");
+    if (!parse_required(lexer, TOK_IDENTIFIER))
+    {
+        print_error_line(lexer->source.buffer, lexer_peek(lexer));
+        report_error("Missing identifier for variable\n");
+        return NULL;
+    }
+    token_t token = lexer_previous(lexer);
     char *ident = substr(lexer->source.buffer, token.offset, token.length);
 
     node_t *init = NULL;
@@ -321,12 +391,18 @@ static node_t *parse_var_decl(lexer_t *lexer)
 
 static node_t *parse_func_decl(lexer_t *lexer)
 {
-    token_t token = lexer_consume(lexer, TOK_IDENTIFIER, "identifier");
+    if (!parse_required(lexer, TOK_IDENTIFIER))
+    {
+        print_error_line(lexer->source.buffer, lexer_peek(lexer));
+        report_error("Missing identifier for function\n");
+        return NULL;
+    }
+    token_t token = lexer_previous(lexer);
     char *ident = substr(lexer->source.buffer, token.offset, token.length);
 
-    lexer_consume(lexer, TOK_OPEN_PAREN, "(");
+    parse_required(lexer, TOK_OPEN_PAREN);
     vector_t(node_var_t*) *params = parse_func_params(lexer);
-    lexer_consume(lexer, TOK_CLOSED_PAREN, ")");
+    parse_required(lexer, TOK_CLOSED_PAREN);
 
     node_t *body = parse_block(lexer);
 
@@ -348,15 +424,29 @@ static node_t *parse_block(lexer_t *lexer)
     node_r *stmts = (node_r*)calloc(1, sizeof(node_r));
     vector_init(*stmts);
 
-    lexer_consume(lexer, TOK_OPEN_BRACE, "{");
+    parse_required(lexer, TOK_OPEN_BRACE);
 
     while (!lexer_check(lexer, TOK_CLOSED_BRACE))
     {
-        vector_push(node_t*, *stmts, parse_decl(lexer));
+        node_t *node = parse_decl(lexer);
+        if (!node)
+        {
+            report_error("Parsed node was null\n");
+            lexer->nerrors++;
+            goto error;
+        }
+        vector_push(node_t*, *stmts, node);
+        if (lexer_end(lexer))
+        {
+            report_error("Unexpected end of file while parsing\n");
+            lexer->nerrors++;
+            goto error;
+        }
     }
 
-    lexer_consume(lexer, TOK_CLOSED_BRACE, "}");
+    parse_required(lexer, TOK_CLOSED_BRACE);
 
+error:
     return node_block_new(stmts);
 }
 
@@ -369,7 +459,14 @@ node_t *parse(lexer_t *lexer)
 
     while (!lexer_end(lexer))
     {
-        vector_push(node_t*, *stmts, parse_decl(lexer));
+        node_t *node = parse_decl(lexer);
+        if (!node)
+        {
+            report_error("Parsed node was null\n");
+            lexer->nerrors++;
+            break;
+        }
+        vector_push(node_t*, *stmts, node);
     }
 
     return node_block_new(stmts);
