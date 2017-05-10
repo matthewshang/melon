@@ -1,6 +1,15 @@
-func test(x, y)
+var f1 = func()
 {
-	return x + y;
+	return 1;
 }
 
-println(test(2, 5));
+var f1 = func(x)
+{
+	return x;
+}
+
+var hello = "Hello, World!";
+
+var test = 3.1415;
+
+println(f2(f1()));

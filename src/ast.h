@@ -32,7 +32,8 @@ typedef struct
 {
     node_t base;
     vector_t(node_t*) *stmts;
-    symtable_t *table;
+
+    symtable_t *symtable;
 } node_block_t;
 
 typedef struct

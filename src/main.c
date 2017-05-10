@@ -9,6 +9,7 @@
 #include "debug.h"
 #include "utils.h"
 #include "lexer.h"
+#include "semantic.h"
 #include "vector.h"
 #include "vm.h"
 #include "parser.h"
@@ -21,13 +22,9 @@ int melon_compile(const char *file, function_t *func, cli_options_t *options)
 
     if (options->c_print_ast) ast_print(ast);
 
-    if (lexer.nerrors > 0)
-    {
-        printf("melon fatal  : Errors in compilation\n");
-        ast_free(ast);
-        lexer_destroy(&lexer);
-        return 1;
-    }
+    if (lexer.nerrors > 0) goto compile_abort;
+
+    if (!semantic_process(ast)) goto compile_abort;
 
     codegen_t gen = codegen_create(func);
     codegen_run(&gen, ast);
@@ -39,6 +36,12 @@ int melon_compile(const char *file, function_t *func, cli_options_t *options)
     lexer_destroy(&lexer);
     codegen_destroy(&gen);
     return 0;
+
+compile_abort:
+    printf("\nmelon fatal  : Errors in compilation\n");
+    ast_free(ast);
+    lexer_destroy(&lexer);
+    return 1;
 }
 
 int main(int argc, char **argv)

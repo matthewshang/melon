@@ -1,10 +1,13 @@
 #ifndef __ASTWALKER__
 #define __ASTWALKER__
 
+#include <stdint.h>
+
 #include "ast.h"
 
 typedef struct astwalker
 {
+    uint16_t nerrors;
     int depth;
     void *data;
 
