@@ -246,6 +246,7 @@ static node_t *parse_precedence(lexer_t *lexer, precedence_t prec)
     }
 
     node_t *left = prefix(lexer, token);
+    if (lexer_end(lexer)) goto token_end;
 
     while (prec < get_precedence(lexer))
     {
@@ -253,8 +254,10 @@ static node_t *parse_precedence(lexer_t *lexer, precedence_t prec)
 
         infix_func infix = rules[token.type].infix;
         left = infix(lexer, left, token);
+        if (lexer_end(lexer)) goto token_end;
     }
 
+token_end:
     return left;
 }
 
