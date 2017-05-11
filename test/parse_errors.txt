@@ -3,13 +3,18 @@ var f1 = func()
 	return 1;
 }
 
-var f1 = func(x)
+var f2 = func(x)
 {
 	return x;
 }
 
 var hello = "Hello, World!";
 
-var test = 3.1415;
+var hello2 = 3.1415;
+
+func hello3(x)
+{
+	return x;
+}
 
 println(f2(f1()));

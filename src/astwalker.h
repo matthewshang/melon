@@ -10,6 +10,7 @@ typedef struct astwalker
     uint16_t nerrors;
     int depth;
     void *data;
+    void *data2;
 
     void(* visit_block)(struct astwalker *self, node_block_t *node);
     void(* visit_if)(struct astwalker *self, node_if_t *node);

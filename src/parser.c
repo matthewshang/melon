@@ -201,7 +201,7 @@ static node_t *parse_func_expr(lexer_t *lexer, token_t token)
     parse_required(lexer, TOK_CLOSED_PAREN);
 
     node_t *body = parse_block(lexer);
-    return node_func_decl_new(strdup("{anonymous func}"), params, (node_block_t*)body);
+    return node_func_decl_new((token_t){.type = TOK_FUNC}, strdup("{anonymous func}"), params, (node_block_t*)body);
 }
 
 static node_t *parse_unary(lexer_t *lexer, token_t token)
@@ -389,7 +389,7 @@ static node_t *parse_var_decl(lexer_t *lexer)
 
     lexer_match(lexer, TOK_SEMICOLON);
 
-    return node_var_decl_new((const char*)ident, init);
+    return node_var_decl_new(token, (const char*)ident, init);
 }
 
 static node_t *parse_func_decl(lexer_t *lexer)
@@ -409,7 +409,7 @@ static node_t *parse_func_decl(lexer_t *lexer)
 
     node_t *body = parse_block(lexer);
 
-    return node_func_decl_new((const char*)ident, params, (node_block_t*)body);
+    return node_func_decl_new(token, (const char*)ident, params, (node_block_t*)body);
 }
 
 static node_t *parse_decl(lexer_t *lexer)

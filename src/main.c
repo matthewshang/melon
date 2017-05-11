@@ -18,13 +18,14 @@ int melon_compile(const char *file, function_t *func, cli_options_t *options)
 {
     if (!file) return 1;
     lexer_t lexer = lexer_create(file);
+    if (lexer.nerrors > 0) goto lexer_abort;
+
     node_t *ast = parse(&lexer);
+    if (lexer.nerrors > 0) goto compile_abort;
 
     if (options->c_print_ast) ast_print(ast);
 
-    if (lexer.nerrors > 0) goto compile_abort;
-
-    if (!semantic_process(ast)) goto compile_abort;
+    if (!semantic_process(ast, &lexer)) goto compile_abort;
 
     codegen_t gen = codegen_create(func);
     codegen_run(&gen, ast);
@@ -38,9 +39,10 @@ int melon_compile(const char *file, function_t *func, cli_options_t *options)
     return 0;
 
 compile_abort:
-    printf("\nmelon fatal  : Errors in compilation\n");
     ast_free(ast);
+lexer_abort:
     lexer_destroy(&lexer);
+    printf("\nmelon fatal  : Errors in compilation\n");
     return 1;
 }
 
