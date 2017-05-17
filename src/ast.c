@@ -13,6 +13,9 @@ node_t* node_block_new(vector_t(node_t *) *stmts)
     node_block_t *node = (node_block_t*)calloc(1, sizeof(node_block_t));
     NODE_SETBASE(node, NODE_BLOCK);
     node->stmts = stmts;
+
+    node->symtable = NULL;
+    node->is_root = false;
     return (node_t*)node;
 }
 
@@ -153,7 +156,7 @@ static void free_node_block(astwalker_t *self, node_block_t *node)
         vector_destroy(*node->stmts);
         free(node->stmts);
     }
-    if (node->symtable) symtable_free(node->symtable);
+    if (node->is_root && node->symtable) symtable_free(node->symtable);
     free(node);
 }
 
@@ -203,6 +206,8 @@ static void free_node_func_decl(astwalker_t *self, node_func_decl_t *node)
         vector_destroy(*node->upvalues);
         free(node->upvalues);
     }
+    if (node->symtable) symtable_free(node->symtable);
+
     free(node);
 }
 

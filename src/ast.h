@@ -36,6 +36,7 @@ typedef struct
     vector_t(node_t*) *stmts;
 
     symtable_t *symtable;
+    bool is_root;
 } node_block_t;
 
 typedef struct
@@ -66,7 +67,7 @@ typedef struct
     node_t *init;
 
     bool is_global;
-    int idx;
+    uint8_t idx;
 } node_var_decl_t;
 
 typedef struct
@@ -85,7 +86,10 @@ typedef struct
     vector_t(node_var_t*) *params;
     node_block_t *body;
 
+    symtable_t *symtable;
     vector_t(ast_upvalue_t) *upvalues;
+    bool is_global;
+    uint32_t idx;
 } node_func_decl_t;
 
 typedef struct
@@ -110,11 +114,20 @@ typedef struct
     vector_t(node_t*) *args;
 } node_postfix_t;
 
+typedef enum
+{
+    LOC_LOCAL,
+    LOC_GLOBAL,
+    LOC_UPVALUE
+} location_e;
+
 typedef struct node_var_s
 {
     node_t base;
     const char *identifier;
-    uint16_t local_idx;
+
+    uint8_t idx;
+    location_e location;
 } node_var_t;
 
 typedef struct

@@ -1,0 +1,16 @@
+var foo = "This is foo.";
+
+func bar(x, y)
+{
+	return x + y;
+}
+
+func bar2(x)
+{
+	var x = 6;
+	return x * a;
+}
+
+println(foo);
+println(bar(1, 2));
+println(bar2(7));

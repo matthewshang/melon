@@ -33,8 +33,9 @@ void symtable_free(symtable_t *table);
 
 bool symtable_lookup(symtable_t *table, const char *symbol, decl_info_t *ret);
 uint8_t symtable_add_local(symtable_t *table, const char *symbol);
+uint8_t symtable_nvars(symtable_t *table);
 void symtable_enter_scope(symtable_t *table);
-void symtable_exit_scope(symtable_t *table);
+uint32_t symtable_exit_scope(symtable_t *table);
 
 bool symtable_is_global(symtable_t *table);
 

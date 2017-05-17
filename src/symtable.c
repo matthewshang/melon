@@ -51,10 +51,21 @@ uint8_t symtable_add_local(symtable_t *table, const char *symbol)
 
     symtable_entry_r *scope = vector_get(table->stack, table->top);
     decl.is_global = symtable_is_global(table);
-    decl.idx = vector_size(*scope);
+    decl.idx = vector_size(*scope) + symtable_nvars(table);
     decl.level = table->top;
     vector_push(symtable_entry_t, *scope, ((symtable_entry_t){ .identifier = symbol, .decl = decl}));
     return decl.idx;
+}
+
+uint8_t symtable_nvars(symtable_t *table)
+{
+    uint8_t nvars = 0;
+    for (size_t i = 0; i < table->top; i++)
+    {
+        symtable_entry_r *scope = vector_get(table->stack, i);
+        nvars += vector_size(*scope);
+    }
+    return nvars;
 }
 
 void symtable_enter_scope(symtable_t *table)
@@ -65,13 +76,15 @@ void symtable_enter_scope(symtable_t *table)
     vector_push(symtable_entry_r*, table->stack, new_scope);
 }
 
-void symtable_exit_scope(symtable_t *table)
+uint32_t symtable_exit_scope(symtable_t *table)
 {
     symtable_entry_r *scope = vector_get(table->stack, table->top);
+    uint32_t nlocals = vector_size(*scope);
     vector_destroy(*scope);
     free(scope);
     vector_pop(table->stack);
     table->top--;
+    return nlocals;
 }
 
 bool symtable_is_global(symtable_t *table)

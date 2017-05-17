@@ -78,7 +78,7 @@ static void print_error_line(const char *buffer, token_t token)
 
 static void report_error(const char *msg, ...)
 {
-    printf("[Error] ");
+    printf("[Error::Parse] ");
     va_list args;
 
     va_start(args, msg);

@@ -85,42 +85,15 @@ static void gen_node_return(astwalker_t *self, node_return_t *node)
 
 static void gen_node_var_decl(astwalker_t *self, node_var_decl_t *node)
 {
-    if (symtable_lookup(SYMTABLE, node->ident, NULL))
-    {
-        printf("Variable %s already defined\n", node->ident);
-        return;
-    }
-    uint8_t idx = symtable_add_local(SYMTABLE, node->ident);
-    bool is_global = symtable_is_global(SYMTABLE);
-
-    if (node->init) 
+    if (node->init)
     {
         walk_ast(self, node->init);
-        emit_bytes(CODE, is_global? OP_STOREG : OP_STORE, idx);
+        emit_bytes(CODE, node->is_global ? OP_STOREG : OP_STORE, node->idx);
     }
 }
 
 static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
 {
-    if (strcmp("{anonymous func}", node->identifier) != 0 &&
-        symtable_lookup(SYMTABLE, node->identifier, NULL))
-    {
-        printf("Function %s already defined\n", node->identifier);
-        return;
-    }
-    uint8_t idx = symtable_add_local(SYMTABLE, node->identifier);
-
-    symtable_enter_scope(SYMTABLE);
-
-    if (node->params)
-    {
-        for (size_t i = 0; i < vector_size(*node->params); i++)
-        {
-            node_var_t *param = vector_get(*node->params, i);
-            symtable_add_local(SYMTABLE, param->identifier);
-        }
-    }
-
     function_t *f = function_new(strdup(node->identifier));
     codegen_t *gen = (codegen_t*)self->data;
     function_t *parent = gen->func;
@@ -137,8 +110,6 @@ static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
     gen->func = parent;
     gen->code = &parent->bytecode;
     gen->constants = &parent->constpool;
-
-    symtable_exit_scope(SYMTABLE);
 
     vector_push(value_t, parent->constpool, FROM_CLOSURE(closure_new(f)));
 
@@ -159,7 +130,7 @@ static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
     vector_pop(gen->functions);
 
     if (!node->base.is_assign)
-        emit_bytes(CODE, symtable_is_global(SYMTABLE) ? OP_STOREG : OP_STORE, idx);
+        emit_bytes(CODE, node->is_global ? OP_STOREG : OP_STORE, node->idx);
 }
 
 static void gen_node_binary(astwalker_t *self, node_binary_t *node)
@@ -202,54 +173,20 @@ static void gen_node_postfix(astwalker_t *self, node_postfix_t *node)
     }
 }
 
-static uint8_t add_upvalue(node_func_decl_t *f, uint8_t level, decl_info_t decl, const char *symbol)
-{
-    vector_t(ast_upvalue_t) *upvalues = f->upvalues;
-    for (uint8_t i = 0; i < vector_size(*upvalues); i++)
-    {
-        ast_upvalue_t upvalue = vector_get(*upvalues, i);
-        if (strcmp(symbol, upvalue.symbol) == 0) return i;
-    }
-
-    bool is_direct = level - decl.level == 1;
-
-    vector_push(ast_upvalue_t, *upvalues,
-        ((ast_upvalue_t){.is_direct = is_direct, .idx = decl.idx, .symbol = symbol }));
-    return vector_size(*upvalues) - 1;
-}
-
 static void gen_node_var(astwalker_t *self, node_var_t *node)
 {
-    decl_info_t decl;
-    if (!symtable_lookup(SYMTABLE, node->identifier, &decl))
+    if (node->location == LOC_GLOBAL)
     {
-        printf("Unknown identifier %s\n", node->identifier);
-        return;
+        emit_bytes(CODE, node->base.is_assign ? OP_STOREG : OP_LOADG, node->idx);
     }
-    
-    uint8_t idx = decl.idx;
-    bool is_upvalue = SYMTABLE->top != decl.level && decl.level != 0;
-    //printf("upvalues: %s %d %d %d %d\n", node->identifier, SYMTABLE->top, vector_size(AS_GEN(self)->functions), decl.level, is_upvalue);
-    if (is_upvalue)
+    else if (node->location == LOC_LOCAL)
     {
-        codegen_t *gen = AS_GEN(self);
-        uint8_t i = vector_size(gen->functions);
-        idx = add_upvalue(gen->parent_func, i--, decl, node->identifier);
-
-        while (i > decl.level)
-        {
-            node_func_decl_t *f = vector_get(gen->functions, i - 1);
-            add_upvalue(f, i, decl, node->identifier);
-            i--;
-        }
+        emit_bytes(CODE, node->base.is_assign ? OP_STORE : OP_LOAD, node->idx);
     }
-
-    if (node->base.is_assign)
-        emit_bytes(CODE, 
-            is_upvalue ? OP_STOREU : decl.is_global ? OP_STOREG : OP_STORE, idx);
-    else
-        emit_bytes(CODE, 
-            is_upvalue ? OP_LOADU : decl.is_global ? OP_LOADG : OP_LOAD, idx);
+    else if (node->location == LOC_UPVALUE)
+    {
+        emit_bytes(CODE, node->base.is_assign ? OP_STOREU : OP_LOADU, node->idx);
+    }
 }
 
 static int constant_exists(value_r *constants, node_literal_t *node)

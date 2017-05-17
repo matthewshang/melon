@@ -10,9 +10,9 @@ var f2 = func(x)
 
 var hello = "Hello, World!";
 
-var hello2 = 3.1415;
+var hello = 3.1415;
 
-func hello3(x)
+func hello(x)
 {
 	return x;
 }
