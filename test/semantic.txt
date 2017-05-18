@@ -9,7 +9,7 @@ func bar2(x)
 {
 	var x = 6;
 	if (y < 5)
-	{
+	{	
 		println("test");
 	}
 	return x * a;

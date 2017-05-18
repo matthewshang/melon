@@ -44,7 +44,7 @@ static void print_error_line(const char *buffer, token_t token)
     }
 
     char linestr[128];
-    sprintf(linestr, "line %d: ", token.line);
+    sprintf(linestr, "        ");
     printf(linestr);
     while (start < end)
     {
@@ -81,14 +81,14 @@ static void report_error(const char *msg, ...)
 
 static void semantic_error(astwalker_t *self, token_t token, const char *msg, ...)
 {
-    print_error_line(((lexer_t*)self->data2)->source.buffer, token);
-    printf("[Error::Semantic] ");
+    printf("line %d: error: ", token.line);
     va_list args;
 
     va_start(args, msg);
     vprintf(msg, args);
     va_end(args);
-    printf("\n");
+
+    print_error_line(((lexer_t*)self->data2)->source.buffer, token);
 
     self->nerrors++;
 }

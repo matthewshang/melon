@@ -62,14 +62,24 @@ static void print_error_line(const char *buffer, token_t token)
     }
 
     char linestr[128];
-    sprintf(linestr, "line %d: ", token.line);
+    sprintf(linestr, "        ");
     printf(linestr);
     while (start < end)
     {
         putchar(buffer[start++]);
     }
     printf("\n");
-    for (uint32_t i = 0; i < strlen(linestr) + token.col - 1; i++)
+
+    uint8_t ntabs = 0;
+    int i = token.offset;
+    while (i >= 0 && (int)token.offset - i <= token.col)
+    {
+        if (buffer[i] == '\t') ntabs++;
+        if (buffer[i] == '\n') break;
+        i--;
+    }
+
+    for (uint32_t i = 0; i < strlen(linestr) + token.col - ntabs; i++)
     {
         putchar(' ');
     }
@@ -78,12 +88,26 @@ static void print_error_line(const char *buffer, token_t token)
 
 static void report_error(const char *msg, ...)
 {
-    printf("[Error::Parse] ");
+    printf("error: ");
     va_list args;
 
     va_start(args, msg);
     vprintf(msg, args);
     va_end(args);
+}
+
+static void parser_error(lexer_t *lexer, token_t token, const char *msg, ...)
+{
+    printf("line %d: error: ", token.line);
+    va_list args;
+
+    va_start(args, msg);
+    vprintf(msg, args);
+    va_end(args);
+
+    print_error_line(lexer->source.buffer, token);
+
+    lexer->nerrors++;
 }
 
 static char *substr(const char *s, int offset, int length)
@@ -99,16 +123,18 @@ static char *substr(const char *s, int offset, int length)
     return sub;
 }
 
-static bool parse_required(lexer_t *lexer, token_type type)
+static bool parse_required(lexer_t *lexer, token_type type, bool report)
 {
     token_t token = lexer_consume(lexer, type);
     if (token.type == TOK_ERROR)
     {
-        token_t next = lexer_advance(lexer);
-        const char *value = substr(lexer->source.buffer, next.offset, next.length);
-        print_error_line(lexer->source.buffer, next);
-        report_error("Expected token %s but got value %s\n\n", token_type_string(type), value);
-        free(value);
+        if (report)
+        {
+            token_t next = lexer_advance(lexer);
+            const char *value = substr(lexer->source.buffer, next.offset, next.length);
+            parser_error(lexer, next, "Expected token %s but got value %s\n", token_type_string(type), value);
+            free(value);
+        }
         return false;
     }
     return true;
@@ -155,7 +181,7 @@ static node_t *parse_identifier(lexer_t *lexer, token_t token)
 static node_t *parse_nested_expr(lexer_t *lexer, token_t token)
 {
     node_t *expr = parse_expression(lexer);
-    parse_required(lexer, TOK_CLOSED_PAREN);
+    parse_required(lexer, TOK_CLOSED_PAREN, true);
     return expr;
 }
 
@@ -173,7 +199,7 @@ static node_t *parse_postfix(lexer_t *lexer, node_t *node, token_t token)
         vector_push(node_t*, *args, parse_expression(lexer));
     } while (lexer_match(lexer, TOK_COMMA));
     
-    parse_required(lexer, TOK_CLOSED_PAREN);
+    parse_required(lexer, TOK_CLOSED_PAREN, true);
     return node_postfix_new(node, args);
 }
 
@@ -196,9 +222,9 @@ static node_var_r *parse_func_params(lexer_t *lexer)
 
 static node_t *parse_func_expr(lexer_t *lexer, token_t token)
 {
-    parse_required(lexer, TOK_OPEN_PAREN);
+    parse_required(lexer, TOK_OPEN_PAREN, true);
     vector_t(node_var_t*) *params = parse_func_params(lexer);
-    parse_required(lexer, TOK_CLOSED_PAREN);
+    parse_required(lexer, TOK_CLOSED_PAREN, true);
 
     node_t *body = parse_block(lexer);
     return node_func_decl_new((token_t){.type = TOK_FUNC}, strdup("{anonymous func}"), params, (node_block_t*)body);
@@ -315,9 +341,9 @@ static node_t *parse_if(lexer_t *lexer)
     node_t *then = NULL;
     node_t *els = NULL;
 
-    parse_required(lexer, TOK_OPEN_PAREN);
+    parse_required(lexer, TOK_OPEN_PAREN, true);
     cond = parse_expression(lexer);
-    parse_required(lexer, TOK_CLOSED_PAREN);
+    parse_required(lexer, TOK_CLOSED_PAREN, true);
 
     then = parse_block(lexer);
 
@@ -338,9 +364,9 @@ static node_t *parse_while(lexer_t *lexer)
     node_t *cond = NULL;
     node_t *body = NULL;
 
-    parse_required(lexer, TOK_OPEN_PAREN);
+    parse_required(lexer, TOK_OPEN_PAREN, true);
     cond = parse_expression(lexer);
-    parse_required(lexer, TOK_CLOSED_PAREN);
+    parse_required(lexer, TOK_CLOSED_PAREN, true);
 
     body = parse_block(lexer);
     return node_loop_new(cond, body);
@@ -372,10 +398,9 @@ static node_t *parse_stmt(lexer_t *lexer)
 
 static node_t *parse_var_decl(lexer_t *lexer)
 {
-    if (!parse_required(lexer, TOK_IDENTIFIER))
+    if (!parse_required(lexer, TOK_IDENTIFIER, false))
     {
-        print_error_line(lexer->source.buffer, lexer_peek(lexer));
-        report_error("Missing identifier for variable\n");
+        parser_error(lexer, lexer_peek(lexer), "Missing identifier for variable\n");
         return NULL;
     }
     token_t token = lexer_previous(lexer);
@@ -394,18 +419,17 @@ static node_t *parse_var_decl(lexer_t *lexer)
 
 static node_t *parse_func_decl(lexer_t *lexer)
 {
-    if (!parse_required(lexer, TOK_IDENTIFIER))
+    if (!parse_required(lexer, TOK_IDENTIFIER, false))
     {
-        print_error_line(lexer->source.buffer, lexer_peek(lexer));
-        report_error("Missing identifier for function\n");
+        parser_error(lexer, lexer_peek(lexer), "Missing identifier for function\n");
         return NULL;
     }
     token_t token = lexer_previous(lexer);
     char *ident = substr(lexer->source.buffer, token.offset, token.length);
 
-    parse_required(lexer, TOK_OPEN_PAREN);
+    parse_required(lexer, TOK_OPEN_PAREN, true);
     vector_t(node_var_t*) *params = parse_func_params(lexer);
-    parse_required(lexer, TOK_CLOSED_PAREN);
+    parse_required(lexer, TOK_CLOSED_PAREN, true);
 
     node_t *body = parse_block(lexer);
 
@@ -427,7 +451,7 @@ static node_t *parse_block(lexer_t *lexer)
     node_r *stmts = (node_r*)calloc(1, sizeof(node_r));
     vector_init(*stmts);
 
-    parse_required(lexer, TOK_OPEN_BRACE);
+    parse_required(lexer, TOK_OPEN_BRACE, true);
 
     while (!lexer_check(lexer, TOK_CLOSED_BRACE))
     {
@@ -447,7 +471,7 @@ static node_t *parse_block(lexer_t *lexer)
         }
     }
 
-    parse_required(lexer, TOK_CLOSED_BRACE);
+    parse_required(lexer, TOK_CLOSED_BRACE, true);
 
 error:
     return node_block_new(stmts);
