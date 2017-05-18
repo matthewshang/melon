@@ -135,6 +135,7 @@ static token_type get_keyword(charstream_t *source, int start, int bytes)
     {
         if (strequals(iden, bytes, "while")) return TOK_WHILE;
         if (strequals(iden, bytes, "false")) return TOK_FALSE;
+        if (strequals(iden, bytes, "class")) return TOK_CLASS;
     }
     if (bytes == 6)
     {

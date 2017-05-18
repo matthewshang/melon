@@ -104,6 +104,7 @@ const char *token_type_string(token_type type)
 
     case TOK_IDENTIFIER: return "identifier";
     case TOK_VAR: return "var";
+    case TOK_CLASS: return "class";
     case TOK_IF: return "if";
     case TOK_ELSE: return "else";
     case TOK_WHILE: return "while";

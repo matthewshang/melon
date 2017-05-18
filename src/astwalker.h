@@ -19,6 +19,7 @@ typedef struct astwalker
 
     void(* visit_var_decl)(struct astwalker *self, node_var_decl_t *node);
     void(* visit_func_decl)(struct astwalker *self, node_func_decl_t *node);
+    void(* visit_class_decl)(struct astwalker *self, node_class_decl_t *node);
 
     void(* visit_binary)(struct astwalker *self, node_binary_t *node);
     void(* visit_unary)(struct astwalker *self, node_unary_t *node);

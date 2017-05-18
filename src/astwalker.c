@@ -15,6 +15,7 @@ void walk_ast(astwalker_t *self, node_t *node)
 
     case NODE_VAR_DECL: VISIT(var_decl);
     case NODE_FUNC_DECL: VISIT(func_decl);
+    case NODE_CLASS_DECL: VISIT(class_decl);
 
     case NODE_BINARY: VISIT(binary);
     case NODE_UNARY: VISIT(unary);

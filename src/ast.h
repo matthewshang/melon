@@ -12,7 +12,7 @@ typedef enum
 {
     NODE_BLOCK, NODE_IF, NODE_LOOP, NODE_RETURN,
 
-    NODE_VAR_DECL, NODE_FUNC_DECL,
+    NODE_VAR_DECL, NODE_FUNC_DECL, NODE_CLASS_DECL,
 
     NODE_UNARY, NODE_BINARY, NODE_POSTFIX, NODE_VAR, NODE_LITERAL
 
@@ -95,6 +95,15 @@ typedef struct
 typedef struct
 {
     node_t base;
+    const char *identifier;
+    vector_t(node_t*) *decls;
+
+    symtable_t *symtable;
+} node_class_decl_t;
+
+typedef struct
+{
+    node_t base;
     token_t op;
     node_t *left;
     node_t *right;
@@ -149,8 +158,9 @@ node_t *node_if_new(node_t *cond, node_t *then, node_t *els);
 node_t *node_loop_new(node_t *cond, node_t *body);
 node_t *node_return_new(node_t *expr);
 
-node_t *node_func_decl_new(token_t token, const char *identifier, vector_t(node_var_t*) *params, node_block_t *body);
 node_t *node_var_decl_new(token_t token, const char *ident, node_t *init);
+node_t *node_func_decl_new(token_t token, const char *identifier, vector_t(node_var_t*) *params, node_block_t *body);
+node_t *node_class_decl_new(token_t token, const char *identifier, vector_t(node_t*) *decls);
 
 node_t *node_binary_new(token_t op, node_t *left, node_t *right);
 node_t *node_unary_new(token_t op, node_t *right);

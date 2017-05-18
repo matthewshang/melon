@@ -72,6 +72,17 @@ node_t *node_func_decl_new(token_t token, const char *identifier, vector_t(node_
     return (node_t*)node;
 }
 
+node_t *node_class_decl_new(token_t token, const char *identifier, vector_t(node_t*) *decls)
+{
+    node_class_decl_t *node = (node_class_decl_t*)calloc(1, sizeof(node_class_decl_t));
+    NODE_SETBASE(node, NODE_CLASS_DECL);
+    node->base.token = token;
+
+    node->identifier = identifier;
+    node->decls = decls;
+    return (node_t*)node;
+}
+
 node_t *node_binary_new(token_t op, node_t *left, node_t *right)
 {
     node_binary_t *node = (node_binary_t*)calloc(1, sizeof(node_binary_t));
@@ -212,6 +223,23 @@ static void free_node_func_decl(astwalker_t *self, node_func_decl_t *node)
     free(node);
 }
 
+static void free_node_class_decl(astwalker_t *self, node_class_decl_t *node)
+{
+    if (node->identifier) free(node->identifier);
+    if (node->symtable) symtable_free(node->symtable);
+    if (node->decls)
+    {
+        for (size_t i = 0; i < vector_size(*node->decls); i++)
+        {
+            walk_ast(self, vector_get(*node->decls, i));
+        }
+        vector_destroy(*node->decls);
+        free(node->decls);
+    }
+
+    free(node);
+}
+
 static void free_node_binary(astwalker_t *self, node_binary_t *node)
 {
     if (node->left) walk_ast(self, node->left);
@@ -262,6 +290,7 @@ void ast_free(node_t *root)
 
         .visit_var_decl = free_node_var_decl,
         .visit_func_decl = free_node_func_decl,
+        .visit_class_decl = free_node_class_decl,
 
         .visit_binary = free_node_binary,
         .visit_unary = free_node_unary,
@@ -386,6 +415,25 @@ static void print_node_func_decl(astwalker_t *self, node_func_decl_t *node)
     self->depth = depth;
 }
 
+static void print_node_class_decl(astwalker_t *self, node_class_decl_t *node)
+{
+    printf("[class_decl] ident: %s\n", node->identifier);
+    int depth = self->depth;
+
+    if (node->decls)
+    {
+        print_tabs(depth); printf("func-decls: ");
+        for (int i = 0; i < vector_size(*node->decls); i++)
+        {
+            print_tabs(depth);
+            self->depth = depth + 1;
+            walk_ast(self, vector_get(*node->decls, i));
+        }
+    }
+
+    self->depth = depth;
+}
+
 static void print_node_binary(astwalker_t *self, node_binary_t *node)
 {
     printf("[binary] op: %d\n", node->op.type);
@@ -471,6 +519,7 @@ void ast_print(node_t *root)
 
         .visit_var_decl = print_node_var_decl,
         .visit_func_decl = print_node_func_decl,
+        .visit_class_decl = print_node_class_decl,
 
         .visit_binary = print_node_binary,
         .visit_unary = print_node_unary,
