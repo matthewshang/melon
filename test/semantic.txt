@@ -7,9 +7,16 @@ func bar(x, y)
 
 func bar2(x)
 {
-	var a = 6;
+	var x = 6;
+	if (y < 5)
+	{
+		println("test");
+	}
 	return x * a;
+
 }
+
+println(test);
 
 println(foo);
 println(bar(1, 2));

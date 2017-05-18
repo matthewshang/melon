@@ -155,7 +155,7 @@ node_t *node_var_decl_new(token_t token, const char *ident, node_t *init);
 node_t *node_binary_new(token_t op, node_t *left, node_t *right);
 node_t *node_unary_new(token_t op, node_t *right);
 node_t *node_postfix_new(node_t *target, vector_t(node_t*) *args);
-node_t *node_var_new(const char *identifier);
+node_t *node_var_new(token_t token, const char *identifier);
 node_t *node_literal_int_new(int value);
 node_t *node_literal_float_new(double value);
 node_t *node_literal_str_new(const char *value, int len);

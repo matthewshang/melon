@@ -149,7 +149,7 @@ static node_t *parse_bool(lexer_t *lexer, token_t token)
 static node_t *parse_identifier(lexer_t *lexer, token_t token)
 {
     char *name = substr(lexer->source.buffer, token.offset, token.length);
-    return node_var_new((const char*)name);
+    return node_var_new(token, (const char*)name);
 }
 
 static node_t *parse_nested_expr(lexer_t *lexer, token_t token)

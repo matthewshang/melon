@@ -51,7 +51,17 @@ static void print_error_line(const char *buffer, token_t token)
         putchar(buffer[start++]);
     }
     printf("\n");
-    for (uint32_t i = 0; i < strlen(linestr) + token.col; i++)
+
+    uint8_t ntabs = 0;
+    int i = token.offset;
+    while (i >= 0 && (int)token.offset - i <= token.col)
+    {
+        if (buffer[i] == '\t') ntabs++;
+        if (buffer[i] == '\n') break;
+        i--;
+    }
+
+    for (uint32_t i = 0; i < strlen(linestr) + token.col - ntabs; i++)
     {
         putchar(' ');
     }
@@ -66,6 +76,7 @@ static void report_error(const char *msg, ...)
     va_start(args, msg);
     vprintf(msg, args);
     va_end(args);
+    printf("\n");
 }
 
 static void semantic_error(astwalker_t *self, token_t token, const char *msg, ...)
@@ -77,6 +88,8 @@ static void semantic_error(astwalker_t *self, token_t token, const char *msg, ..
     va_start(args, msg);
     vprintf(msg, args);
     va_end(args);
+    printf("\n");
+
     self->nerrors++;
 }
 

@@ -100,10 +100,11 @@ node_t *node_postfix_new(node_t *target, vector_t(node_t *) *args)
     return (node_t*)node;
 }
 
-node_t *node_var_new(const char *identifier)
+node_t *node_var_new(token_t token, const char *identifier)
 {
     node_var_t *node = (node_var_t*)calloc(1, sizeof(node_var_t));
     NODE_SETBASE(node, NODE_VAR);
+    node->base.token = token;
     node->identifier = identifier;
     return (node_t*)node;
 }
