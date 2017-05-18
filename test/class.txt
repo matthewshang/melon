@@ -1,0 +1,10 @@
+class Foo 
+{
+	var x = 1;
+	var mystr = "I am foo";
+
+	func Foo()
+	{
+		x = 2;
+	}
+}

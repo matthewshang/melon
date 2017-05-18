@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-typedef vector_t(node_t*) node_r;
 typedef vector_t(node_var_t*) node_var_r;
 
 typedef enum {
@@ -339,24 +338,24 @@ static node_t *parse_if(lexer_t *lexer)
 {
     node_t *cond = NULL;
     node_t *then = NULL;
-    node_t *els = NULL;
+node_t *els = NULL;
 
-    parse_required(lexer, TOK_OPEN_PAREN, true);
-    cond = parse_expression(lexer);
-    parse_required(lexer, TOK_CLOSED_PAREN, true);
+parse_required(lexer, TOK_OPEN_PAREN, true);
+cond = parse_expression(lexer);
+parse_required(lexer, TOK_CLOSED_PAREN, true);
 
-    then = parse_block(lexer);
+then = parse_block(lexer);
 
-    if (lexer_match(lexer, TOK_ELSE))
-    {
-        // Handles else if {...
-        if (lexer_match(lexer, TOK_IF)) 
-            els = parse_if(lexer);
-        else
-            els = parse_block(lexer);
-    }
+if (lexer_match(lexer, TOK_ELSE))
+{
+    // Handles else if {...
+    if (lexer_match(lexer, TOK_IF))
+        els = parse_if(lexer);
+    else
+        els = parse_block(lexer);
+}
 
-    return node_if_new(cond, then, els);
+return node_if_new(cond, then, els);
 }
 
 static node_t *parse_while(lexer_t *lexer)
@@ -400,7 +399,7 @@ static node_t *parse_var_decl(lexer_t *lexer)
 {
     if (!parse_required(lexer, TOK_IDENTIFIER, false))
     {
-        parser_error(lexer, lexer_peek(lexer), "Missing identifier for variable\n");
+        parser_error(lexer, lexer_previous(lexer), "Missing identifier for variable\n");
         return NULL;
     }
     token_t token = lexer_previous(lexer);
@@ -421,7 +420,7 @@ static node_t *parse_func_decl(lexer_t *lexer)
 {
     if (!parse_required(lexer, TOK_IDENTIFIER, false))
     {
-        parser_error(lexer, lexer_peek(lexer), "Missing identifier for function\n");
+        parser_error(lexer, lexer_previous(lexer), "Missing identifier for function\n");
         return NULL;
     }
     token_t token = lexer_previous(lexer);
@@ -436,12 +435,31 @@ static node_t *parse_func_decl(lexer_t *lexer)
     return node_func_decl_new(token, (const char*)ident, params, (node_block_t*)body);
 }
 
+static node_t *parse_class_decl(lexer_t *lexer)
+{
+    if (!parse_required(lexer, TOK_IDENTIFIER, false))
+    {
+        parser_error(lexer, lexer_previous(lexer), "Missing identifier for class\n");
+        return NULL;
+    }
+    token_t token = lexer_previous(lexer);
+    char *ident = substr(lexer->source.buffer, token.offset, token.length);
+
+    node_block_t *body = (node_block_t*)parse_block(lexer);
+    node_r *decls = body->stmts;
+    free(body);
+
+    return node_class_decl_new(token, ident, decls);
+}
+
 static node_t *parse_decl(lexer_t *lexer)
 {
     if (lexer_match(lexer, TOK_VAR)) 
         return parse_var_decl(lexer);
     if (lexer_match(lexer, TOK_FUNC))
         return parse_func_decl(lexer);
+    if (lexer_match(lexer, TOK_CLASS))
+        return parse_class_decl(lexer);
 
     return parse_stmt(lexer);
 }

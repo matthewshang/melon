@@ -12,8 +12,6 @@
 #define PUSH_CONTEXT(x) vector_push(node_t*, ((semantic_t*)self->data)->context_stack, x)
 #define POP_CONTEXT vector_pop(((semantic_t*)self->data)->context_stack)
 
-typedef vector_t(node_t*) node_r;
-
 typedef struct
 {
     node_r context_stack;

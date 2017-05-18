@@ -8,7 +8,7 @@
 #define NODE_TEST(node) node
 #define NODE_SETBASE(node, _type) node->base.type = _type
 
-node_t* node_block_new(vector_t(node_t *) *stmts)
+node_t* node_block_new(node_r *stmts)
 {
     node_block_t *node = (node_block_t*)calloc(1, sizeof(node_block_t));
     NODE_SETBASE(node, NODE_BLOCK);
@@ -72,7 +72,7 @@ node_t *node_func_decl_new(token_t token, const char *identifier, vector_t(node_
     return (node_t*)node;
 }
 
-node_t *node_class_decl_new(token_t token, const char *identifier, vector_t(node_t*) *decls)
+node_t *node_class_decl_new(token_t token, const char *identifier, node_r *decls)
 {
     node_class_decl_t *node = (node_class_decl_t*)calloc(1, sizeof(node_class_decl_t));
     NODE_SETBASE(node, NODE_CLASS_DECL);
@@ -102,7 +102,7 @@ node_t *node_unary_new(token_t op, node_t *right)
     return (node_t*)node;
 }
 
-node_t *node_postfix_new(node_t *target, vector_t(node_t *) *args)
+node_t *node_postfix_new(node_t *target, node_r *args)
 {
     node_postfix_t *node = (node_postfix_t*)calloc(1, sizeof(node_postfix_t));
     NODE_SETBASE(node, NODE_POSTFIX);
@@ -422,7 +422,7 @@ static void print_node_class_decl(astwalker_t *self, node_class_decl_t *node)
 
     if (node->decls)
     {
-        print_tabs(depth); printf("func-decls: ");
+        print_tabs(depth); printf("func-decls:\n");
         for (int i = 0; i < vector_size(*node->decls); i++)
         {
             print_tabs(depth);
