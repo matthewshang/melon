@@ -142,7 +142,7 @@ static bool sema_build_global_symtables(node_t *ast, lexer_t *lexer)
 
     walk_ast(&walker, ast);
 
-    symtable_dump(((node_block_t*)ast)->symtable);
+    //symtable_dump(((node_block_t*)ast)->symtable);
 
     return walker.nerrors == 0;
 }
@@ -215,7 +215,7 @@ static void visit_var_decl(struct astwalker *self, node_var_decl_t *node)
     if (context_is_root(GET_CONTEXT)) return;
 
     symtable_t *symtable = node_get_symtable(GET_CONTEXT);
-    symtable_dump(symtable);
+    //symtable_dump(symtable);
     if (symtable_lookup(symtable, node->ident, NULL))
     {
         semantic_error(self, node->base.token, "Variable %s is already defined\n", node->ident);

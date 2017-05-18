@@ -101,8 +101,6 @@ static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
     gen->code = &f->bytecode;
     gen->constants = &f->constpool;
 
-    vector_push(node_func_decl_t*, gen->functions, node);
-    gen->parent_func = node;
     walk_ast(self, node->body);
     if (vector_get(*gen->code, vector_size(*gen->code) - 1) != OP_RETURN)
         emit_byte(CODE, (uint8_t)OP_RET0);
@@ -126,8 +124,6 @@ static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
         emit_bytes(CODE, (uint8_t)OP_NEWUP, (uint8_t)upvalue.is_direct);
         emit_byte(CODE, upvalue.is_direct ? upvalue.idx : upindex++);
     }
-
-    vector_pop(gen->functions);
 
     if (!node->base.is_assign)
         emit_bytes(CODE, node->is_global ? OP_STOREG : OP_STORE, node->idx);
@@ -259,25 +255,15 @@ static void gen_node_literal(astwalker_t *self, node_literal_t *node)
 codegen_t codegen_create(function_t *f)
 {
     codegen_t gen;
-    gen.symtable = symtable_new();
 
-    vector_init(gen.functions);
     gen.func = f;
     gen.code = &gen.func->bytecode;
     gen.constants = &gen.func->constpool;
     return gen;
 }
 
-void codegen_destroy(codegen_t *gen)
-{
-    vector_destroy(gen->functions);
-    symtable_free(gen->symtable);
-}
-
 void codegen_run(codegen_t *gen, node_t *ast)
 {
-    core_register_codegen(gen);
-
     astwalker_t walker = {
         .depth = 0,
         .data = (void*)gen,

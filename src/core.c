@@ -50,18 +50,8 @@ static function_t *core_print;
 static closure_t *core_println_cl;
 static closure_t *core_print_cl;
 
-static bool core_codegen_inited = false;
 static bool core_vm_inited = false;
 static bool core_semantic_inited = false;
-
-void core_register_codegen(codegen_t *gen)
-{
-    if (core_codegen_inited) return;
-    core_codegen_inited = true;
-
-    symtable_add_local(gen->symtable, "println");
-    symtable_add_local(gen->symtable, "print");
-}
 
 void core_register_semantic(symtable_t *globals)
 {

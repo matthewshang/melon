@@ -35,7 +35,6 @@ int melon_compile(const char *file, function_t *func, cli_options_t *options)
 
     ast_free(ast);
     lexer_destroy(&lexer);
-    codegen_destroy(&gen);
     return 0;
 
 compile_abort:

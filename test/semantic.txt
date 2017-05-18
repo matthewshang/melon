@@ -7,7 +7,7 @@ func bar(x, y)
 
 func bar2(x)
 {
-	var x = 6;
+	var a = 6;
 	return x * a;
 }
 
