@@ -87,6 +87,8 @@ node_t *node_binary_new(token_t op, node_t *left, node_t *right)
 {
     node_binary_t *node = (node_binary_t*)calloc(1, sizeof(node_binary_t));
     NODE_SETBASE(node, NODE_BINARY);
+    node->base.token = op;
+
     node->op = op;
     node->left = left;
     node->right = right;

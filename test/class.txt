@@ -3,8 +3,15 @@ class Foo
 	var x = 1;
 	var mystr = "I am foo";
 
-	func Foo()
+	func test()
 	{
-		x = 2;
+		return 5;
+	}
+
+	func bar()
+	{
+		println("Hi!");
 	}
 }
+
+var x = Foo();

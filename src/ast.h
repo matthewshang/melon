@@ -99,6 +99,8 @@ typedef struct
     node_r *decls;
 
     symtable_t *symtable;
+    uint8_t idx;
+    bool is_global;
 } node_class_decl_t;
 
 typedef struct

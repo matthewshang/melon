@@ -125,6 +125,42 @@ static void visit_func_decl_global(struct astwalker *self, node_func_decl_t *nod
     node->is_global = true;
 }
 
+static void visit_class_decl_global(struct astwalker *self, node_class_decl_t *node)
+{
+    symtable_t *symtable = (symtable_t*)self->data;
+    if (symtable_lookup(symtable, node->identifier, NULL))
+    {
+        semantic_error(self, node->base.token, "Class %s is already defined\n", node->identifier);
+        return;
+    }
+    node->idx = symtable_add_local(symtable, node->identifier);
+    node->is_global = true;
+
+    node->symtable = symtable_new();
+    if (node->decls)
+    {
+        for (size_t i = 0; i < vector_size(*node->decls); i++)
+        {
+            node_t *decl = vector_get(*node->decls, i);
+            const char *ident = NULL;
+            if (decl->type == NODE_VAR_DECL)
+            {
+                ident = ((node_var_decl_t*)decl)->ident;
+            }
+            else if (decl->type == NODE_FUNC_DECL)
+            {
+                ident = ((node_func_decl_t*)decl)->identifier;
+            }
+            else
+            {
+                semantic_error(self, decl->token, "Class declarations must be a variable or function\n");
+                return;
+            }
+            symtable_add_local(node->symtable, ident);
+        }
+    }
+}
+
 static bool sema_build_global_symtables(node_t *ast, lexer_t *lexer)
 {
     symtable_t *globals = symtable_new();
@@ -143,6 +179,7 @@ static bool sema_build_global_symtables(node_t *ast, lexer_t *lexer)
 
         .visit_var_decl = visit_var_decl_global,
         .visit_func_decl = visit_func_decl_global,
+        .visit_class_decl = visit_class_decl_global,
 
         .visit_binary = NULL,
         .visit_unary = NULL,
