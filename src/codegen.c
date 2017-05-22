@@ -40,7 +40,7 @@ static void emit_loadstore(byte_r *code, location_e loc, uint8_t idx, bool store
     }
     else if (loc == LOC_LOCAL)
     {
-        emit_bytes(code, store ? OP_STORE : OP_LOAD, idx);
+        emit_bytes(code, store ? OP_STOREL : OP_LOADL, idx);
     }
     else if (loc == LOC_UPVALUE)
     {
@@ -357,14 +357,4 @@ void codegen_run(codegen_t *gen, node_t *ast)
 
     walk_ast(&walker, ast);
     emit_byte(gen->code, (uint8_t)OP_HALT);
-
-    hashtable_t *htable = hashtable_new(384);
-
-    hashtable_set(htable, FROM_CSTR("foo"), FROM_CSTR("test"));
-    hashtable_set(htable, FROM_CSTR("bar"), FROM_CSTR("test2"));
-
-    printf("%s\n", AS_STR(*hashtable_get(htable, FROM_CSTR("foo"))));
-    printf("%s\n", AS_STR(*hashtable_get(htable, FROM_CSTR("bar"))));
-
-    hashtable_free(htable);
 }

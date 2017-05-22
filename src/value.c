@@ -117,7 +117,7 @@ static void internal_disassemble(function_t *func, uint8_t depth)
             uint8_t op = vector_get(func->bytecode, i);
             ninsts++;
             print_tabs(depth + 1); printf("%s", op_to_str((opcode)op));
-            if (op == OP_LOADI || op == OP_STORE || op == OP_LOAD || op == OP_JIF
+            if (op == OP_LOADI || op == OP_STOREL || op == OP_LOADL || op == OP_JIF
                 || op == OP_JMP || op == OP_LOOP || op == OP_LOADK || op == OP_LOADG
                 || op == OP_STOREG || op == OP_CALL || op == OP_LOADU || op == OP_STOREU
                 || op == OP_NEWUP)
@@ -271,4 +271,20 @@ void class_bind(class_t *c, value_t key, value_t value)
 value_t *class_lookup(class_t *c, value_t key)
 {
     return hashtable_get(c->htable, key);
+}
+
+instance_t *instance_new(class_t *c, uint16_t nvars)
+{
+    instance_t *inst = (instance_t*)calloc(1, sizeof(instance_t));
+    inst->c = c;
+    inst->nvars = nvars;
+    inst->vars = (value_t*)calloc(nvars, sizeof(value_t));
+    return inst;
+}
+
+void instance_free(instance_t *inst)
+{
+    if (!inst) return;
+    if (inst->vars) free(inst->vars);
+    free(inst);
 }

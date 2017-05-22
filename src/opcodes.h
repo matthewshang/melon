@@ -1,18 +1,20 @@
 #ifndef __OPCODES__
 #define __OPCODES__
-
+                        
 typedef enum
 {
     OP_RET0,
     OP_NOP,
 
-    OP_LOAD,
-    OP_LOADI,
-    OP_LOADK,
-    OP_LOADU,
-    OP_LOADG,
-    OP_STORE,
+    OP_LOADL,        // LOAD_LOCAL
+    OP_LOADI,        // LOAD_IMPLICIT
+    OP_LOADK,        // LOAD_CONSTANT
+    OP_LOADU,        // LOAD_UPVALUE
+    OP_LOADF,        // LOAD_FIELD
+    OP_LOADG,        // LOAD_GLOBAL
+    OP_STOREL,
     OP_STOREU,
+    OP_STOREF,
     OP_STOREG,
 
     OP_NEWUP,

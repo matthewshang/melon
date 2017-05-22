@@ -215,7 +215,7 @@ void vm_run(vm_t *vm)
         }
         case OP_NOP: continue;
 
-        case OP_LOAD: STACK_PUSH(vm->stack[bp + READ_BYTE]); break;
+        case OP_LOADL: STACK_PUSH(vm->stack[bp + READ_BYTE]); break;
         case OP_LOADI: STACK_PUSH(FROM_INT(READ_BYTE)); break;
         case OP_LOADK: STACK_PUSH(function_cpool_get(closure->f, READ_BYTE)); break;
         case OP_LOADU: 
@@ -223,11 +223,19 @@ void vm_run(vm_t *vm)
             STACK_PUSH(*closure->upvalues[READ_BYTE]->value); 
             break;
         }
+        case OP_LOADF:
+        {
+            break;
+        }
         case OP_LOADG: STACK_PUSH(vector_get(vm->globals, READ_BYTE)); break;
-        case OP_STORE: vm->stack[bp + READ_BYTE] = STACK_PEEK; break;
+        case OP_STOREL: vm->stack[bp + READ_BYTE] = STACK_PEEK; break;
         case OP_STOREU: 
         {
             *closure->upvalues[READ_BYTE]->value = STACK_PEEK; 
+            break;
+        }
+        case OP_STOREF:
+        {
             break;
         }
         case OP_STOREG: vector_set(vm->globals, READ_BYTE, STACK_PEEK); break;

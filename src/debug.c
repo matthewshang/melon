@@ -9,13 +9,15 @@ const char *op_to_str(opcode op)
     case OP_RET0: return "ret0";
     case OP_NOP: return "nop";
 
-    case OP_LOAD: return "load";
+    case OP_LOADL: return "loadl";
     case OP_LOADI: return "loadi";
     case OP_LOADK: return "loadk";
     case OP_LOADU: return "loadu";
+    case OP_LOADF: return "loadf";
     case OP_LOADG: return "loadg";
-    case OP_STORE: return "store";
+    case OP_STOREL: return "storel";
     case OP_STOREU: return "storeu";
+    case OP_STOREF: return "storef";
     case OP_STOREG: return "storeg";
 
     case OP_NEWUP: return "newup";
