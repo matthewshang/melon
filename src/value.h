@@ -1,6 +1,8 @@
 #ifndef __VALUE__
 #define __VALUE__
 
+#include <stdbool.h>
+
 #include "vector.h"
 
 typedef enum
@@ -99,6 +101,7 @@ typedef struct closure_s
 
 void value_destroy(value_t val);
 void value_print(value_t val);
+bool value_equals(value_t v1, value_t v2);
 
 function_t *function_native_new(melon_c_func func);
 function_t *function_new(const char *identifier);

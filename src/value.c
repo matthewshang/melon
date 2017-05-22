@@ -32,6 +32,25 @@ void value_print(value_t v)
     }
 }
 
+bool value_equals(value_t v1, value_t v2)
+{
+    if (v1.type != v2.type) return false;
+
+    if (IS_INT(v1) || IS_BOOL(v1))
+    {
+        return AS_INT(v1) == AS_INT(v2);
+    }
+    else if (IS_FLOAT(v1))
+    {
+        return AS_FLOAT(v1) == AS_FLOAT(v2);
+    }
+    else if (IS_STR(v1))
+    {
+        return strcmp(AS_STR(v1), AS_STR(v2)) == 0;
+    }  
+    return false;
+}
+
 function_t *function_native_new(melon_c_func cfunc)
 {
     function_t *func = (function_t*)calloc(1, sizeof(function_t));
