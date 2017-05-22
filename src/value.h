@@ -49,6 +49,12 @@ typedef struct function_s
     };
 } function_t;
 
+typedef struct
+{
+    const char *identifier;
+
+} class_t;
+
 typedef struct upvalue_s
 {
     value_t *value;
