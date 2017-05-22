@@ -1,6 +1,7 @@
 #include "value.h"
 
 #include "debug.h"
+#include "hash.h"
 #include "opcodes.h"
 
 void value_destroy(value_t val)
@@ -164,10 +165,7 @@ void internal_class_print(class_t *c, uint8_t depth)
 {
     print_tabs(depth); printf("nvars: %d\n", c->nvars);
 
-    for (size_t i = 0; i < c->nvars; i++)
-    {
-        print_tabs(depth); debug_print_val(vector_get(c->vars, i), depth);
-    }
+    hashtable_dump(c->htable);
 }
 
 void internal_cpool_dump(function_t *func, uint8_t depth)
@@ -244,7 +242,7 @@ class_t *class_new(const char *identifier, uint16_t nvars)
     class_t *c = (class_t*)calloc(1, sizeof(class_t));
     c->identifier = identifier;
     c->nvars = nvars;
-    vector_init(c->vars);
+    c->htable = hashtable_new(384);
     return c;
 }
 
@@ -253,7 +251,7 @@ void class_free(class_t *c)
     if (c)
     {
         if (c->identifier) free(c->identifier);
-        vector_destroy(c->vars);
+        hashtable_free(c->htable);
         free(c);
     }
 }
@@ -263,4 +261,14 @@ void class_print(class_t *c)
     if (!c) return;
 
     internal_class_print(c, 0);
+}
+
+void class_bind(class_t *c, value_t key, value_t value)
+{
+    hashtable_set(c->htable, key, value);
+}
+
+value_t *class_lookup(class_t *c, value_t key)
+{
+    return hashtable_get(c->htable, key);
 }

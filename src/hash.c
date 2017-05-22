@@ -84,6 +84,20 @@ void hashtable_free(hashtable_t *htable)
     free(htable);
 }
 
+void hashtable_dump(hashtable_t *htable)
+{
+    for (size_t i = 0; i < htable->size; i++)
+    {
+        hash_entry_t *node = htable->table[i];
+        while (node)
+        {
+            printf("key: "); value_print(node->key);
+            printf("value: "); value_print(node->value);
+            node = node->next;
+        }
+    }
+}
+
 static uint32_t hash_string(const char *s)
 {
     return murmur3_32(s, strlen(s), HASH_SEED);

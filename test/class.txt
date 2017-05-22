@@ -1,13 +1,4 @@
 class Foo 
 {
-	var v1 = 0;
+	var a;
 }
-
-var a = 54;
-
-func bar()
-{
-	println("outside");
-}
-
-bar();

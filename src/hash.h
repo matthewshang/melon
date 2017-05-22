@@ -21,6 +21,7 @@ typedef struct
 
 hashtable_t *hashtable_new(uint32_t size);
 void hashtable_free(hashtable_t *htable);
+void hashtable_dump(hashtable_t *htable);
 
 void hashtable_set(hashtable_t *htable, value_t key, value_t value);
 value_t *hashtable_get(hashtable_t *htable, value_t key);

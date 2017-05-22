@@ -55,13 +55,13 @@ typedef struct function_s
     };
 } function_t;
 
+struct hashtable_t;
 typedef struct class_s
 {
     const char *identifier;
 
-    // tmp
+    struct hashtable_t *htable;
     uint16_t nvars;
-    value_r vars;
 
 } class_s;
 
@@ -119,5 +119,7 @@ void closure_free(closure_t *closure);
 class_t *class_new(const char *identifier, uint16_t nvars);
 void class_free(class_t *c);
 void class_print(class_t *c);
+void class_bind(class_t *c, value_t key, value_t value);
+value_t *class_lookup(class_t *c, value_t key);
 
 #endif

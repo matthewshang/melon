@@ -5,6 +5,7 @@
 
 #include "astwalker.h"
 #include "core.h"
+#include "hash.h"
 #include "opcodes.h"
 
 #define CODE ((codegen_t*)self->data)->code
@@ -156,7 +157,7 @@ static void gen_node_var_decl(astwalker_t *self, node_var_decl_t *node)
     else if (env_class)
     {
         class_t *c = AS_CLASS(context);
-        vector_push(value_t, c->vars, FROM_INT(1));
+        class_bind(c, FROM_CSTR(node->ident), FROM_INT(node->idx));
     }
 }
 
@@ -356,4 +357,14 @@ void codegen_run(codegen_t *gen, node_t *ast)
 
     walk_ast(&walker, ast);
     emit_byte(gen->code, (uint8_t)OP_HALT);
+
+    hashtable_t *htable = hashtable_new(384);
+
+    hashtable_set(htable, FROM_CSTR("foo"), FROM_CSTR("test"));
+    hashtable_set(htable, FROM_CSTR("bar"), FROM_CSTR("test2"));
+
+    printf("%s\n", AS_STR(*hashtable_get(htable, FROM_CSTR("foo"))));
+    printf("%s\n", AS_STR(*hashtable_get(htable, FROM_CSTR("bar"))));
+
+    hashtable_free(htable);
 }
