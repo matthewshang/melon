@@ -33,6 +33,7 @@ int melon_compile(const char *file, function_t *func, cli_options_t *options)
     if (options->c_func_disasm) function_disassemble(func);
     if (options->c_dump_cpool) function_cpool_dump(func);
 
+    codegen_destroy(&gen);
     ast_free(ast);
     lexer_destroy(&lexer);
     return 0;

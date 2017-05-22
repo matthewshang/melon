@@ -15,10 +15,10 @@ static void melon_println(value_t *args, uint8_t nargs)
         value_t v = args[0];
         switch (v.type)
         {
-        case VAL_BOOL: printf("%s\n", v.i == 1 ? "true" : "false"); break;
-        case VAL_INT: printf("%d\n", v.i); break;
-        case VAL_FLOAT: printf("%f\n", v.d); break;
-        case VAL_STR: printf("%s\n", v.s); break;
+        case VAL_BOOL: printf("%s\n", AS_BOOL(v) == 1 ? "true" : "false"); break;
+        case VAL_INT: printf("%d\n", AS_INT(v)); break;
+        case VAL_STR: printf("%s\n", AS_STR(v)); break;
+        case VAL_FLOAT: printf("%f\n", AS_FLOAT(v)); break;
         default: break;
         }
     }
@@ -35,10 +35,10 @@ static void melon_print(value_t *args, uint8_t nargs)
         value_t v = args[0];
         switch (v.type)
         {
-        case VAL_BOOL: printf("%s", v.i == 1 ? "true" : "false"); break;
-        case VAL_INT: printf("%d", v.i); break;
-        case VAL_FLOAT: printf("f", v.d); break;
-        case VAL_STR: printf("%s", v.s); break;
+        case VAL_BOOL: printf("%s", AS_BOOL(v) == 1 ? "true" : "false"); break;
+        case VAL_INT: printf("%d", AS_INT(v)); break;
+        case VAL_STR: printf("%s", AS_STR(v)); break;
+        case VAL_FLOAT: printf("%f", AS_FLOAT(v)); break;
         default: break;
         }
     }

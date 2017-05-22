@@ -12,6 +12,10 @@
 #define CONSTANTS ((codegen_t*)self->data)->constants
 #define SYMTABLE ((codegen_t*)self->data)->symtable
 
+#define GET_CONTEXT vector_peek(((codegen_t*)self->data)->decls)
+#define PUSH_CONTEXT(x) vector_push(value_t, ((codegen_t*)self->data)->decls, x)
+#define POP_CONTEXT vector_pop(((codegen_t*)self->data)->decls)
+
 #define AS_GEN(self) ((codegen_t*)self->data)
 
 #define MAX_LITERAL_INT 256
@@ -27,7 +31,7 @@ static void emit_bytes(byte_r *code, uint8_t b1, uint8_t b2)
     vector_push(uint8_t, *code, b2);
 }
 
-static void emit_var(byte_r *code, location_e loc, uint8_t idx, bool store)
+static void emit_loadstore(byte_r *code, location_e loc, uint8_t idx, bool store)
 {
     if (loc == LOC_GLOBAL)
     {
@@ -99,61 +103,103 @@ static void gen_node_return(astwalker_t *self, node_return_t *node)
     emit_byte(CODE, (uint8_t)OP_RETURN);
 }
 
+static void store_decl(astwalker_t *self, value_t decl, node_func_decl_t *node)
+{
+    value_t context = GET_CONTEXT;
+    bool env_local = IS_CLOSURE(context);
+    bool env_class = IS_CLASS(context);
+
+    if (env_local)
+    {
+        function_t *contextf = AS_CLOSURE(context)->f;
+        vector_push(value_t, contextf->constpool, decl);
+        emit_bytes(&contextf->bytecode, (uint8_t)OP_LOADK, vector_size(contextf->constpool) - 1);
+
+        if (IS_CLOSURE(decl))
+        {
+            function_t *f = AS_CLOSURE(decl)->f;
+
+            vector_t(ast_upvalue_t) *upvalues = node->upvalues;
+            f->nupvalues = vector_size(*upvalues);
+            emit_byte(CODE, (uint8_t)OP_CLOSURE);
+
+            uint8_t upindex = 0;
+            for (uint8_t i = 0; i < f->nupvalues; i++)
+            {
+                ast_upvalue_t upvalue = vector_get(*upvalues, i);
+                emit_bytes(&contextf->bytecode, (uint8_t)OP_NEWUP, (uint8_t)upvalue.is_direct);
+                emit_byte(&contextf->bytecode, upvalue.is_direct ? upvalue.idx : upindex++);
+            }
+        }
+    }
+}
+
 static void gen_node_var_decl(astwalker_t *self, node_var_decl_t *node)
 {
-    if (node->init)
+    value_t context = GET_CONTEXT;
+    bool env_local = IS_CLOSURE(context);
+    bool env_class = IS_CLASS(context);
+
+    if (env_local)
     {
-        //printf("var_decl: %d %d\n", node->loc, node->idx);
-        walk_ast(self, node->init);
-        emit_var(CODE, node->loc, node->idx, true);
+        if (node->init)
+        {
+            printf("var_decl: %d %d\n", node->loc, node->idx);
+            walk_ast(self, node->init);
+            emit_loadstore(CODE, node->loc, node->idx, true);
+        }
+        else
+        {
+            emit_bytes(CODE, (uint8_t)OP_LOADI, 0);
+        }
+    }
+    else if (env_class)
+    {
+        class_t *c = AS_CLASS(context);
+        vector_push(value_t, c->vars, FROM_INT(1));
     }
 }
 
 static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
 {
-    //printf("func_decl: %d %d\n", node->loc, node->idx);
-
     function_t *f = function_new(strdup(node->identifier));
     codegen_t *gen = (codegen_t*)self->data;
-    function_t *parent = gen->func;
-    gen->func = f;
     gen->code = &f->bytecode;
     gen->constants = &f->constpool;
+
+    closure_t *cl = closure_new(f);
+
+    PUSH_CONTEXT(FROM_CLOSURE(cl));
 
     walk_ast(self, node->body);
     if (vector_get(*gen->code, vector_size(*gen->code) - 1) != OP_RETURN)
         emit_byte(CODE, (uint8_t)OP_RET0);
 
-    gen->func = parent;
-    gen->code = &parent->bytecode;
-    gen->constants = &parent->constpool;
+    POP_CONTEXT;
 
-    vector_push(value_t, parent->constpool, FROM_CLOSURE(closure_new(f)));
+    function_t *context = AS_CLOSURE(GET_CONTEXT)->f;
+    gen->code = &context->bytecode;
+    gen->constants = &context->constpool;
 
-    emit_bytes(CODE, (uint8_t)OP_LOADK, vector_size(parent->constpool) - 1);
-
-    vector_t(ast_upvalue_t) *upvalues = node->upvalues;
-    f->nupvalues = vector_size(*upvalues);
-    emit_byte(CODE, (uint8_t)OP_CLOSURE);
-
-    uint8_t upindex = 0;
-    for (uint8_t i = 0; i < f->nupvalues; i++)
-    {
-        ast_upvalue_t upvalue = vector_get(*upvalues, i);
-        emit_bytes(CODE, (uint8_t)OP_NEWUP, (uint8_t)upvalue.is_direct);
-        emit_byte(CODE, upvalue.is_direct ? upvalue.idx : upindex++);
-    }
-
-    if (!node->base.is_assign)
-        emit_var(CODE, node->loc, node->idx, true);
+    store_decl(self, FROM_CLOSURE(cl), node);
 }
 
 static void gen_node_class_decl(struct astwalker *self, node_class_decl_t *node)
 {
+    class_t *c = class_new(strdup(node->identifier), node->num_instvars);
+
+    PUSH_CONTEXT(FROM_CLASS(c));
+
     for (size_t i = 0; i < vector_size(*node->decls); i++)
     {
         walk_ast(self, vector_get(*node->decls, i));
     }
+
+    POP_CONTEXT;
+
+    store_decl(self, FROM_CLASS(c), NULL);
+
+    emit_loadstore(CODE, LOC_GLOBAL, node->idx, true);
 }
 
 static void gen_node_binary(astwalker_t *self, node_binary_t *node)
@@ -198,7 +244,7 @@ static void gen_node_postfix(astwalker_t *self, node_postfix_t *node)
 
 static void gen_node_var(astwalker_t *self, node_var_t *node)
 {
-    emit_var(CODE, node->location, node->idx, node->base.is_assign);
+    emit_loadstore(CODE, node->location, node->idx, node->base.is_assign);
 }
 
 static int constant_exists(value_r *constants, node_literal_t *node)
@@ -272,10 +318,18 @@ codegen_t codegen_create(function_t *f)
 {
     codegen_t gen;
 
-    gen.func = f;
-    gen.code = &gen.func->bytecode;
-    gen.constants = &gen.func->constpool;
+    gen.main_cl = closure_new(f);
+    gen.code = &f->bytecode;
+    gen.constants = &f->constpool;
+    vector_init(gen.decls);
+    vector_push(value_t, gen.decls, FROM_CLOSURE(gen.main_cl));
     return gen;
+}
+
+void codegen_destroy(codegen_t *gen)
+{
+    vector_destroy(gen->decls);
+    free(gen->main_cl);
 }
 
 void codegen_run(codegen_t *gen, node_t *ast)

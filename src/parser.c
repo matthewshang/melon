@@ -432,7 +432,8 @@ static node_t *parse_func_decl(lexer_t *lexer)
 
     node_t *body = parse_block(lexer);
 
-    return node_func_decl_new(token, (const char*)ident, params, (node_block_t*)body);
+    return node_var_decl_new(token, (const char*)ident,
+        node_func_decl_new(token, (const char*)ident, params, (node_block_t*)body));
 }
 
 static node_t *parse_class_decl(lexer_t *lexer)

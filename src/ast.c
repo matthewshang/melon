@@ -216,7 +216,6 @@ static void free_node_func_decl(astwalker_t *self, node_func_decl_t *node)
         vector_destroy(*node->params);
         free(node->params);
     }
-    if (node->identifier) free(node->identifier);
     if (node->upvalues)
     {
         vector_destroy(*node->upvalues);

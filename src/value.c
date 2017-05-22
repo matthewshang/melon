@@ -5,23 +5,25 @@
 
 void value_destroy(value_t val)
 {
-    if (val.type == VAL_STR)
-        free(val.s);
-    else if (val.type == VAL_CLOSURE)
-        closure_free(val.cl);
+    if (IS_STR(val))
+        free(AS_STR(val));
+    else if (IS_CLOSURE(val))
+        closure_free(AS_CLOSURE(val));
+    else if (IS_CLASS(val))
+        class_free(AS_CLASS(val));
 }
 
 void value_print(value_t v)
 {
     switch (v.type)
     {
-    case VAL_BOOL: printf("[bool]: %s\n", v.i == 1 ? "true" : "false"); break;
-    case VAL_INT: printf("[int]: %d\n", v.i); break;
-    case VAL_STR: printf("[string]: %s\n", v.s); break;
-    case VAL_FLOAT: printf("[float]: %f\n", v.d); break;
+    case VAL_BOOL: printf("[bool]: %s\n", AS_BOOL(v) == 1 ? "true" : "false"); break;
+    case VAL_INT: printf("[int]: %d\n", AS_INT(v)); break;
+    case VAL_STR: printf("[string]: %s\n", AS_STR(v)); break;
+    case VAL_FLOAT: printf("[float]: %f\n", AS_FLOAT(v)); break;
     case VAL_CLOSURE: {
-        if (v.cl->f->type == FUNC_MELON)
-            printf("[closure]: %s\n", v.cl->f->identifier);
+        if (AS_CLOSURE(v)->f->type == FUNC_MELON)
+            printf("[closure]: %s\n", AS_CLOSURE(v)->f->identifier);
         else
             printf("[native function]\n");
         break;
@@ -112,7 +114,44 @@ static void internal_disassemble(function_t *func, uint8_t depth)
     }
 }
 
-static void internal_cpool_dump(function_t *func, uint8_t depth)
+static void internal_class_print(class_t *c, uint8_t depth);
+static void internal_cpool_dump(function_t *func, uint8_t depth);
+
+static void debug_print_val(value_t v, uint8_t depth)
+{
+    switch (v.type)
+    {
+    case VAL_BOOL: printf("[bool] %s\n", AS_BOOL(v) == 1 ? "true" : "false"); break;
+    case VAL_INT: printf("[int] %d\n", AS_INT(v)); break;
+    case VAL_FLOAT: printf("[float] %f\n", AS_FLOAT(v)); break;
+    case VAL_STR: printf("[string] %s\n", AS_STR(v)); break;
+    case VAL_CLOSURE:
+    {
+        printf("[function] %s\n", AS_CLOSURE(v)->f->identifier);
+        internal_disassemble(AS_CLOSURE(v)->f, depth + 1);
+        internal_cpool_dump(AS_CLOSURE(v)->f, depth + 1);
+        break;
+    }
+    case VAL_CLASS:
+    {
+        printf("[class] %s\n", AS_CLASS(v)->identifier);
+        internal_class_print(AS_CLASS(v), depth + 1); break;
+    }
+    default: break;
+    }
+}
+
+void internal_class_print(class_t *c, uint8_t depth)
+{
+    print_tabs(depth); printf("nvars: %d\n", c->nvars);
+
+    for (size_t i = 0; i < c->nvars; i++)
+    {
+        print_tabs(depth); debug_print_val(vector_get(c->vars, i), depth);
+    }
+}
+
+void internal_cpool_dump(function_t *func, uint8_t depth)
 {
     if (func->type == FUNC_MELON)
     {
@@ -125,20 +164,8 @@ static void internal_cpool_dump(function_t *func, uint8_t depth)
         for (int i = 0; i < vector_size(func->constpool); i++)
         {
             value_t v = vector_get(func->constpool, i);
-            switch (v.type)
-            {
-            case VAL_BOOL: print_tabs(depth + 1); printf("[bool] %s\n", v.i == 1 ? "true" : "false"); break;
-            case VAL_INT: print_tabs(depth + 1); printf("[int] %d\n", v.i); break;
-            case VAL_FLOAT: print_tabs(depth + 1); printf("[float] %f\n", v.d); break;
-            case VAL_STR: print_tabs(depth + 1); printf("[string] %s\n", v.s); break;
-            case VAL_CLOSURE:
-            {
-                print_tabs(depth + 1); printf("[function] %s\n", v.cl->f->identifier);
-                internal_disassemble(v.cl->f, depth + 1);
-                internal_cpool_dump(v.cl->f, depth + 1); break;
-            }
-            default: break;
-            }
+            print_tabs(depth + 1);
+            debug_print_val(v, depth + 1);
         }
         printf("\n");
     }
@@ -191,4 +218,30 @@ void closure_free(closure_t *closure)
         free(closure->upvalues);
     }
     free(closure);
+}
+
+class_t *class_new(const char *identifier, uint16_t nvars)
+{
+    class_t *c = (class_t*)calloc(1, sizeof(class_t));
+    c->identifier = identifier;
+    c->nvars = nvars;
+    vector_init(c->vars);
+    return c;
+}
+
+void class_free(class_t *c)
+{
+    if (c)
+    {
+        if (c->identifier) free(c->identifier);
+        vector_destroy(c->vars);
+        free(c);
+    }
+}
+
+void class_print(class_t *c)
+{
+    if (!c) return;
+
+    internal_class_print(c, 0);
 }

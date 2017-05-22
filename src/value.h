@@ -5,10 +5,13 @@
 
 typedef enum
 {
-    VAL_BOOL, VAL_INT, VAL_FLOAT, VAL_STR, VAL_CLOSURE
+    VAL_BOOL, VAL_INT, VAL_FLOAT, VAL_STR, VAL_CLOSURE, VAL_CLASS
 } value_e;
 
 typedef struct closure_s closure_t;
+
+typedef struct class_s class_t;
+typedef struct class_s object_t;
 
 typedef struct
 {
@@ -19,6 +22,7 @@ typedef struct
         double d;
         const char *s;
         closure_t *cl;
+        class_t *c;
     };
 } value_t;
 
@@ -49,11 +53,15 @@ typedef struct function_s
     };
 } function_t;
 
-typedef struct
+typedef struct class_s
 {
     const char *identifier;
 
-} class_t;
+    // tmp
+    uint16_t nvars;
+    value_r vars;
+
+} class_s;
 
 typedef struct upvalue_s
 {
@@ -73,15 +81,21 @@ typedef struct closure_s
 #define FROM_FLOAT(x) (value_t){.type = VAL_FLOAT, .d = x}
 #define FROM_CSTR(x) (value_t){.type = VAL_STR, .s = x}
 #define FROM_CLOSURE(x) (value_t){.type = VAL_CLOSURE, .cl = x}
+#define FROM_CLASS(x) (value_t){.type = VAL_CLASS, .c = x}
 
 #define AS_INT(x) (x).i
 #define AS_BOOL(x) (x).i
+#define AS_STR(x) (x).s
 #define AS_CLOSURE(x) (x).cl
 #define AS_FLOAT(x) (x).d
+#define AS_CLASS(x) (x).c
 
 #define IS_BOOL(x) (x).type == VAL_BOOL
 #define IS_INT(x) (x).type == VAL_INT
 #define IS_FLOAT(x) (x).type == VAL_FLOAT
+#define IS_STR(x) (x).type == VAL_STR
+#define IS_CLOSURE(x) (x).type == VAL_CLOSURE
+#define IS_CLASS(x) (x).type == VAL_CLASS
 
 void value_destroy(value_t val);
 void value_print(value_t val);
@@ -98,5 +112,9 @@ void upvalue_free(upvalue_t *upvalue);
 
 closure_t *closure_new(function_t *func);
 void closure_free(closure_t *closure);
+
+class_t *class_new(const char *identifier, uint16_t nvars);
+void class_free(class_t *c);
+void class_print(class_t *c);
 
 #endif

@@ -287,30 +287,6 @@ static void visit_var_decl(struct astwalker *self, node_var_decl_t *node)
 
 static void visit_func_decl(struct astwalker *self, node_func_decl_t *node)
 {
-    node_t *context = GET_CONTEXT;
-    symtable_t *env_symtable = node_get_symtable(context);
-    bool env_class = context->type == NODE_CLASS_DECL;
-    bool env_func = context->type == NODE_FUNC_DECL;
-
-    if (env_func)
-    {
-        if (strcmp("{anonymous func}", node->identifier) != 0
-            && symtable_lookup(env_symtable, node->identifier, NULL))
-        {
-            semantic_error(self, node->base.token, "Function %s is already defined\n", node->identifier);
-            return;
-        }
-
-        node->idx = symtable_add_local(env_symtable, node->identifier);
-        node->loc = LOC_LOCAL;
-    }
-    else if (env_class)
-    {
-        node_class_decl_t *c = (node_class_decl_t*)context;
-        node->idx = c->num_instvars++;
-        node->loc = LOC_CLASS;
-    }
-
     node->symtable = symtable_new();
     symtable_t *symtable = node->symtable;
     symtable_enter_scope(symtable);

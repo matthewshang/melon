@@ -1,16 +1,6 @@
 class Foo 
 {
-	func Foo()
-	{
-		println("constructor");
-	}
-	var x = 4;
-	var a = "This is a test";
-
-	func bar()
-	{
-		println("inside");
-	}
+	var v1 = 0;
 }
 
 var a = 54;
