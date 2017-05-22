@@ -110,7 +110,7 @@ static void visit_var_decl_global(struct astwalker *self, node_var_decl_t *node)
         return;
     }
     node->idx = symtable_add_local(symtable, node->ident);
-    node->is_global = true;
+    node->loc = LOC_GLOBAL;
 }
 
 static void visit_func_decl_global(struct astwalker *self, node_func_decl_t *node)
@@ -122,7 +122,7 @@ static void visit_func_decl_global(struct astwalker *self, node_func_decl_t *nod
         return;
     }
     node->idx = symtable_add_local(symtable, node->identifier);
-    node->is_global = true;
+    node->loc = LOC_GLOBAL;
 }
 
 static void visit_class_decl_global(struct astwalker *self, node_class_decl_t *node)
@@ -201,6 +201,8 @@ static symtable_t *node_get_symtable(node_t *node)
         return ((node_block_t*)node)->symtable;
     else if (node->type == NODE_FUNC_DECL)
         return ((node_func_decl_t*)node)->symtable;
+    else if (node->type == NODE_CLASS_DECL)
+        return ((node_class_decl_t*)node)->symtable;
 
     report_error("Last declaration does not contain a symboltable\n");
     return NULL;
@@ -257,33 +259,57 @@ static void visit_return(struct astwalker *self, node_return_t *node)
 
 static void visit_var_decl(struct astwalker *self, node_var_decl_t *node)
 {
+    node_t *context = GET_CONTEXT;
+    symtable_t *env_symtable = node_get_symtable(context);
+    bool env_class = context->type == NODE_CLASS_DECL;
+    bool env_func = context->type == NODE_FUNC_DECL;
+
     if (node->init) walk_ast(self, node->init);
 
-    node->is_global = context_is_root(GET_CONTEXT);
-    if (context_is_root(GET_CONTEXT)) return;
-
-    symtable_t *symtable = node_get_symtable(GET_CONTEXT);
-    //symtable_dump(symtable);
-    if (symtable_lookup(symtable, node->ident, NULL))
+    if (env_func)
     {
-        semantic_error(self, node->base.token, "Variable %s is already defined\n", node->ident);
-        return;
+        if (symtable_lookup(env_symtable, node->ident, NULL))
+        {
+            semantic_error(self, node->base.token, "Variable %s is already defined\n", node->ident);
+            return;
+        }
+
+        node->idx = symtable_add_local(env_symtable, node->ident);
+        node->loc = LOC_LOCAL;
     }
-    node->idx = symtable_add_local(symtable, node->ident);
+    else if (env_class)
+    {
+        node_class_decl_t *c = (node_class_decl_t*)context;
+        node->idx = c->num_instvars++;
+        node->loc = LOC_CLASS;
+    }
 }
 
 static void visit_func_decl(struct astwalker *self, node_func_decl_t *node)
 {
-    symtable_t *env_symtable = node_get_symtable(GET_CONTEXT);
+    node_t *context = GET_CONTEXT;
+    symtable_t *env_symtable = node_get_symtable(context);
+    bool env_class = context->type == NODE_CLASS_DECL;
+    bool env_func = context->type == NODE_FUNC_DECL;
 
-    if (!context_is_root(GET_CONTEXT) &&
-        strcmp("{anonymous func}", node->identifier) != 0 &&
-        symtable_lookup(env_symtable, node->identifier, NULL))
+    if (env_func)
     {
-        semantic_error(self, node->base.token, "Variable %s is already defined\n", node->identifier);
-        return;
+        if (strcmp("{anonymous func}", node->identifier) != 0
+            && symtable_lookup(env_symtable, node->identifier, NULL))
+        {
+            semantic_error(self, node->base.token, "Function %s is already defined\n", node->identifier);
+            return;
+        }
+
+        node->idx = symtable_add_local(env_symtable, node->identifier);
+        node->loc = LOC_LOCAL;
     }
-    node->idx = symtable_add_local(env_symtable, node->identifier);
+    else if (env_class)
+    {
+        node_class_decl_t *c = (node_class_decl_t*)context;
+        node->idx = c->num_instvars++;
+        node->loc = LOC_CLASS;
+    }
 
     node->symtable = symtable_new();
     symtable_t *symtable = node->symtable;
@@ -311,6 +337,16 @@ static void visit_func_decl(struct astwalker *self, node_func_decl_t *node)
     if (nlocals > MAX_LOCALS) 
         semantic_error(self, node->base.token, 
             "Maximum number of local variables reached in function %s\n", node->identifier);
+}
+
+static void visit_class_decl(struct astwalker *self, node_class_decl_t *node)
+{
+    PUSH_CONTEXT(node);
+    for (size_t i = 0; i < vector_size(*node->decls); i++)
+    {
+        walk_ast(self, vector_get(*node->decls, i));
+    }
+    POP_CONTEXT;
 }
 
 static void visit_binary(struct astwalker *self, node_binary_t *node)
@@ -428,6 +464,7 @@ static bool sema_build_local_symtables(node_t *ast, lexer_t *lexer)
 
         .visit_var_decl = visit_var_decl,
         .visit_func_decl = visit_func_decl,
+        .visit_class_decl = visit_class_decl,
 
         .visit_binary = visit_binary,
         .visit_unary = visit_unary,

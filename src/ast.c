@@ -80,6 +80,8 @@ node_t *node_class_decl_new(token_t token, const char *identifier, node_r *decls
 
     node->identifier = identifier;
     node->decls = decls;
+
+    node->num_instvars = 0;
     return (node_t*)node;
 }
 

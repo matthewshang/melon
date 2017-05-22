@@ -1,17 +1,23 @@
 class Foo 
 {
-	var x = 1;
-	var mystr = "I am foo";
-
-	func test()
+	func Foo()
 	{
-		return 5;
+		println("constructor");
 	}
+	var x = 4;
+	var a = "This is a test";
 
 	func bar()
 	{
-		println("Hi!");
+		println("inside");
 	}
 }
 
-var x = Foo();
+var a = 54;
+
+func bar()
+{
+	println("outside");
+}
+
+bar();

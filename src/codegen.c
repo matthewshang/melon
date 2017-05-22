@@ -27,6 +27,22 @@ static void emit_bytes(byte_r *code, uint8_t b1, uint8_t b2)
     vector_push(uint8_t, *code, b2);
 }
 
+static void emit_var(byte_r *code, location_e loc, uint8_t idx, bool store)
+{
+    if (loc == LOC_GLOBAL)
+    {
+        emit_bytes(code, store ? OP_STOREG : OP_LOADG, idx);
+    }
+    else if (loc == LOC_LOCAL)
+    {
+        emit_bytes(code, store ? OP_STORE : OP_LOAD, idx);
+    }
+    else if (loc == LOC_UPVALUE)
+    {
+        emit_bytes(code, store ? OP_STOREU : OP_LOADU, idx);
+    }
+}
+
 static void gen_node_block(astwalker_t *self, node_block_t *node)
 {
     for (int i = 0; i < vector_size(*node->stmts); i++)
@@ -87,13 +103,16 @@ static void gen_node_var_decl(astwalker_t *self, node_var_decl_t *node)
 {
     if (node->init)
     {
+        //printf("var_decl: %d %d\n", node->loc, node->idx);
         walk_ast(self, node->init);
-        emit_bytes(CODE, node->is_global ? OP_STOREG : OP_STORE, node->idx);
+        emit_var(CODE, node->loc, node->idx, true);
     }
 }
 
 static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
 {
+    //printf("func_decl: %d %d\n", node->loc, node->idx);
+
     function_t *f = function_new(strdup(node->identifier));
     codegen_t *gen = (codegen_t*)self->data;
     function_t *parent = gen->func;
@@ -126,7 +145,15 @@ static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
     }
 
     if (!node->base.is_assign)
-        emit_bytes(CODE, node->is_global ? OP_STOREG : OP_STORE, node->idx);
+        emit_var(CODE, node->loc, node->idx, true);
+}
+
+static void gen_node_class_decl(struct astwalker *self, node_class_decl_t *node)
+{
+    for (size_t i = 0; i < vector_size(*node->decls); i++)
+    {
+        walk_ast(self, vector_get(*node->decls, i));
+    }
 }
 
 static void gen_node_binary(astwalker_t *self, node_binary_t *node)
@@ -171,18 +198,7 @@ static void gen_node_postfix(astwalker_t *self, node_postfix_t *node)
 
 static void gen_node_var(astwalker_t *self, node_var_t *node)
 {
-    if (node->location == LOC_GLOBAL)
-    {
-        emit_bytes(CODE, node->base.is_assign ? OP_STOREG : OP_LOADG, node->idx);
-    }
-    else if (node->location == LOC_LOCAL)
-    {
-        emit_bytes(CODE, node->base.is_assign ? OP_STORE : OP_LOAD, node->idx);
-    }
-    else if (node->location == LOC_UPVALUE)
-    {
-        emit_bytes(CODE, node->base.is_assign ? OP_STOREU : OP_LOADU, node->idx);
-    }
+    emit_var(CODE, node->location, node->idx, node->base.is_assign);
 }
 
 static int constant_exists(value_r *constants, node_literal_t *node)
@@ -275,6 +291,7 @@ void codegen_run(codegen_t *gen, node_t *ast)
 
         .visit_var_decl = gen_node_var_decl,
         .visit_func_decl = gen_node_func_decl,
+        .visit_class_decl = gen_node_class_decl,
 
         .visit_binary = gen_node_binary,
         .visit_unary = gen_node_unary,

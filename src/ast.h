@@ -23,6 +23,15 @@ typedef enum
     LITERAL_BOOL, LITERAL_INT, LITERAL_FLT, LITERAL_STR
 } literal_type;
 
+
+typedef enum
+{
+    LOC_LOCAL,
+    LOC_GLOBAL,
+    LOC_UPVALUE,
+    LOC_CLASS
+} location_e;
+
 typedef struct node_s
 {
     node_type type;
@@ -66,7 +75,7 @@ typedef struct
     const char *ident;
     node_t *init;
 
-    bool is_global;
+    location_e loc;
     uint8_t idx;
 } node_var_decl_t;
 
@@ -88,7 +97,7 @@ typedef struct
 
     symtable_t *symtable;
     vector_t(ast_upvalue_t) *upvalues;
-    bool is_global;
+    location_e loc;
     uint32_t idx;
 } node_func_decl_t;
 
@@ -101,6 +110,7 @@ typedef struct
     symtable_t *symtable;
     uint8_t idx;
     bool is_global;
+    uint16_t num_instvars;
 } node_class_decl_t;
 
 typedef struct
@@ -124,13 +134,6 @@ typedef struct
     node_t *target;
     node_r *args;
 } node_postfix_t;
-
-typedef enum
-{
-    LOC_LOCAL,
-    LOC_GLOBAL,
-    LOC_UPVALUE
-} location_e;
 
 typedef struct node_var_s
 {
