@@ -105,13 +105,13 @@ typedef struct closure_s
 #define AS_CLASS(x) (x).c
 #define AS_INSTANCE(x) (x).inst
 
-#define IS_BOOL(x) (x).type == VAL_BOOL
-#define IS_INT(x) (x).type == VAL_INT
-#define IS_FLOAT(x) (x).type == VAL_FLOAT
-#define IS_STR(x) (x).type == VAL_STR
-#define IS_CLOSURE(x) (x).type == VAL_CLOSURE
-#define IS_CLASS(x) (x).type == VAL_CLASS
-#define IS_INSTANCE(x) (x).type == VAL_INST
+#define IS_BOOL(x) ((x).type == VAL_BOOL)
+#define IS_INT(x) ((x).type == VAL_INT)
+#define IS_FLOAT(x) ((x).type == VAL_FLOAT)
+#define IS_STR(x) ((x).type == VAL_STR)
+#define IS_CLOSURE(x) ((x).type == VAL_CLOSURE)
+#define IS_CLASS(x) ((x).type == VAL_CLASS)
+#define IS_INSTANCE(x) ((x).type == VAL_INST)
 
 void value_destroy(value_t val);
 void value_print(value_t val);

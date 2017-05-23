@@ -2,10 +2,7 @@ class Foo
 {
 	var a;
 	var bar;
-	func test()
-	{
-		println("hi");
-	}
+	var test;
 }
 
 class Bar
@@ -16,11 +13,24 @@ class Bar
 }
 
 var x = Foo();
+
+x.test = func()
+{
+	println("hi");
+}
 x.a = 2;
 x.bar = 5;
 x.test();
 println(x.a);
 println(x.bar);
+
+var x2 = Foo();
+x2.a = 3
+x2.bar = 9;
+x2.test = "test";
+println(x2.a);
+println(x2.bar);
+println(x2.test);
 
 var y = Bar();
 y.a = "bob";

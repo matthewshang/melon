@@ -15,6 +15,8 @@
 #define STACK_PEEK      *(vm->stacktop - 1)
 #define STACK_POPN(n)   vm->stacktop -= (n)
 
+#define RUNTIME_ERROR(...) do {printf(__VA_ARGS__); return; } while (0)
+
 #define INT_BIN_MATH(a, b, op) do {STACK_PUSH(FROM_INT(a op b)); break; } while (0)
 #define FLT_BIN_MATH(a, b, op) do {STACK_PUSH(FROM_FLOAT(a op b)); break; } while (0)
 #define BOOL_BIN_MATH(a, b, op) do {STACK_PUSH(FROM_BOOL(a op b)); break; } while (0)
@@ -228,6 +230,9 @@ void vm_run(vm_t *vm)
             value_t accessor = STACK_POP;
             instance_t *object = AS_INSTANCE(STACK_POP);
             value_t *index = class_lookup(object->c, accessor);
+            if (!index)
+                RUNTIME_ERROR("Runtime error: class %s does not have property %s\n", object->c->identifier, AS_STR(accessor));
+
             STACK_PUSH(object->vars[AS_INT(*index)]);
             break;
         }
@@ -245,10 +250,8 @@ void vm_run(vm_t *vm)
             value_t tostore = STACK_PEEK;
             value_t *index = class_lookup(object->c, accessor);
             if (!index)
-            {
-                printf("Runtime error: class %s does not have property %s\n", object->c->identifier, AS_STR(accessor));
-                return;
-            }
+                RUNTIME_ERROR("Runtime error: class %s does not have property %s\n", object->c->identifier, AS_STR(accessor));
+
             object->vars[AS_INT(*index)] = tostore;
 
             break;
@@ -265,10 +268,8 @@ void vm_run(vm_t *vm)
             {
                 uint8_t newup = READ_BYTE;
                 if (newup != OP_NEWUP)
-                {
-                    printf("Runtime error: expected instruction NEWUP\n");
-                    return;
-                }
+                    RUNTIME_ERROR("Runtime error: expected instruction NEWUP\n");
+
                 uint8_t is_direct = READ_BYTE;
                 newclose->upvalues[i] = is_direct ? 
                     capture_upvalue(&vm->upvalues, &vm->stack[bp + READ_BYTE]) : closure->upvalues[READ_BYTE];
@@ -286,6 +287,8 @@ void vm_run(vm_t *vm)
                 vm->ip++;
                 break;
             }
+            if (!IS_CLOSURE(v)) 
+                RUNTIME_ERROR("Runtime error: cannot call non-class or non-closure\n");
             closure_t *cl = AS_CLOSURE(v);
             if (cl->f->type == FUNC_MELON)
             {
