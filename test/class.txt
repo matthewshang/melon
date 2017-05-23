@@ -1,4 +1,31 @@
 class Foo 
 {
 	var a;
+	var bar;
+	func test()
+	{
+		println("hi");
+	}
 }
+
+class Bar
+{
+	var a;
+	var b;
+	var c;
+}
+
+var x = Foo();
+x.a = 2;
+x.bar = 5;
+x.test();
+println(x.a);
+println(x.bar);
+
+var y = Bar();
+y.a = "bob";
+y.b = "This is a test";
+y.c = 1.2;
+println(y.a);
+println(y.b);
+println(y.c);

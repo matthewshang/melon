@@ -28,6 +28,7 @@ token_type token_punc(char c)
     else if (c == '(') return TOK_OPEN_PAREN;
     else if (c == ')') return TOK_CLOSED_PAREN;
     else if (c == ',') return TOK_COMMA;
+    else if (c == '.') return TOK_DOT;
     else if (c == '{') return TOK_OPEN_BRACE;
     else if (c == '}') return TOK_CLOSED_BRACE;
     else return TOK_ERROR;
@@ -95,6 +96,7 @@ const char *token_type_string(token_type type)
     case TOK_CLOSED_PAREN: return ")";
     case TOK_SEMICOLON: return ";";
     case TOK_COMMA: return ",";
+    case TOK_DOT: return ".";
     case TOK_OPEN_BRACE: return "{";
     case TOK_CLOSED_BRACE: return "}";
 

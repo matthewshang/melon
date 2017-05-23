@@ -168,3 +168,16 @@ value_t *hashtable_get(hashtable_t *htable, value_t key)
         return &node->value;
     }
 }
+
+void hashtable_iterate(hashtable_t *htable, hash_iterator_func iterator)
+{
+    for (size_t i = 0; i < htable->size; i++)
+    {
+        hash_entry_t *node = htable->table[i];
+        while (node)
+        {
+            iterator(node);
+            node = node->next;
+        }
+    }
+}

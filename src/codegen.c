@@ -145,7 +145,6 @@ static void gen_node_var_decl(astwalker_t *self, node_var_decl_t *node)
     {
         if (node->init)
         {
-            printf("var_decl: %d %d\n", node->loc, node->idx);
             walk_ast(self, node->init);
             emit_loadstore(CODE, node->loc, node->idx, true);
         }
@@ -157,7 +156,7 @@ static void gen_node_var_decl(astwalker_t *self, node_var_decl_t *node)
     else if (env_class)
     {
         class_t *c = AS_CLASS(context);
-        class_bind(c, FROM_CSTR(node->ident), FROM_INT(node->idx));
+        class_bind(c, FROM_CSTR(strdup(node->ident)), FROM_INT(node->idx));
     }
 }
 
@@ -225,21 +224,48 @@ static void gen_node_unary(astwalker_t *self, node_unary_t *node)
     emit_byte(CODE, (uint8_t)token_to_unary_op(node->op));
 }
 
+static uint8_t cpool_add_constant(value_r *cpool, value_t v)
+{
+    if (vector_size(*cpool) > 255)
+    {
+        printf("error: maximum amount of constants\n");
+        return 255;
+    }
+
+    for (int i = 0; i < vector_size(*cpool); i++)
+    {
+        value_t val = vector_get(*cpool, i);
+        if (value_equals(val, v)) return i;
+    }
+
+    vector_push(value_t, *cpool, v);
+    return vector_size(*cpool) - 1;
+}
+
 static void gen_node_postfix(astwalker_t *self, node_postfix_t *node)
 {
-    if (node->args)
+    uint8_t nargs = 0;
+    if (node->type == POST_CALL && node->args)
     {
         for (size_t i = 0; i < vector_size(*node->args); i++)
         {
             walk_ast(self, vector_get(*node->args, i));
         }
-        walk_ast(self, node->target);
-        emit_bytes(CODE, (uint8_t)OP_CALL, vector_size(*node->args));
+        nargs = vector_size(*node->args);
     }
-    else
+
+    walk_ast(self, node->target);
+
+    if (node->type == POST_CALL)
     {
-        walk_ast(self, node->target);
-        emit_bytes(CODE, (uint8_t)OP_CALL, 0);
+        emit_bytes(CODE, (uint8_t)OP_CALL, nargs);
+    }
+    else if (node->type == POST_ACCESS)
+    {
+        node_var_t *expr = (node_var_t*)node->expr;
+        emit_bytes(CODE, (uint8_t)OP_LOADK, 
+            cpool_add_constant(CONSTANTS, FROM_CSTR(strdup(expr->identifier))));
+        emit_byte(CODE, node->base.is_assign ? OP_STOREF : OP_LOADF);
     }
 }
 

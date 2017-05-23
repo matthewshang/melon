@@ -134,7 +134,7 @@ static void visit_class_decl_global(struct astwalker *self, node_class_decl_t *n
         return;
     }
     node->idx = symtable_add_local(symtable, node->identifier);
-    node->is_global = true;
+    node->loc = LOC_GLOBAL;
 
     node->symtable = symtable_new();
     if (node->decls)
@@ -338,13 +338,17 @@ static void visit_unary(struct astwalker *self, node_unary_t *node)
 
 static void visit_postfix(struct astwalker *self, node_postfix_t *node)
 {
-    if (node->args)
+    if (node->type == POST_CALL)
     {
-        for (size_t i = 0; i < vector_size(*node->args); i++)
+        if (node->args)
         {
-            walk_ast(self, vector_get(*node->args, i));
+            for (size_t i = 0; i < vector_size(*node->args); i++)
+            {
+                walk_ast(self, vector_get(*node->args, i));
+            }
         }
     }
+
     walk_ast(self, node->target);
 }
 

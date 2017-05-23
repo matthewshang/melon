@@ -184,11 +184,11 @@ static node_t *parse_nested_expr(lexer_t *lexer, token_t token)
     return expr;
 }
 
-static node_t *parse_postfix(lexer_t *lexer, node_t *node, token_t token)
+static node_t *parse_postfix_call(lexer_t *lexer, node_t *node, token_t token)
 {
     if (lexer_match(lexer, TOK_CLOSED_PAREN))
     {
-        return node_postfix_new(node, NULL);
+        return node_postfix_call_new(node, NULL);
     }
 
     node_r *args = (node_r*)calloc(1, sizeof(node_r));
@@ -199,7 +199,13 @@ static node_t *parse_postfix(lexer_t *lexer, node_t *node, token_t token)
     } while (lexer_match(lexer, TOK_COMMA));
     
     parse_required(lexer, TOK_CLOSED_PAREN, true);
-    return node_postfix_new(node, args);
+    return node_postfix_call_new(node, args);
+}
+
+static node_t *parse_postfix_access(lexer_t *lexer, node_t *node, token_t token)
+{
+    node_t *expr = parse_identifier(lexer, lexer_advance(lexer));
+    return node_postfix_access_new(node, expr);
 }
 
 static node_var_r *parse_func_params(lexer_t *lexer)
@@ -295,7 +301,8 @@ static void init_parse_rules()
 {
     if (rules_initialized) return;
 
-    rules[TOK_OPEN_PAREN] = RULE(parse_nested_expr, parse_postfix, PREC_CALL);
+    rules[TOK_OPEN_PAREN] = RULE(parse_nested_expr, parse_postfix_call, PREC_CALL);
+    rules[TOK_DOT] = INFIX_RULE(PREC_CALL, parse_postfix_access);
 
     rules[TOK_TRUE] = PREFIX_RULE(PREC_LOWEST, parse_bool);
     rules[TOK_FALSE] = PREFIX_RULE(PREC_LOWEST, parse_bool);

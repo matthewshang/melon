@@ -225,6 +225,10 @@ void vm_run(vm_t *vm)
         }
         case OP_LOADF:
         {
+            value_t accessor = STACK_POP;
+            instance_t *object = AS_INSTANCE(STACK_POP);
+            value_t *index = class_lookup(object->c, accessor);
+            STACK_PUSH(object->vars[AS_INT(*index)]);
             break;
         }
         case OP_LOADG: STACK_PUSH(vector_get(vm->globals, READ_BYTE)); break;
@@ -236,6 +240,17 @@ void vm_run(vm_t *vm)
         }
         case OP_STOREF:
         {
+            value_t accessor = STACK_POP;
+            instance_t *object = AS_INSTANCE(STACK_POP);
+            value_t tostore = STACK_PEEK;
+            value_t *index = class_lookup(object->c, accessor);
+            if (!index)
+            {
+                printf("Runtime error: class %s does not have property %s\n", object->c->identifier, AS_STR(accessor));
+                return;
+            }
+            object->vars[AS_INT(*index)] = tostore;
+
             break;
         }
         case OP_STOREG: vector_set(vm->globals, READ_BYTE, STACK_PEEK); break;
@@ -264,7 +279,14 @@ void vm_run(vm_t *vm)
         }
         case OP_CALL:
         {
-            closure_t *cl = AS_CLOSURE(STACK_POP);
+            value_t v = STACK_POP;
+            if (IS_CLASS(v))
+            {
+                STACK_PUSH(FROM_INSTANCE(instance_new(AS_CLASS(v))));
+                vm->ip++;
+                break;
+            }
+            closure_t *cl = AS_CLOSURE(v);
             if (cl->f->type == FUNC_MELON)
             {
                 callstack_push(&vm->callstack, vm->ip + 1, closure, bp);

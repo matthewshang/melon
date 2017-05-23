@@ -32,6 +32,12 @@ typedef enum
     LOC_CLASS
 } location_e;
 
+typedef enum
+{
+    POST_CALL,
+    POST_ACCESS
+} postfix_type;
+
 typedef struct node_s
 {
     node_type type;
@@ -109,7 +115,7 @@ typedef struct
 
     symtable_t *symtable;
     uint8_t idx;
-    bool is_global;
+    location_e loc;
     uint16_t num_instvars;
 } node_class_decl_t;
 
@@ -131,8 +137,15 @@ typedef struct
 typedef struct
 {
     node_t base;
+    postfix_type type;
     node_t *target;
-    node_r *args;
+    
+    union
+    {
+        node_r *args;
+        node_t *expr;
+    };
+
 } node_postfix_t;
 
 typedef struct node_var_s
@@ -169,7 +182,8 @@ node_t *node_class_decl_new(token_t token, const char *identifier, node_r *decls
 
 node_t *node_binary_new(token_t op, node_t *left, node_t *right);
 node_t *node_unary_new(token_t op, node_t *right);
-node_t *node_postfix_new(node_t *target, node_r *args);
+node_t *node_postfix_call_new(node_t *target, node_r *args);
+node_t *node_postfix_access_new(node_t *target, node_t *expr);
 node_t *node_var_new(token_t token, const char *identifier);
 node_t *node_literal_int_new(int value);
 node_t *node_literal_float_new(double value);

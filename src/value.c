@@ -29,6 +29,8 @@ void value_print(value_t v)
             printf("[native function]\n");
         break;
     }
+    case VAL_CLASS: printf("[class]: %s\n", AS_CLASS(v)->identifier); break;
+    case VAL_INST: printf("[instance]\n"); break;
     default: break;
     }
 }
@@ -246,11 +248,20 @@ class_t *class_new(const char *identifier, uint16_t nvars)
     return c;
 }
 
+void free_class_strings(hash_entry_t *node)
+{
+    if (IS_STR(node->key))
+    {
+        free(AS_STR(node->key));
+    }
+}
+
 void class_free(class_t *c)
 {
     if (c)
     {
         if (c->identifier) free(c->identifier);
+        hashtable_iterate(c->htable, free_class_strings);
         hashtable_free(c->htable);
         free(c);
     }
@@ -273,12 +284,12 @@ value_t *class_lookup(class_t *c, value_t key)
     return hashtable_get(c->htable, key);
 }
 
-instance_t *instance_new(class_t *c, uint16_t nvars)
+instance_t *instance_new(class_t *c)
 {
     instance_t *inst = (instance_t*)calloc(1, sizeof(instance_t));
     inst->c = c;
-    inst->nvars = nvars;
-    inst->vars = (value_t*)calloc(nvars, sizeof(value_t));
+    inst->nvars = c->nvars;
+    inst->vars = (value_t*)calloc(inst->nvars, sizeof(value_t));
     return inst;
 }
 
