@@ -15,7 +15,7 @@
 #define STACK_PEEK      *(vm->stacktop - 1)
 #define STACK_POPN(n)   vm->stacktop -= (n)
 
-#define RUNTIME_ERROR(...) do {printf(__VA_ARGS__); return; } while (0)
+#define RUNTIME_ERROR(...) do {printf("Runtime error: "); printf(__VA_ARGS__); return; } while (0)
 
 #define INT_BIN_MATH(a, b, op) do {STACK_PUSH(FROM_INT(a op b)); break; } while (0)
 #define FLT_BIN_MATH(a, b, op) do {STACK_PUSH(FROM_FLOAT(a op b)); break; } while (0)
@@ -107,6 +107,7 @@ vm_t vm_create(function_t *f)
     core_register_vm(&vm);
 
     vector_init(vm.callstack);
+    vector_init(vm.mem);
     return vm;
 }
 
@@ -115,11 +116,22 @@ void vm_set_global(vm_t *vm, value_t val, uint16_t idx)
     vector_set(vm->globals, idx, val);
 }
 
+static void vm_push_mem(vm_t *vm, value_t v)
+{
+    vector_push(value_t, vm->mem, v);
+}
+
 void vm_destroy(vm_t *vm)
 {
     free(vm->stack);
     vector_destroy(vm->globals);
     vector_destroy(vm->callstack);
+    printf("Allocated: %d\n", vector_size(vm->mem));
+    for (size_t i = 0; i < vector_size(vm->mem); i++)
+    {
+        value_destroy(vector_get(vm->mem, i));
+    }
+    vector_destroy(vm->mem);
 
     upvalue_t *upvalue = vm->upvalues;
     while (upvalue)
@@ -231,9 +243,12 @@ void vm_run(vm_t *vm)
             instance_t *object = AS_INSTANCE(STACK_POP);
             value_t *index = class_lookup(object->c, accessor);
             if (!index)
-                RUNTIME_ERROR("Runtime error: class %s does not have property %s\n", object->c->identifier, AS_STR(accessor));
+                RUNTIME_ERROR("class %s does not have property %s\n", object->c->identifier, AS_STR(accessor));
 
-            STACK_PUSH(object->vars[AS_INT(*index)]);
+            if (IS_INT(*index))
+                STACK_PUSH(object->vars[AS_INT(*index)]);
+            else
+                STACK_PUSH(*index);
             break;
         }
         case OP_LOADG: STACK_PUSH(vector_get(vm->globals, READ_BYTE)); break;
@@ -248,9 +263,13 @@ void vm_run(vm_t *vm)
             value_t accessor = STACK_POP;
             instance_t *object = AS_INSTANCE(STACK_POP);
             value_t tostore = STACK_PEEK;
-            value_t *index = class_lookup(object->c, accessor);
+            value_t *index;
+            if (IS_INT(accessor))
+                index = &accessor;
+            else
+                index = class_lookup(object->c, accessor);
             if (!index)
-                RUNTIME_ERROR("Runtime error: class %s does not have property %s\n", object->c->identifier, AS_STR(accessor));
+                RUNTIME_ERROR("class %s does not have property %s\n", object->c->identifier, AS_STR(accessor));
 
             object->vars[AS_INT(*index)] = tostore;
 
@@ -268,7 +287,7 @@ void vm_run(vm_t *vm)
             {
                 uint8_t newup = READ_BYTE;
                 if (newup != OP_NEWUP)
-                    RUNTIME_ERROR("Runtime error: expected instruction NEWUP\n");
+                    RUNTIME_ERROR("expected instruction NEWUP\n");
 
                 uint8_t is_direct = READ_BYTE;
                 newclose->upvalues[i] = is_direct ? 
@@ -283,12 +302,23 @@ void vm_run(vm_t *vm)
             value_t v = STACK_POP;
             if (IS_CLASS(v))
             {
-                STACK_PUSH(FROM_INSTANCE(instance_new(AS_CLASS(v))));
+                class_t *c = AS_CLASS(v);
+                value_t instance = FROM_INSTANCE(instance_new(c));
+                vm_push_mem(vm, instance);
+                STACK_PUSH(instance);
                 vm->ip++;
+
+                closure_t *init = class_lookup_closure(c, FROM_CSTR("$init"));
+                if (!init) RUNTIME_ERROR("missing init function in class %s\n", c->identifier);
+
+                callstack_push(&vm->callstack, vm->ip, closure, bp);
+                bp = vm->stacktop - vm->stack - 1;
+                closure = init;
+                vm->ip = &vector_get(init->f->bytecode, 0);
                 break;
             }
             if (!IS_CLOSURE(v)) 
-                RUNTIME_ERROR("Runtime error: cannot call non-class or non-closure\n");
+                RUNTIME_ERROR("cannot call non-class or non-closure\n");
             closure_t *cl = AS_CLOSURE(v);
             if (cl->f->type == FUNC_MELON)
             {

@@ -12,6 +12,8 @@ void value_destroy(value_t val)
         closure_free(AS_CLOSURE(val));
     else if (IS_CLASS(val))
         class_free(AS_CLASS(val));
+    else if (IS_INSTANCE(val))
+        instance_free(AS_INSTANCE(val));
 }
 
 void value_print(value_t v)
@@ -163,11 +165,21 @@ static void debug_print_val(value_t v, uint8_t depth)
     }
 }
 
+static void class_print_iterate(hash_entry_t *node)
+{
+    value_print(node->value);
+    if (IS_CLOSURE(node->value))
+    {
+        function_disassemble(AS_CLOSURE(node->value)->f);
+        function_cpool_dump(AS_CLOSURE(node->value)->f);
+    }
+}
+
 void internal_class_print(class_t *c, uint8_t depth)
 {
     print_tabs(depth); printf("nvars: %d\n", c->nvars);
-
-    hashtable_dump(c->htable);
+    hashtable_iterate(c->htable, class_print_iterate);
+    //hashtable_dump(c->htable);
 }
 
 void internal_cpool_dump(function_t *func, uint8_t depth)
@@ -248,7 +260,7 @@ class_t *class_new(const char *identifier, uint16_t nvars)
     return c;
 }
 
-void free_class_strings(hash_entry_t *node)
+static void free_class_strings(hash_entry_t *node)
 {
     if (IS_STR(node->key))
     {
@@ -282,6 +294,13 @@ void class_bind(class_t *c, value_t key, value_t value)
 value_t *class_lookup(class_t *c, value_t key)
 {
     return hashtable_get(c->htable, key);
+}
+
+closure_t *class_lookup_closure(class_t *c, value_t key)
+{
+    value_t *value = class_lookup(c, key);
+    if (IS_CLOSURE(*value)) return AS_CLOSURE(*value);
+    else return NULL;
 }
 
 instance_t *instance_new(class_t *c)

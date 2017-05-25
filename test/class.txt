@@ -1,41 +1,21 @@
-class Foo 
+class Foo
 {
-	var a;
-	var bar;
-	var test;
+	var x = 1;
+	var y = 2;
+	var z = 3;
+	var name = "Bob Jones";
 }
 
 class Bar
 {
-	var a;
+	var a = 0;
 	var b;
-	var c;
 }
 
-var x = Foo();
+var inst = Foo();
+inst.x = 2;
+println(inst.x);
+println(inst.name);
 
-x.test = func()
-{
-	println("hi");
-}
-x.a = 2;
-x.bar = 5;
-x.test();
-println(x.a);
-println(x.bar);
-
-var x2 = Foo();
-x2.a = 3
-x2.bar = 9;
-x2.test = "test";
-println(x2.a);
-println(x2.bar);
-println(x2.test);
-
-var y = Bar();
-y.a = "bob";
-y.b = "This is a test";
-y.c = 1.2;
-println(y.a);
-println(y.b);
-println(y.c);
+var bar = Bar();
+println(bar.a);
