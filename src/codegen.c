@@ -14,12 +14,37 @@
 #define SYMTABLE ((codegen_t*)self->data)->symtable
 
 #define GET_CONTEXT vector_peek(((codegen_t*)self->data)->decls)
-#define PUSH_CONTEXT(x) vector_push(value_t, ((codegen_t*)self->data)->decls, x)
-#define POP_CONTEXT vector_pop(((codegen_t*)self->data)->decls)
+//#define PUSH_CONTEXT(x) vector_push(value_t, ((codegen_t*)self->data)->decls, x)
+#define PUSH_CONTEXT(x) push_context((codegen_t*)self->data, x)
+//#define POP_CONTEXT vector_pop(((codegen_t*)self->data)->decls)
+#define POP_CONTEXT pop_context((codegen_t*)self->data)
 
 #define AS_GEN(self) ((codegen_t*)self->data)
 
 #define MAX_LITERAL_INT 256
+
+static void push_context(codegen_t *gen, value_t context)
+{
+    vector_push(value_t, gen->decls, context);
+    if (IS_CLOSURE(context))
+    {
+        function_t *f = AS_CLOSURE(context)->f;
+        gen->code = &f->bytecode;
+        gen->constants = &f->constpool;
+    }
+}
+
+static void pop_context(codegen_t *gen)
+{
+    vector_pop(gen->decls);
+    value_t context = vector_peek(gen->decls);
+    if (IS_CLOSURE(context))
+    {
+        function_t *f = AS_CLOSURE(context)->f;
+        gen->code = &f->bytecode;
+        gen->constants = &f->constpool;
+    }
+}
 
 static void emit_byte(byte_r *code, uint8_t b)
 {
@@ -199,23 +224,15 @@ static void gen_node_var_decl(astwalker_t *self, node_var_decl_t *node)
 static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
 {
     function_t *f = function_new(strdup(node->identifier));
-    codegen_t *gen = (codegen_t*)self->data;
-    gen->code = &f->bytecode;
-    gen->constants = &f->constpool;
-
     closure_t *cl = closure_new(f);
 
     PUSH_CONTEXT(FROM_CLOSURE(cl));
 
     walk_ast(self, node->body);
-    if (vector_get(*gen->code, vector_size(*gen->code) - 1) != OP_RETURN)
+    if (vector_get(*CODE, vector_size(*CODE) - 1) != OP_RETURN)
         emit_byte(CODE, (uint8_t)OP_RET0);
 
     POP_CONTEXT;
-
-    function_t *context = AS_CLOSURE(GET_CONTEXT)->f;
-    gen->code = &context->bytecode;
-    gen->constants = &context->constpool;
 
     store_decl(self, FROM_CLOSURE(cl), node);
 }

@@ -9,7 +9,6 @@ class Foo
 class Bar
 {
 	var a = 0;
-	var b;
 }
 
 var inst = Foo();

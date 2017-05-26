@@ -1,0 +1,19 @@
+class Bar
+{
+	var a = 0;
+	
+	var test = func()
+	{
+		println("Hello World");
+	}
+
+	func test2()
+	{
+		println("Bye");
+	}
+}
+
+var bar = Bar();
+println(bar.a);
+bar.test();
+bar.test2();

@@ -4,6 +4,6 @@
 #include "ast.h"
 #include "lexer.h"
 
-node_t *parse(struct lexer_t *lexer);
+node_t *parse(lexer_t *lexer);
 
 #endif
