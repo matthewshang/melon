@@ -16,6 +16,6 @@ class Bar
 }
 
 var bar = Bar();
-println(bar.a);
-bar.test();
-bar.test2();
+println(bar.a.x(2)()(1).x, bar.b);
+#bar.test();
+#bar.test2();

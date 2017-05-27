@@ -136,15 +136,23 @@ typedef struct
 
 typedef struct
 {
-    node_t base;
     postfix_type type;
-    node_t *target;
     
     union
     {
         node_r *args;
-        node_t *expr;
+        node_t *accessor;
     };
+} postfix_expr_t;
+
+typedef vector_t(postfix_expr_t*) postfix_expr_r;
+
+typedef struct
+{
+    node_t base;
+    node_t *target;
+    
+    postfix_expr_r *exprs;
 
 } node_postfix_t;
 
@@ -182,8 +190,9 @@ node_t *node_class_decl_new(token_t token, const char *identifier, node_r *decls
 
 node_t *node_binary_new(token_t op, node_t *left, node_t *right);
 node_t *node_unary_new(token_t op, node_t *right);
-node_t *node_postfix_call_new(node_t *target, node_r *args);
-node_t *node_postfix_access_new(node_t *target, node_t *expr);
+postfix_expr_t *postfix_call_new(node_r *args);
+postfix_expr_t *postfix_access_new(node_t *accessor);
+node_t *node_postfix_new(node_t *target, postfix_expr_r *exprs);
 node_t *node_var_new(token_t token, const char *identifier);
 node_t *node_literal_int_new(int value);
 node_t *node_literal_float_new(double value);

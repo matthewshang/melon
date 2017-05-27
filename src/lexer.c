@@ -307,7 +307,7 @@ token_t lexer_previous(lexer_t * lexer)
     return lexer->tokens[lexer->current - 1];
 }
 
-bool lexer_match(lexer_t * lexer, token_type type)
+bool lexer_match(lexer_t *lexer, token_type type)
 {
     if (lexer_check(lexer, type)) 
     {

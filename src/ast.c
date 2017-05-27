@@ -105,22 +105,27 @@ node_t *node_unary_new(token_t op, node_t *right)
     return (node_t*)node;
 }
 
-node_t *node_postfix_call_new(node_t *target, node_r *args)
+postfix_expr_t *postfix_call_new(node_r *args)
 {
-    node_postfix_t *node = (node_postfix_t*)calloc(1, sizeof(node_postfix_t));
-    NODE_SETBASE(node, NODE_POSTFIX);
-    node->type = POST_CALL;
-    node->args = args;
-    node->target = target;
-    return (node_t*)node;
+    postfix_expr_t *expr = (postfix_expr_t*)calloc(1, sizeof(postfix_expr_t));
+    expr->type = POST_CALL;
+    expr->args = args;
+    return expr;
 }
 
-node_t *node_postfix_access_new(node_t *target, node_t *expr)
+postfix_expr_t *postfix_access_new(node_t *accessor)
+{
+    postfix_expr_t *expr = (postfix_expr_t*)calloc(1, sizeof(postfix_expr_t));
+    expr->type = POST_ACCESS;
+    expr->accessor = accessor;
+    return expr;
+}
+
+node_t *node_postfix_new(node_t *target, postfix_expr_r *exprs)
 {
     node_postfix_t *node = (node_postfix_t*)calloc(1, sizeof(node_postfix_t));
     NODE_SETBASE(node, NODE_POSTFIX);
-    node->type = POST_ACCESS;
-    node->expr = expr;
+    node->exprs = exprs;
     node->target = target;
     return (node_t*)node;
 }
@@ -268,23 +273,28 @@ static void free_node_unary(astwalker_t *self, node_unary_t *node)
 
 static void free_node_postfix(astwalker_t *self, node_postfix_t *node)
 {
-    if (node->type == POST_CALL)
+    if (node->exprs)
     {
-        if (node->args)
+        for (size_t i = 0; i < vector_size(*node->exprs); i++)
         {
-            for (int i = 0; i < vector_size(*node->args); i++)
+            postfix_expr_t *expr = vector_get(*node->exprs, i);
+            if (expr->type == POST_CALL && expr->args)
             {
-                walk_ast(self, vector_get(*node->args, i));
+                for (size_t j = 0; j < vector_size(*expr->args); j++)
+                {
+                    walk_ast(self, vector_get(*expr->args, j));
+                }
+                vector_destroy(*expr->args);
+                free(expr->args);
             }
-            vector_destroy(*node->args);
-            free(node->args);
+            else if (expr->type == POST_ACCESS)
+            {
+                walk_ast(self, expr->accessor);
+            }
         }
+        vector_destroy(*node->exprs);
+        free(node->exprs);
     }
-    else if (node->type == POST_ACCESS)
-    {
-        if (node->expr) walk_ast(self, node->expr);
-    }
-
     if (node->target) free(node->target);
     free(node);
 }
@@ -443,7 +453,7 @@ static void print_node_class_decl(astwalker_t *self, node_class_decl_t *node)
 
     if (node->decls)
     {
-        print_tabs(depth); printf("func-decls:\n");
+        print_tabs(depth); printf("class-decls:\n");
         for (int i = 0; i < vector_size(*node->decls); i++)
         {
             print_tabs(depth);
@@ -487,36 +497,40 @@ static void print_node_postfix(astwalker_t *self, node_postfix_t *node)
 {
     int depth = self->depth;
 
-    if (node->type == POST_CALL)
+    printf("[postfix] target: "); 
+    
+    self->depth = depth + 1;
+    walk_ast(self, node->target);
+
+    if (node->exprs)
     {
-        printf("[postfix_call] nargs: %d\n", node->args ? vector_size(*node->args) : 0);
-
-        print_tabs(depth); printf("postfix-target: ");
-        self->depth = depth + 1;
-        walk_ast(self, node->target);
-
-        if (node->args)
+        print_tabs(depth);
+        printf("postfix-exprs (%d):\n", vector_size(*node->exprs));
+        for (size_t i = 0; i < vector_size(*node->exprs); i++)
         {
-            print_tabs(depth); printf("postfix-args:\n");
-            for (int i = 0; i < vector_size(*node->args); i++)
+            postfix_expr_t *expr = vector_get(*node->exprs, i);
+            print_tabs(depth + 1);
+            if (expr->type == POST_CALL)
             {
-                print_tabs(depth + 1);
-                self->depth = depth + 1;
-                walk_ast(self, vector_get(*node->args, i));
+                if (!expr->args)
+                {
+                    printf("[post-call] args: 0\n");
+                    continue;
+                }
+                printf("[post-call] args: %d\n", vector_size(*expr->args));
+                for (size_t j = 0; j < vector_size(*expr->args); j++)
+                {
+                    print_tabs(depth + 2);
+                    self->depth = depth + 3;
+                    walk_ast(self, vector_get(*expr->args, j));
+                }
             }
-        }
-    }
-    else if (node->type == POST_ACCESS)
-    {
-        printf("[postfix_access]\n");
-        print_tabs(depth); printf("postfix-target: ");
-        self->depth = depth + 1;
-        walk_ast(self, node->target);
-
-        if (node->expr)
-        {
-            print_tabs(depth); printf("postfix-accessor: ");
-            walk_ast(self, node->expr);
+            else if (expr->type == POST_ACCESS)
+            {
+                printf("[post-access]: ");
+                self->depth = depth + 1;
+                walk_ast(self, expr->accessor);
+            }
         }
     }
 

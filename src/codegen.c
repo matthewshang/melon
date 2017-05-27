@@ -285,29 +285,29 @@ static void gen_node_unary(astwalker_t *self, node_unary_t *node)
 
 static void gen_node_postfix(astwalker_t *self, node_postfix_t *node)
 {
-    uint8_t nargs = 0;
-    if (node->type == POST_CALL && node->args)
-    {
-        for (size_t i = 0; i < vector_size(*node->args); i++)
-        {
-            walk_ast(self, vector_get(*node->args, i));
-        }
-        nargs = vector_size(*node->args);
-    }
+    //uint8_t nargs = 0;
+    //if (node->type == POST_CALL && node->args)
+    //{
+    //    for (size_t i = 0; i < vector_size(*node->args); i++)
+    //    {
+    //        walk_ast(self, vector_get(*node->args, i));
+    //    }
+    //    nargs = vector_size(*node->args);
+    //}
 
-    walk_ast(self, node->target);
+    //walk_ast(self, node->target);
 
-    if (node->type == POST_CALL)
-    {
-        emit_bytes(CODE, (uint8_t)OP_CALL, nargs);
-    }
-    else if (node->type == POST_ACCESS)
-    {
-        node_var_t *expr = (node_var_t*)node->expr;
-        emit_bytes(CODE, (uint8_t)OP_LOADK, 
-            cpool_add_constant(CONSTANTS, FROM_CSTR(strdup(expr->identifier))));
-        emit_byte(CODE, node->base.is_assign ? OP_STOREF : OP_LOADF);
-    }
+    //if (node->type == POST_CALL)
+    //{
+    //    emit_bytes(CODE, (uint8_t)OP_CALL, nargs);
+    //}
+    //else if (node->type == POST_ACCESS)
+    //{
+    //    node_var_t *expr = (node_var_t*)node->expr;
+    //    emit_bytes(CODE, (uint8_t)OP_LOADK, 
+    //        cpool_add_constant(CONSTANTS, FROM_CSTR(strdup(expr->identifier))));
+    //    emit_byte(CODE, node->base.is_assign ? OP_STOREF : OP_LOADF);
+    //}
 }
 
 static void gen_node_var(astwalker_t *self, node_var_t *node)
