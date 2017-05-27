@@ -312,6 +312,11 @@ static void gen_node_postfix(astwalker_t *self, node_postfix_t *node)
 
 static void gen_node_var(astwalker_t *self, node_var_t *node)
 {
+    if (node->location == LOC_CLASS)
+    {
+        emit_bytes(CODE, OP_LOADL, 0);
+        emit_bytes(CODE, OP_LOADI, node->idx);
+    }
     emit_loadstore(CODE, node->location, node->idx, node->base.is_assign);
 }
 

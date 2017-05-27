@@ -147,10 +147,6 @@ static void visit_class_decl_global(struct astwalker *self, node_class_decl_t *n
             {
                 ident = ((node_var_decl_t*)decl)->ident;
             }
-            else if (decl->type == NODE_FUNC_DECL)
-            {
-                ident = ((node_func_decl_t*)decl)->identifier;
-            }
             else
             {
                 semantic_error(self, decl->token, "Class declarations must be a variable or function\n");
@@ -371,16 +367,19 @@ static void visit_var(struct astwalker *self, node_var_t *node)
     node_r context_stack = ((semantic_t*)self->data)->context_stack;
 
     uint16_t funcs_traversed = 0;
+    uint16_t classes_traversed = 0;
     uint16_t len = vector_size(context_stack);
-    for (int i = vector_size(context_stack) - 1; i >= 0; i--)
+    for (int i = len - 1; i >= 0; i--)
     {
         node_t *context = vector_get(context_stack, i);
         symtable_t *symtable = node_get_symtable(context);
 
         bool context_is_global = context_is_root(context);
         bool context_is_func = context->type == NODE_FUNC_DECL;
+        bool context_is_class = context->type == NODE_CLASS_DECL;
 
         if (context_is_func) funcs_traversed++;
+        if (context_is_class) classes_traversed++;
 
         decl_info_t decl;
         if (!symtable_lookup(symtable, node->identifier, &decl))
@@ -416,6 +415,14 @@ static void visit_var(struct astwalker *self, node_var_t *node)
                 node->location = LOC_LOCAL;
                 node->idx = decl.idx;
             }
+            return;
+        }
+
+        if (context_is_class)
+        {
+            node->location = LOC_CLASS;
+            node->idx = decl.idx;
+            printf("class context: %s %d\n", node->identifier, node->idx);
             return;
         }
 

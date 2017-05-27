@@ -5,7 +5,6 @@
 #include "astwalker.h"
 #include "symtable.h"
 
-#define NODE_TEST(node) node
 #define NODE_SETBASE(node, _type) node->base.type = _type
 
 node_t* node_block_new(node_r *stmts)

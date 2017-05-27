@@ -1,15 +1,17 @@
 class Bar
 {
 	var a = 0;
+	var b;
 	
-	var test = func()
+	func test()
 	{
-		println("Hello World");
+		a = 2;
+		b = 1;
 	}
 
 	func test2()
 	{
-		println("Bye");
+		return a;
 	}
 }
 
