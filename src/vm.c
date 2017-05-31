@@ -303,14 +303,14 @@ void vm_run(vm_t *vm)
         }
         case OP_CALL:
         {
-            value_t v = STACK_POP;
+            uint8_t nargs = READ_BYTE;
+            value_t v = *(vm->stacktop - nargs - 1);
             if (IS_CLASS(v))
             {
                 class_t *c = AS_CLASS(v);
                 value_t instance = FROM_INSTANCE(instance_new(c));
                 vm_push_mem(vm, instance);
                 STACK_PUSH(instance);
-                vm->ip++;
 
                 closure_t *init = class_lookup_closure(c, FROM_CSTR("$init"));
                 if (!init) RUNTIME_ERROR("missing init function in class %s\n", c->identifier);
@@ -323,21 +323,21 @@ void vm_run(vm_t *vm)
             }
             if (!IS_CLOSURE(v)) 
                 RUNTIME_ERROR("cannot call non-class or non-closure\n");
+
             closure_t *cl = AS_CLOSURE(v);
             if (cl->f->type == FUNC_MELON)
             {
-                callstack_push(&vm->callstack, vm->ip + 1, closure, bp);
-                bp = vm->stacktop - vm->stack - READ_BYTE;
+                callstack_push(&vm->callstack, vm->ip, closure, bp);
+                bp = vm->stacktop - vm->stack - nargs;
                 closure = cl;
                 vm->ip = &vector_get(cl->f->bytecode, 0);
             }
             else if (cl->f->type == FUNC_NATIVE)
             {
-                uint8_t nargs = READ_BYTE;
                 value_t *adr = vm->stacktop - 1;
                 adr -= nargs == 0 ? 0 : nargs - 1;
                 cl->f->cfunc(adr, nargs);
-                STACK_POPN(nargs);
+                STACK_POPN(nargs + 1);
             }
             break;
         }
@@ -353,8 +353,8 @@ void vm_run(vm_t *vm)
         case OP_RETURN:
         {
             close_upvalues(&vm->upvalues, &vm->stack[bp]);
-            vm->stack[bp] = STACK_PEEK;
-            STACK_POPN(vm->stacktop - vm->stack - bp - 1);
+            vm->stack[bp - 1] = STACK_PEEK;
+            STACK_POPN(vm->stacktop - vm->stack - bp);
             vm->ip = callstack_ret(&vm->callstack, &closure, &bp);
             break;
         }

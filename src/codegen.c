@@ -285,24 +285,10 @@ static void gen_node_unary(astwalker_t *self, node_unary_t *node)
 
 static void gen_node_postfix(astwalker_t *self, node_postfix_t *node)
 {
+    walk_ast(self, node->target);
+
     bool is_method = vector_get(*node->exprs, 0)->type == POST_ACCESS;
     int len = vector_size(*node->exprs);
-    for (int i = len - 1; i >= 0; i--)
-    {
-        postfix_expr_t *expr = vector_get(*node->exprs, i);
-        if (expr->type == POST_CALL)
-        {
-            if (is_method) walk_ast(self, node->target);
-            
-            if (!expr->args) continue;
-            for (size_t j = 0; j < vector_size(*expr->args); j++)
-            {
-                walk_ast(self, vector_get(*expr->args, j));
-            }
-        }
-    }
-
-    walk_ast(self, node->target);
 
     for (int i = 0; i < len; i++)
     {
@@ -310,6 +296,12 @@ static void gen_node_postfix(astwalker_t *self, node_postfix_t *node)
         if (expr->type == POST_CALL)
         {
             uint8_t nargs = expr->args ? vector_size(*expr->args) : 0;
+
+            for (size_t j = 0; j < nargs; j++)
+            {
+                walk_ast(self, vector_get(*expr->args, j));
+            }
+
             if (is_method) nargs++;
             emit_bytes(CODE, (uint8_t)OP_CALL, nargs);
         }

@@ -1,0 +1,33 @@
+class Foo
+{
+	var x = 0;
+
+	func getX()
+	{
+		return x;
+	}
+
+	func setX(val)
+	{
+		x = val;
+	}
+}
+
+class Bar
+{
+	var a = 0;
+
+	func getA()
+	{
+		return a;
+	}
+
+	func setA(val)
+	{
+		a = val;
+	}
+}
+
+var foo = Foo();
+foo.setX(1);
+println(foo.getX());
