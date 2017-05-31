@@ -417,8 +417,16 @@ static void visit_var(struct astwalker *self, node_var_t *node)
             }
             else
             {
+                bool is_method = false;
+                while (i >= 0)
+                {
+                    if (vector_get(context_stack, i)->type == NODE_CLASS_DECL)
+                        is_method = true;
+                    i--;
+                }
+                
                 node->location = LOC_LOCAL;
-                node->idx = decl.idx;
+                node->idx = decl.idx + is_method;
             }
             return;
         }

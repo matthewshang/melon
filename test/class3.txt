@@ -1,0 +1,19 @@
+class Bar
+{
+	var a = 5;
+
+	func getA()
+	{
+		return a;
+	}
+
+	func setA(val)
+	{
+		a = val;
+	}
+}
+
+var bar = Bar();
+println(bar.getA());
+bar.setA(2);
+println(bar.getA());

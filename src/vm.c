@@ -241,7 +241,11 @@ void vm_run(vm_t *vm)
         {
             value_t accessor = STACK_POP;
             instance_t *object = AS_INSTANCE(STACK_POP);
-            value_t *index = class_lookup(object->c, accessor);
+            value_t *index = NULL;
+            if (IS_INT(accessor))
+                index = &accessor;
+            else
+                index = class_lookup(object->c, accessor);
             if (!index)
                 RUNTIME_ERROR("class %s does not have property %s\n", object->c->identifier, AS_STR(accessor));
 
