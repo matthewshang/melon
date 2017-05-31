@@ -223,7 +223,7 @@ void vm_run(vm_t *vm)
         case OP_RET0: 
         {
             close_upvalues(&vm->upvalues, &vm->stack[bp]);
-            STACK_POPN((vm->stacktop - vm->stack) - bp);
+            STACK_POPN(vm->stacktop - vm->stack - bp + 1);
             vm->ip = callstack_ret(&vm->callstack, &closure, &bp);
             break;
         }
@@ -240,6 +240,7 @@ void vm_run(vm_t *vm)
         case OP_LOADF:
         {
             value_t accessor = STACK_POP;
+            bool keepobj = READ_BYTE;
             instance_t *object = AS_INSTANCE(STACK_POP);
             value_t *index = NULL;
             if (IS_INT(accessor))
@@ -253,6 +254,8 @@ void vm_run(vm_t *vm)
                 STACK_PUSH(object->vars[AS_INT(*index)]);
             else
                 STACK_PUSH(*index);
+
+            if (keepobj) STACK_PUSH(FROM_INSTANCE(object));
             break;
         }
         case OP_LOADG: STACK_PUSH(vector_get(vm->globals, READ_BYTE)); break;

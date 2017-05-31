@@ -124,7 +124,7 @@ static void internal_disassemble(function_t *func, uint8_t depth)
             if (op == OP_LOADI || op == OP_STOREL || op == OP_LOADL || op == OP_JIF
                 || op == OP_JMP || op == OP_LOOP || op == OP_LOADK || op == OP_LOADG
                 || op == OP_STOREG || op == OP_CALL || op == OP_LOADU || op == OP_STOREU
-                || op == OP_NEWUP)
+                || op == OP_NEWUP || op == OP_LOADF)
             {
                 printf(" %d", vector_get(func->bytecode, ++i));
             }

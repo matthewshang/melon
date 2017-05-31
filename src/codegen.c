@@ -73,7 +73,10 @@ static void emit_loadstore(byte_r *code, location_e loc, uint8_t idx, bool store
     }
     else if (loc == LOC_CLASS)
     {
-        emit_byte(code, store ? OP_STOREF : OP_LOADF);
+        if (store)
+            emit_byte(code, OP_STOREF);
+        else
+            emit_bytes(code, OP_LOADF, 0);
     }
 }
 
@@ -295,6 +298,7 @@ static void gen_node_postfix(astwalker_t *self, node_postfix_t *node)
         postfix_expr_t *expr = vector_get(*node->exprs, i);
         if (expr->type == POST_CALL)
         {
+            bool is_method = i > 0 && vector_get(*node->exprs, i - 1)->type == POST_ACCESS;
             uint8_t nargs = expr->args ? vector_size(*expr->args) : 0;
 
             for (size_t j = 0; j < nargs; j++)
@@ -307,10 +311,14 @@ static void gen_node_postfix(astwalker_t *self, node_postfix_t *node)
         }
         else if (expr->type == POST_ACCESS)
         {
+            bool is_method = i < len - 1 && vector_get(*node->exprs, i + 1)->type == POST_CALL;
             node_var_t *var = (node_var_t*)expr->accessor;
             emit_bytes(CODE, (uint8_t)OP_LOADK, 
                 cpool_add_constant(CONSTANTS, FROM_CSTR(strdup(var->identifier))));
-            emit_byte(CODE, (node->base.is_assign && i == len - 1) ? OP_STOREF : OP_LOADF);
+            if (node->base.is_assign && i == len - 1)
+                emit_byte(CODE, OP_STOREF);
+            else
+                emit_bytes(CODE, OP_LOADF, is_method ? 1 : 0);
         }
     }
 

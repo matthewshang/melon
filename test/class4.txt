@@ -31,3 +31,9 @@ class Bar
 var foo = Foo();
 foo.setX(1);
 println(foo.getX());
+
+var bar = Bar();
+bar.setA(foo);
+println(bar.getA().getX());
+bar.getA().setX(5);
+println(bar.getA().getX());
