@@ -25,15 +25,15 @@ int melon_compile(const char *file, function_t *func, cli_options_t *options)
 
     if (options->c_print_ast) ast_print(ast);
 
-    //if (!semantic_process(ast, &lexer)) goto compile_abort;
+    if (!semantic_process(ast, &lexer)) goto compile_abort;
 
-    //codegen_t gen = codegen_create(func);
-    //codegen_run(&gen, ast);
+    codegen_t gen = codegen_create(func);
+    codegen_run(&gen, ast);
 
-    //if (options->c_func_disasm) function_disassemble(func);
-    //if (options->c_dump_cpool) function_cpool_dump(func);
+    if (options->c_func_disasm) function_disassemble(func);
+    if (options->c_dump_cpool) function_cpool_dump(func);
 
-    //codegen_destroy(&gen);
+    codegen_destroy(&gen);
     ast_free(ast);
     lexer_destroy(&lexer);
     return 0;

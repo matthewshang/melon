@@ -334,18 +334,23 @@ static void visit_unary(struct astwalker *self, node_unary_t *node)
 
 static void visit_postfix(struct astwalker *self, node_postfix_t *node)
 {
-    //if (node->type == POST_CALL)
-    //{
-    //    if (node->args)
-    //    {
-    //        for (size_t i = 0; i < vector_size(*node->args); i++)
-    //        {
-    //            walk_ast(self, vector_get(*node->args, i));
-    //        }
-    //    }
-    //}
+    for (size_t i = 0; i < vector_size(*node->exprs); i++)
+    {
+        postfix_expr_t *expr = vector_get(*node->exprs, i);
+        if (expr->type == POST_CALL)
+        {
+            if (expr->args)
+            {
+                for (size_t i = 0; i < vector_size(*expr->args); i++)
+                {
+                    walk_ast(self, vector_get(*expr->args, i));
+                }
+            }
+        }
+    }
 
-    //walk_ast(self, node->target);
+
+    walk_ast(self, node->target);
 }
 
 static uint8_t add_upvalue(node_func_decl_t *f, uint16_t distance, decl_info_t decl, const char *symbol)

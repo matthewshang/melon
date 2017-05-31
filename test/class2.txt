@@ -1,21 +1,22 @@
+class Foo
+{
+	var mybar;
+}
+
 class Bar
 {
 	var a = 0;
-	var b;
-	
-	func test()
-	{
-		a = 2;
-		b = 1;
-	}
 
-	func test2()
+	func hi()
 	{
-		return a;
+		println("hi");
 	}
 }
 
+var foo = Foo();
 var bar = Bar();
-println(bar.a.x(2)()(1).x, bar.b);
-#bar.test();
-#bar.test2();
+
+foo.mybar = bar
+foo.mybar.a = 2;
+println(foo.mybar.a);
+foo.mybar.hi();
