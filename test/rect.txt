@@ -1,0 +1,30 @@
+class Rectangle
+{
+	var width = 0;
+	var height = 0;
+
+	func setWidth(w)
+	{
+		width = w;
+	}
+
+	func setHeight(h)
+	{
+		height = h;
+	}
+
+	func getArea()
+	{
+		return width * height;
+	}
+}
+
+var a = Rectangle();
+a.setWidth(5);
+a.setHeight(7);
+println(a.getArea());
+
+var b = Rectangle();
+b.setWidth(12);
+b.setHeight(12);
+println(b.getArea());

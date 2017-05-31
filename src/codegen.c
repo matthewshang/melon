@@ -14,9 +14,7 @@
 #define SYMTABLE ((codegen_t*)self->data)->symtable
 
 #define GET_CONTEXT vector_peek(((codegen_t*)self->data)->decls)
-//#define PUSH_CONTEXT(x) vector_push(value_t, ((codegen_t*)self->data)->decls, x)
 #define PUSH_CONTEXT(x) push_context((codegen_t*)self->data, x)
-//#define POP_CONTEXT vector_pop(((codegen_t*)self->data)->decls)
 #define POP_CONTEXT pop_context((codegen_t*)self->data)
 
 #define AS_GEN(self) ((codegen_t*)self->data)
@@ -260,7 +258,6 @@ static void gen_node_class_decl(struct astwalker *self, node_class_decl_t *node)
 
     store_decl(self, FROM_CLASS(c), NULL);
 
-
     emit_loadstore(CODE, LOC_GLOBAL, node->idx, true);
 }
 
@@ -334,71 +331,44 @@ static void gen_node_var(astwalker_t *self, node_var_t *node)
     emit_loadstore(CODE, node->location, node->idx, node->base.is_assign);
 }
 
-static int constant_exists(value_r *constants, node_literal_t *node)
-{
-    value_e type = node->type;
-    for (int i = 0; i < vector_size(*constants); i++)
-    {
-        value_t val = vector_get(*constants, i);
-        if (val.type == type)
-        {
-            if (val.type == VAL_STR)
-                if (strcmp(node->u.s, val.s) == 0) return i;
-            if (val.type == VAL_BOOL || val.type == VAL_INT)
-                if (node->u.i == val.i) return i;
-            if (val.type == VAL_FLOAT)
-                if (node->u.d == val.d) return i;
-        }
-    }
-
-    return -1;
-}
-
 static void gen_node_literal(astwalker_t *self, node_literal_t *node)
 {
     function_t *context = AS_CLOSURE(GET_CONTEXT)->f;
     value_r *constpool = &context->constpool;
     byte_r *code = &context->bytecode;
 
-    int index = constant_exists(constpool, node);
-    if (index != -1)
-    {
-        emit_bytes(code, OP_LOADK, (uint8_t)index);
-        return;
-    }
-
     switch (node->type)
     {
     case LITERAL_BOOL:
     {
-        emit_bytes(code, OP_LOADK, (uint8_t)vector_size(*constpool));
-        vector_push(value_t, *constpool, FROM_BOOL(node->u.i));
+        emit_bytes(code, OP_LOADK, 
+            cpool_add_constant(constpool, FROM_BOOL(node->u.i)));
         break;
     }
     case LITERAL_INT:
     {
-        if (node->u.i < MAX_LITERAL_INT)
+        if (node->u.i >= 0 && node->u.i < MAX_LITERAL_INT)
         {
             emit_bytes(code, OP_LOADI, (uint8_t)node->u.i);
+            return;
         }
         else
         {
-            emit_bytes(code, OP_LOADK, (uint8_t)vector_size(*constpool));
-            vector_push(value_t, *constpool, FROM_INT(node->u.i));
+            emit_bytes(code, OP_LOADK, 
+                cpool_add_constant(constpool, FROM_INT(node->u.i)));
         }
         break;
     }
     case LITERAL_FLT:
     {
-        emit_bytes(code, OP_LOADK, (uint8_t)vector_size(*constpool));
-        vector_push(value_t, *constpool, FROM_FLOAT(node->u.d));
+        emit_bytes(code, OP_LOADK, 
+            cpool_add_constant(constpool, FROM_FLOAT(node->u.d)));
         break;
     }
     case LITERAL_STR:
     {
-        emit_bytes(code, OP_LOADK, (uint8_t)vector_size(*constpool));
-        value_t str = FROM_CSTR(strdup(node->u.s));
-        vector_push(value_t, *constpool, str);
+        emit_bytes(code, OP_LOADK, 
+            cpool_add_constant(constpool, FROM_CSTR(strdup(node->u.s))));
         break;
     }
     default: break;

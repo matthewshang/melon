@@ -435,7 +435,6 @@ static void visit_var(struct astwalker *self, node_var_t *node)
         {
             node->location = LOC_CLASS;
             node->idx = decl.idx;
-            printf("class context: %s %d\n", node->identifier, node->idx);
             return;
         }
 
