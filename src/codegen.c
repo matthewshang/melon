@@ -254,6 +254,15 @@ static void gen_node_class_decl(struct astwalker *self, node_class_decl_t *node)
     POP_CONTEXT;
 
     emit_bytes(&init->f->bytecode, (uint8_t)OP_LOADL, 0);
+    node_var_decl_t *constructor = node->constructor;
+    if (constructor)
+    {
+        emit_bytes(&init->f->bytecode, (uint8_t)OP_LOADI, constructor->idx);
+        emit_bytes(&init->f->bytecode, (uint8_t)OP_LOADF, 1);
+        emit_bytes(&init->f->bytecode, (uint8_t)OP_CALL, 1);
+        emit_bytes(&init->f->bytecode, (uint8_t)OP_LOADL, 0);
+    }
+
     emit_byte(&init->f->bytecode, (uint8_t)OP_RETURN);
 
     store_decl(self, FROM_CLASS(c), NULL);

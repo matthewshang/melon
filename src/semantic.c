@@ -276,8 +276,12 @@ static void visit_var_decl(struct astwalker *self, node_var_decl_t *node)
     else if (env_class)
     {
         node_class_decl_t *c = (node_class_decl_t*)context;
+        if (node->init && node->init->type == NODE_FUNC_DECL && strcmp(node->ident, c->identifier) == 0) 
+            c->constructor = node;
+
         node->idx = c->num_instvars++;
         node->loc = LOC_CLASS;
+        printf("env_class: %s, %d\n", node->ident, node->idx);
     }
 }
 
