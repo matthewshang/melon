@@ -257,9 +257,15 @@ static void gen_node_class_decl(struct astwalker *self, node_class_decl_t *node)
     node_var_decl_t *constructor = node->constructor;
     if (constructor)
     {
+        node_func_decl_t *constr_node = (node_func_decl_t*)constructor->init;
         emit_bytes(&init->f->bytecode, (uint8_t)OP_LOADI, constructor->idx);
         emit_bytes(&init->f->bytecode, (uint8_t)OP_LOADF, 1);
-        emit_bytes(&init->f->bytecode, (uint8_t)OP_CALL, 1);
+        uint8_t nparams = vector_size(*constr_node->params);
+        for (size_t i = 0; i < nparams; i++)
+        {
+            emit_bytes(&init->f->bytecode, (uint8_t)OP_LOADL, i + 1);
+        }
+        emit_bytes(&init->f->bytecode, (uint8_t)OP_CALL, 1 + nparams);
         emit_bytes(&init->f->bytecode, (uint8_t)OP_LOADL, 0);
     }
 

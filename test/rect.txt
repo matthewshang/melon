@@ -3,10 +3,10 @@ class Rectangle
 	var width;
 	var height;
 
-	func Rectangle()
+	func Rectangle(w, h)
 	{
-		width = 0;
-		height = 0;
+		width = w;
+		height = h;
 	}
 
 	func setWidth(w)
@@ -25,15 +25,17 @@ class Rectangle
 	}
 }
 
-var a = Rectangle();
+var a = Rectangle(1, 2);
+println(a.getArea());
 a.setWidth(5);
 a.setHeight(7);
 println(a.getArea());
 
-var b = Rectangle();
+var b = Rectangle(5, 5);
+println(b.getArea());
 b.setWidth(12);
 b.setHeight(12);
 println(b.getArea());
 
-var c = Rectangle();
+var c = Rectangle(1, 1);
 println(c.getArea());

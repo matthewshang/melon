@@ -281,7 +281,7 @@ static void visit_var_decl(struct astwalker *self, node_var_decl_t *node)
 
         node->idx = c->num_instvars++;
         node->loc = LOC_CLASS;
-        printf("env_class: %s, %d\n", node->ident, node->idx);
+        //printf("env_class: %s, %d\n", node->ident, node->idx);
     }
 }
 

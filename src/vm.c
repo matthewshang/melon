@@ -310,18 +310,23 @@ void vm_run(vm_t *vm)
             value_t v = *(vm->stacktop - nargs - 1);
             if (IS_CLASS(v))
             {
+
                 class_t *c = AS_CLASS(v);
                 value_t instance = FROM_INSTANCE(instance_new(c));
                 vm_push_mem(vm, instance);
-                STACK_PUSH(instance);
+
 
                 closure_t *init = class_lookup_closure(c, FROM_CSTR("$init"));
                 if (!init) RUNTIME_ERROR("missing init function in class %s\n", c->identifier);
 
                 callstack_push(&vm->callstack, vm->ip, closure, bp);
-                bp = vm->stacktop - vm->stack - 1;
+                bp = vm->stacktop - vm->stack - nargs - 1;
                 closure = init;
                 vm->ip = &vector_get(init->f->bytecode, 0);
+
+                vm->stack[bp] = instance;
+
+
                 break;
             }
             if (!IS_CLOSURE(v)) 
