@@ -16,12 +16,13 @@ typedef enum
     TOK_IDENTIFIER, 
     TOK_VAR, TOK_CLASS,
     TOK_IF, TOK_ELSE, TOK_WHILE, TOK_TRUE, TOK_FALSE, TOK_FUNC, TOK_RETURN,
+    TOK_STATIC,
 
     TOK_EQ, TOK_ADDEQ, TOK_SUBEQ, TOK_MULEQ, TOK_DIVEQ,
     TOK_ADD, TOK_SUB, TOK_MUL, TOK_DIV, TOK_MOD, 
     TOK_BANG /*!*/, TOK_EQEQ, TOK_NEQ, TOK_LT, TOK_GT, TOK_LTE, TOK_GTE, TOK_AND, TOK_OR,
     
-    TOK_ERROR, TOK_EOF,
+    TOK_ERROR, TOK_EOF, TOK_NONE,
 
     TOK_LAST
 } token_type;
@@ -37,6 +38,7 @@ typedef struct
 
 token_t token_create(token_type type, uint32_t offset, uint32_t length, uint32_t line, uint32_t col);
 token_t token_error();
+token_t token_none();
 
 token_type token_punc(char c);
 

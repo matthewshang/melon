@@ -22,6 +22,11 @@ token_t token_error()
     return tok;
 }
 
+token_t token_none()
+{
+    return token_create(TOK_NONE, 0, 0, 0, 0);
+}
+
 token_type token_punc(char c)
 {
     if (c == ';') return TOK_SEMICOLON;
@@ -114,6 +119,7 @@ const char *token_type_string(token_type type)
     case TOK_FALSE: return "false";
     case TOK_FUNC: return "func";
     case TOK_RETURN: return "return";
+    case TOK_STATIC: return "static";
     default: return "token";
     }
 }

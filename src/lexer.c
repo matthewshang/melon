@@ -141,6 +141,7 @@ static token_type get_keyword(charstream_t *source, int start, int bytes)
     if (bytes == 6)
     {
         if (strequals(iden, bytes, "return")) return TOK_RETURN;
+        if (strequals(iden, bytes, "static")) return TOK_STATIC;
     }
     return TOK_IDENTIFIER;
 }

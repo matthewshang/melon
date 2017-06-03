@@ -423,7 +423,7 @@ static node_t *parse_stmt(lexer_t *lexer)
     else return parse_expr_stmt(lexer);
 }
 
-static node_t *parse_var_decl(lexer_t *lexer)
+static node_t *parse_var_decl(lexer_t *lexer, token_t storage)
 {
     if (!parse_required(lexer, TOK_IDENTIFIER, false))
     {
@@ -441,10 +441,10 @@ static node_t *parse_var_decl(lexer_t *lexer)
 
     lexer_match(lexer, TOK_SEMICOLON);
 
-    return node_var_decl_new(token, (const char*)ident, init);
+    return node_var_decl_new(token, storage, (const char*)ident, init);
 }
 
-static node_t *parse_func_decl(lexer_t *lexer)
+static node_t *parse_func_decl(lexer_t *lexer, token_t storage)
 {
     if (!parse_required(lexer, TOK_IDENTIFIER, false))
     {
@@ -460,7 +460,7 @@ static node_t *parse_func_decl(lexer_t *lexer)
 
     node_t *body = parse_block(lexer);
 
-    return node_var_decl_new(token, (const char*)ident,
+    return node_var_decl_new(token, storage, (const char*)ident,
         node_func_decl_new(token, (const char*)ident, params, (node_block_t*)body));
 }
 
@@ -483,10 +483,14 @@ static node_t *parse_class_decl(lexer_t *lexer)
 
 static node_t *parse_decl(lexer_t *lexer)
 {
+    token_t storage = token_none();
+    if (lexer_match(lexer, TOK_STATIC))
+        storage = lexer_previous(lexer);
+
     if (lexer_match(lexer, TOK_VAR)) 
-        return parse_var_decl(lexer);
+        return parse_var_decl(lexer, storage);
     if (lexer_match(lexer, TOK_FUNC))
-        return parse_func_decl(lexer);
+        return parse_func_decl(lexer, storage);
     if (lexer_match(lexer, TOK_CLASS))
         return parse_class_decl(lexer);
 

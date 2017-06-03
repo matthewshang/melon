@@ -1,0 +1,12 @@
+class Foo
+{
+	var x;
+	var y;
+
+	static var total = 0;
+
+	static func test()
+	{
+		println(total);
+	}
+}

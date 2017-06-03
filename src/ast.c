@@ -45,12 +45,13 @@ node_t *node_return_new(node_t *expr)
     return (node_t*)node;
 }
 
-node_t *node_var_decl_new(token_t token, const char *ident, node_t *init)
+node_t *node_var_decl_new(token_t token, token_t storage, const char *ident, node_t *init)
 {
     node_var_decl_t *node = (node_var_decl_t*)calloc(1, sizeof(node_var_decl_t));
     NODE_SETBASE(node, NODE_VAR_DECL);
     node->base.token = token;
 
+    node->storage = storage;
     node->ident = ident;
     node->init = init;
     return (node_t*)node;
@@ -409,7 +410,15 @@ static void print_node_return(astwalker_t *self, node_return_t *node)
 
 static void print_node_var_decl(astwalker_t *self, node_var_decl_t *node)
 {
-    printf("[var_decl] ident: %s\n", node->ident);
+    printf("[var_decl] ident: %s", node->ident);
+    if (node->storage.type != TOK_NONE)
+    {
+        printf(", storage: %s\n", token_type_string(node->storage.type));
+    }
+    else
+    {
+        printf("\n");
+    }
     if (node->init)
     {
         int depth = self->depth;

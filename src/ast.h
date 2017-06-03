@@ -80,6 +80,7 @@ typedef struct
     node_t base;
     const char *ident;
     node_t *init;
+    token_t storage;
 
     location_e loc;
     uint8_t idx;
@@ -185,7 +186,7 @@ node_t *node_if_new(node_t *cond, node_t *then, node_t *els);
 node_t *node_loop_new(node_t *cond, node_t *body);
 node_t *node_return_new(node_t *expr);
 
-node_t *node_var_decl_new(token_t token, const char *ident, node_t *init);
+node_t *node_var_decl_new(token_t token, token_t storage, const char *ident, node_t *init);
 node_t *node_func_decl_new(token_t token, const char *identifier, vector_t(node_var_t*) *params, node_block_t *body);
 node_t *node_class_decl_new(token_t token, const char *identifier, node_r *decls);
 
