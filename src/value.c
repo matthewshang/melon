@@ -158,8 +158,18 @@ static void debug_print_val(value_t v, uint8_t depth)
     }
     case VAL_CLASS:
     {
-        printf("[class] %s\n", AS_CLASS(v)->identifier);
-        internal_class_print(AS_CLASS(v), depth + 1); break;
+        class_t *c = AS_CLASS(v);
+        printf("[class] %s\n", c->identifier);
+        internal_class_print(c, depth + 1); 
+        if (c->metaclass)
+        {
+            class_t *meta = c->metaclass;
+            print_tabs(depth);
+            printf("[class] %s\n", meta->identifier);
+            internal_class_print(meta, depth + 1);
+        }
+        
+        break;
     }
     default: break;
     }
@@ -206,7 +216,6 @@ void function_cpool_dump(function_t *func)
 {
     internal_cpool_dump(func, 0);
 }
-
 
 void function_disassemble(function_t *func)
 {
@@ -257,6 +266,9 @@ class_t *class_new(const char *identifier, uint16_t nvars)
     c->identifier = identifier;
     c->nvars = nvars;
     c->htable = hashtable_new(384);
+    c->meta_inited = false;
+    c->static_vars = NULL;
+    c->metaclass = NULL;
     return c;
 }
 
@@ -273,6 +285,8 @@ void class_free(class_t *c)
     if (c)
     {
         if (c->identifier) free(c->identifier);
+        if (c->metaclass) class_free(c->metaclass);
+        if (c->static_vars) free(c->static_vars);
         hashtable_iterate(c->htable, free_class_strings);
         hashtable_free(c->htable);
         free(c);
@@ -284,6 +298,7 @@ void class_print(class_t *c)
     if (!c) return;
 
     internal_class_print(c, 0);
+    if (c->metaclass) internal_class_print(c->metaclass, 0);
 }
 
 void class_bind(class_t *c, value_t key, value_t value)

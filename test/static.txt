@@ -1,12 +1,38 @@
 class Foo
 {
-	var x;
-	var y;
+	var x = 5;
 
 	static var total = 0;
 
-	static func test()
+	static func static_test()
 	{
+		print("Foo total: ");
 		println(total);
 	}
+
+	static func static_inc()
+	{
+		total += 1;
+	}
+
+	func test()
+	{
+		println(x);
+	}
+
+	func inc()
+	{
+		x += 1;
+	}
 }
+
+Foo.static_test();
+Foo.static_inc();
+Foo.static_test();
+
+var inst = Foo();
+inst.test();
+inst.inc();
+inst.test();
+
+Foo.static_test();

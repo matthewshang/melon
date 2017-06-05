@@ -118,6 +118,7 @@ typedef struct
     uint8_t idx;
     location_e loc;
     uint16_t num_instvars;
+    uint16_t num_staticvars;
     node_var_decl_t *constructor;
 } node_class_decl_t;
 

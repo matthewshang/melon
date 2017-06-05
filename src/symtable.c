@@ -57,6 +57,23 @@ uint8_t symtable_add_local(symtable_t *table, const char *symbol)
     return decl.idx;
 }
 
+void symtable_modify_decl(symtable_t * table, const char * symbol, uint8_t idx)
+{
+    for (int j = table->top; j >= 0; j--)
+    {
+        symtable_entry_r *scope = vector_get(table->stack, j);
+        for (size_t i = 0; i < vector_size(*scope); i++)
+        {
+            symtable_entry_t *entry = &vector_get(*scope, i);
+            if (strcmp(symbol, entry->identifier) == 0)
+            {
+                entry->decl.idx = idx;
+                return;
+            }
+        }
+    }
+}
+
 uint8_t symtable_nvars(symtable_t *table)
 {
     uint8_t nvars = 0;

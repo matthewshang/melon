@@ -82,6 +82,7 @@ node_t *node_class_decl_new(token_t token, const char *identifier, node_r *decls
     node->decls = decls;
 
     node->num_instvars = 0;
+    node->num_staticvars = 0;
     node->constructor = NULL;
     return (node_t*)node;
 }

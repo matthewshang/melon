@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #include "astwalker.h"
 #include "core.h"
@@ -204,6 +205,10 @@ static void gen_node_var_decl(astwalker_t *self, node_var_decl_t *node)
     else if (env_class)
     {
         class_t *c = AS_CLASS(context);
+
+        if (node->storage.type == TOK_STATIC)
+            c = c->metaclass;
+
         class_bind(c, FROM_CSTR(strdup(node->ident)), FROM_INT(node->idx));
 
         if (node->init)
@@ -241,6 +246,15 @@ static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
 static void gen_node_class_decl(struct astwalker *self, node_class_decl_t *node)
 {
     class_t *c = class_new(strdup(node->identifier), node->num_instvars);
+    closure_t *meta_init = NULL;
+    if (node->num_staticvars > 0)
+    {
+        char buf[256];
+        snprintf(buf, sizeof(buf), "%s_meta", c->identifier);
+        c->metaclass = class_new(strdup(buf), node->num_staticvars);
+        meta_init = closure_new(function_new(strdup("$init")));
+        class_bind(c->metaclass, FROM_CSTR(strdup("$init")), FROM_CLOSURE(meta_init));
+    }
     closure_t *init = closure_new(function_new(strdup("$init")));
     class_bind(c, FROM_CSTR(strdup("$init")), FROM_CLOSURE(init));
 
@@ -270,6 +284,12 @@ static void gen_node_class_decl(struct astwalker *self, node_class_decl_t *node)
     }
 
     emit_byte(&init->f->bytecode, (uint8_t)OP_RETURN);
+
+    if (meta_init)
+    {
+        emit_bytes(&meta_init->f->bytecode, (uint8_t)OP_LOADL, 0);
+        emit_byte(&meta_init->f->bytecode, (uint8_t)OP_RETURN);
+    }
 
     store_decl(self, FROM_CLASS(c), NULL);
 

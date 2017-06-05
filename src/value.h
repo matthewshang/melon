@@ -66,6 +66,10 @@ typedef struct class_s
     struct hashtable_t *htable;
     uint16_t nvars;
 
+    class_t *metaclass;
+    bool meta_inited;
+    value_t *static_vars;
+
 } class_s;
 
 typedef struct instance_s

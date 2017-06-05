@@ -231,7 +231,27 @@ void vm_run(vm_t *vm)
 
         case OP_LOADL: STACK_PUSH(vm->stack[bp + READ_BYTE]); break;
         case OP_LOADI: STACK_PUSH(FROM_INT(READ_BYTE)); break;
-        case OP_LOADK: STACK_PUSH(function_cpool_get(closure->f, READ_BYTE)); break;
+        case OP_LOADK: 
+        {
+            value_t val = function_cpool_get(closure->f, READ_BYTE);
+            STACK_PUSH(val); 
+            if (IS_CLASS(val))
+            {
+                STACK_PUSH(val);
+                class_t *c = AS_CLASS(val);
+                if (c->meta_inited) break;
+                c->static_vars = (value_t*)calloc(c->metaclass->nvars, sizeof(value_t));
+                c->meta_inited = true;
+                closure_t *init = class_lookup_closure(c->metaclass, FROM_CSTR("$init"));
+                if (!init) RUNTIME_ERROR("missing meta init function in class %s\n", c->metaclass->identifier);
+
+                callstack_push(&vm->callstack, vm->ip, closure, bp);
+                bp = vm->stacktop - vm->stack - 1;
+                closure = init;
+                vm->ip = &vector_get(init->f->bytecode, 0);
+            }
+            break;
+        }
         case OP_LOADU: 
         {
             STACK_PUSH(*closure->upvalues[READ_BYTE]->value); 
@@ -241,21 +261,44 @@ void vm_run(vm_t *vm)
         {
             value_t accessor = STACK_POP;
             bool keepobj = READ_BYTE;
-            instance_t *object = AS_INSTANCE(STACK_POP);
+            value_t object = STACK_POP;
+            bool is_class = IS_CLASS(object);
             value_t *index = NULL;
             if (IS_INT(accessor))
+            {
                 index = &accessor;
+            }
             else
-                index = class_lookup(object->c, accessor);
+            {
+                if (is_class) index = class_lookup(AS_CLASS(object)->metaclass, accessor);
+                else index = class_lookup(AS_INSTANCE(object)->c, accessor);
+            }
+
             if (!index)
-                RUNTIME_ERROR("class %s does not have property %s\n", object->c->identifier, AS_STR(accessor));
+            {
+                if (is_class)
+                {
+                    RUNTIME_ERROR("class %s does not have static property %s\n",
+                        AS_CLASS(object)->metaclass->identifier, AS_STR(accessor));
+                }
+                else
+                {
+                    RUNTIME_ERROR("class %s does not have property %s\n",
+                        AS_INSTANCE(object)->c->identifier, AS_STR(accessor));
+                }
+            }
 
             if (IS_INT(*index))
-                STACK_PUSH(object->vars[AS_INT(*index)]);
+            {
+                if (is_class) STACK_PUSH(AS_CLASS(object)->static_vars[AS_INT(*index)]);
+                else STACK_PUSH(AS_INSTANCE(object)->vars[AS_INT(*index)]);
+            }
             else
+            {
                 STACK_PUSH(*index);
+            }
 
-            if (keepobj) STACK_PUSH(FROM_INSTANCE(object));
+            if (keepobj) STACK_PUSH(object);
             break;
         }
         case OP_LOADG: STACK_PUSH(vector_get(vm->globals, READ_BYTE)); break;
@@ -268,17 +311,42 @@ void vm_run(vm_t *vm)
         case OP_STOREF:
         {
             value_t accessor = STACK_POP;
-            instance_t *object = AS_INSTANCE(STACK_POP);
+            value_t object = STACK_POP;
+            bool is_class = IS_CLASS(object);
             value_t tostore = STACK_PEEK;
             value_t *index;
             if (IS_INT(accessor))
+            {
                 index = &accessor;
+            }
             else
-                index = class_lookup(object->c, accessor);
-            if (!index)
-                RUNTIME_ERROR("class %s does not have property %s\n", object->c->identifier, AS_STR(accessor));
+            {
+                if (is_class) index = class_lookup(AS_CLASS(object)->metaclass, accessor);
+                else index = class_lookup(AS_INSTANCE(object)->c, accessor);
+            }
 
-            object->vars[AS_INT(*index)] = tostore;
+            if (!index)
+            {
+                if (is_class)
+                {
+                    RUNTIME_ERROR("class %s does not have static property %s\n",
+                        AS_CLASS(object)->metaclass->identifier, AS_STR(accessor));
+                }
+                else
+                {
+                    RUNTIME_ERROR("class %s does not have property %s\n",
+                        AS_INSTANCE(object)->c->identifier, AS_STR(accessor));
+                }
+            }
+
+            if (is_class)
+            {
+                AS_CLASS(object)->static_vars[AS_INT(*index)] = tostore;
+            }
+            else
+            {
+                AS_INSTANCE(object)->vars[AS_INT(*index)] = tostore;
+            }
 
             break;
         }
@@ -310,11 +378,9 @@ void vm_run(vm_t *vm)
             value_t v = *(vm->stacktop - nargs - 1);
             if (IS_CLASS(v))
             {
-
                 class_t *c = AS_CLASS(v);
                 value_t instance = FROM_INSTANCE(instance_new(c));
                 vm_push_mem(vm, instance);
-
 
                 closure_t *init = class_lookup_closure(c, FROM_CSTR("$init"));
                 if (!init) RUNTIME_ERROR("missing init function in class %s\n", c->identifier);
@@ -325,7 +391,6 @@ void vm_run(vm_t *vm)
                 vm->ip = &vector_get(init->f->bytecode, 0);
 
                 vm->stack[bp] = instance;
-
 
                 break;
             }
