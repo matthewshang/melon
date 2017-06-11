@@ -85,8 +85,6 @@ void function_free(function_t *func)
         for (int i = 0; i < vector_size(func->constpool); i++)
         {
             value_t val = vector_get(func->constpool, i);
-            if (val.type == VAL_CLOSURE)
-                function_free(val.cl->f);
             value_destroy(val);
         }
         vector_destroy(func->constpool);
@@ -258,6 +256,7 @@ void closure_free(closure_t *closure)
         }
         free(closure->upvalues);
     }
+    function_free(closure->f);
     free(closure);
 }
 
@@ -290,12 +289,13 @@ class_t *class_new_with_meta(const char *identifier, uint16_t nvars, uint16_t ns
     return c;
 }
 
-static void free_class_strings(hash_entry_t *node)
+static void free_class_iterate(hash_entry_t *node)
 {
     if (IS_STR(node->key))
     {
         free(AS_STR(node->key));
     }
+    value_destroy(node->value);
 }
 
 void class_free(class_t *c)
@@ -305,7 +305,7 @@ void class_free(class_t *c)
         if (c->identifier) free(c->identifier);
         if (c->metaclass) class_free(c->metaclass);
         if (c->static_vars) free(c->static_vars);
-        hashtable_iterate(c->htable, free_class_strings);
+        hashtable_iterate(c->htable, free_class_iterate);
         hashtable_free(c->htable);
         free(c);
     }

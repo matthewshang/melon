@@ -60,8 +60,6 @@ static void object_classname(vm_t *vm, value_t *args, uint8_t nargs, uint32_t re
 }
 
 // temp stuff
-static function_t *core_println;
-static function_t *core_print;
 static closure_t *core_println_cl;
 static closure_t *core_print_cl;
 
@@ -83,12 +81,10 @@ void core_register_vm(vm_t *vm)
     if (core_vm_inited) return;
     core_vm_inited = true;
 
-    core_println = function_native_new(melon_println);
-    core_println_cl = closure_new(core_println);
+    core_println_cl = closure_new(function_native_new(melon_println));
     vm_set_global(vm, FROM_CLOSURE(core_println_cl), PRINTLN_SLOT);
 
-    core_print = function_native_new(melon_print);
-    core_print_cl = closure_new(core_print);
+    core_print_cl = closure_new(function_native_new(melon_print));
     vm_set_global(vm, FROM_CLOSURE(core_print_cl), PRINT_SLOT);
 }
 
@@ -109,8 +105,6 @@ void core_free_vm()
 {
     if (!core_vm_inited) return;
 
-    function_free(core_println);
-    function_free(core_print);
     closure_free(core_println_cl);
     closure_free(core_print_cl);
 }
