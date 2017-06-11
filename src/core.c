@@ -44,11 +44,8 @@ static void melon_print(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 static void object_classname(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     value_t v = args[0];
-    if (IS_INSTANCE(v))
-    {
-        value_t name = FROM_CSTR(AS_INSTANCE(v)->c->identifier);
-        RETURN_VALUE(name);
-    }
+    value_t name = FROM_CSTR(value_get_class(v)->identifier);
+    RETURN_VALUE(name);
 }
 
 // temp stuff
@@ -89,12 +86,12 @@ void core_init_classes()
     melon_class_class = class_new(strdup("Class"), 0, NULL);
     class_set_superclass(melon_class_class, melon_class_object);
 
-    melon_class_bool = class_new(strdup("Bool"), 0, NULL);
-    melon_class_int = class_new(strdup("Int"), 0, NULL);
-    melon_class_float = class_new(strdup("Float"), 0, NULL);
-    melon_class_string = class_new(strdup("String"), 0, NULL);
-    melon_class_closure = class_new(strdup("Closure"), 0, NULL);
-    melon_class_instance = class_new(strdup("Instance"), 0, NULL);
+    melon_class_bool = class_new_with_meta(strdup("Bool"), 0, 0, melon_class_object);
+    melon_class_int = class_new_with_meta(strdup("Int"), 0, 0, melon_class_object);
+    melon_class_float = class_new_with_meta(strdup("Float"), 0, 0, melon_class_object);
+    melon_class_string = class_new_with_meta(strdup("String"), 0, 0, melon_class_object);
+    melon_class_closure = class_new_with_meta(strdup("Closure"), 0, 0, melon_class_object);
+    melon_class_instance = class_new_with_meta(strdup("Instance"), 0, 0, melon_class_object);
 
     class_bind(melon_class_object, FROM_CSTR(strdup("classname")),
         FROM_CLOSURE(closure_new(function_native_new(object_classname))));

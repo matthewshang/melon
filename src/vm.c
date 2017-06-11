@@ -248,12 +248,13 @@ void vm_run(vm_t *vm)
                 c->static_vars = (value_t*)calloc(c->metaclass->nvars, sizeof(value_t));
                 c->meta_inited = true;
                 closure_t *init = class_lookup_closure(c->metaclass, FROM_CSTR("$init"));
-                if (!init) RUNTIME_ERROR("missing meta init function in class %s\n", c->metaclass->identifier);
-
-                callstack_push(&vm->callstack, vm->ip, closure, bp);
-                bp = vm->stacktop - vm->stack - 1;
-                closure = init;
-                vm->ip = &vector_get(init->f->bytecode, 0);
+                if (init)
+                {
+                    callstack_push(&vm->callstack, vm->ip, closure, bp);
+                    bp = vm->stacktop - vm->stack - 1;
+                    closure = init;
+                    vm->ip = &vector_get(init->f->bytecode, 0);
+                }
             }
             break;
         }
@@ -267,7 +268,6 @@ void vm_run(vm_t *vm)
             value_t accessor = STACK_POP;
             bool keepobj = READ_BYTE;
             value_t object = STACK_POP;
-            bool is_class = IS_CLASS(object);
             value_t *index = NULL;
             if (IS_INT(accessor))
             {
@@ -275,28 +275,23 @@ void vm_run(vm_t *vm)
             }
             else
             {
-                if (is_class) index = class_lookup_super(AS_CLASS(object)->metaclass, accessor);
-                else index = class_lookup_super(AS_INSTANCE(object)->c, accessor);
+                index = class_lookup_super(value_get_class(object), accessor);
             }
 
             if (!index)
             {
-                if (is_class)
-                {
-                    RUNTIME_ERROR("class %s does not have static property %s\n",
-                        AS_CLASS(object)->metaclass->identifier, AS_STR(accessor));
-                }
-                else
-                {
-                    RUNTIME_ERROR("class %s does not have property %s\n",
-                        AS_INSTANCE(object)->c->identifier, AS_STR(accessor));
-                }
+                RUNTIME_ERROR("class %s does not have property %s\n",
+                    value_get_class(object)->identifier, AS_STR(accessor));
             }
 
             if (IS_INT(*index))
             {
-                if (is_class) STACK_PUSH(AS_CLASS(object)->static_vars[AS_INT(*index)]);
-                else STACK_PUSH(AS_INSTANCE(object)->vars[AS_INT(*index)]);
+                if (IS_CLASS(object))
+                    STACK_PUSH(AS_CLASS(object)->static_vars[AS_INT(*index)]);
+                else if (IS_INSTANCE(object))
+                    STACK_PUSH(AS_INSTANCE(object)->vars[AS_INT(*index)]);
+                else
+                    RUNTIME_ERROR("tried to access an instance variable of non-instance object\n");
             }
             else
             {
@@ -326,31 +321,26 @@ void vm_run(vm_t *vm)
             }
             else
             {
-                if (is_class) index = class_lookup(AS_CLASS(object)->metaclass, accessor);
-                else index = class_lookup(AS_INSTANCE(object)->c, accessor);
+                index = class_lookup_super(value_get_class(object), accessor);
             }
 
             if (!index)
             {
-                if (is_class)
-                {
-                    RUNTIME_ERROR("class %s does not have static property %s\n",
-                        AS_CLASS(object)->metaclass->identifier, AS_STR(accessor));
-                }
-                else
-                {
-                    RUNTIME_ERROR("class %s does not have property %s\n",
-                        AS_INSTANCE(object)->c->identifier, AS_STR(accessor));
-                }
+                RUNTIME_ERROR("class %s does not have property %s\n",
+                    value_get_class(object)->identifier, AS_STR(accessor));
             }
 
-            if (is_class)
+            if (IS_CLASS(object))
             {
                 AS_CLASS(object)->static_vars[AS_INT(*index)] = tostore;
             }
-            else
+            else if (IS_INSTANCE(object))
             {
                 AS_INSTANCE(object)->vars[AS_INT(*index)] = tostore;
+            }
+            else
+            {
+                RUNTIME_ERROR("tried to modify an instance variable of non-instance object\n");
             }
 
             break;

@@ -11,3 +11,15 @@ class Polygon
 var poly = Polygon(4);
 println(poly.nsides);
 println(poly.classname());
+
+var test = 5;
+println(test.classname());
+
+var test2 = "This is a test";
+println(test2.classname());
+
+test = true;
+println(test.classname());
+
+println(Polygon.classname());
+println(Polygon.classname().classname());

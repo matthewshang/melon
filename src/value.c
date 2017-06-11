@@ -1,5 +1,7 @@
 #include "value.h"
 
+#include <stdio.h>
+
 #include "debug.h"
 #include "hash.h"
 #include "opcodes.h"
@@ -50,6 +52,15 @@ bool value_equals(value_t v1, value_t v2)
         return strcmp(AS_STR(v1), AS_STR(v2)) == 0;
     }  
     return false;
+}
+
+class_t *value_get_class(value_t v)
+{
+    if (v.type == melon_class_instance)
+        return AS_INSTANCE(v)->c;
+    if (v.type == melon_class_class)
+        return AS_CLASS(v)->metaclass;
+    return v.type;
 }
 
 function_t *function_native_new(melon_c_func cfunc)
@@ -341,6 +352,7 @@ value_t *class_lookup_super(class_t *c, value_t key)
 closure_t *class_lookup_closure(class_t *c, value_t key)
 {
     value_t *value = class_lookup(c, key);
+    if (!value) return NULL;
     if (IS_CLOSURE(*value)) return AS_CLOSURE(*value);
     else return NULL;
 }
