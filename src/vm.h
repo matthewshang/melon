@@ -16,7 +16,7 @@ typedef struct callframe_s
 
 typedef vector_t(callframe_t) callstack_t;
 
-typedef struct
+typedef struct vm_s
 {
     value_t *stack;
     value_t *stacktop;
@@ -34,6 +34,7 @@ typedef struct
 
 vm_t vm_create(function_t *f);
 void vm_set_global(vm_t *vm, value_t val, uint16_t idx);
+void vm_set_stack(vm_t *vm, value_t val, uint32_t idx);
 void vm_destroy(vm_t *vm);
 void vm_run(vm_t *vm);
 

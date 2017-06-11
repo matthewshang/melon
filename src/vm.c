@@ -116,6 +116,11 @@ void vm_set_global(vm_t *vm, value_t val, uint16_t idx)
     vector_set(vm->globals, idx, val);
 }
 
+void vm_set_stack(vm_t *vm, value_t val, uint32_t idx)
+{
+    vm->stack[idx] = val;
+}
+
 static void vm_push_mem(vm_t *vm, value_t v)
 {
     vector_push(value_t, vm->mem, v);
@@ -239,7 +244,7 @@ void vm_run(vm_t *vm)
             {
                 STACK_PUSH(val);
                 class_t *c = AS_CLASS(val);
-                if (c->meta_inited) break;
+                if (c->meta_inited || !c->metaclass) break;
                 c->static_vars = (value_t*)calloc(c->metaclass->nvars, sizeof(value_t));
                 c->meta_inited = true;
                 closure_t *init = class_lookup_closure(c->metaclass, FROM_CSTR("$init"));
@@ -270,8 +275,8 @@ void vm_run(vm_t *vm)
             }
             else
             {
-                if (is_class) index = class_lookup(AS_CLASS(object)->metaclass, accessor);
-                else index = class_lookup(AS_INSTANCE(object)->c, accessor);
+                if (is_class) index = class_lookup_super(AS_CLASS(object)->metaclass, accessor);
+                else index = class_lookup_super(AS_INSTANCE(object)->c, accessor);
             }
 
             if (!index)
@@ -409,8 +414,8 @@ void vm_run(vm_t *vm)
             {
                 value_t *adr = vm->stacktop - 1;
                 adr -= nargs == 0 ? 0 : nargs - 1;
-                cl->f->cfunc(adr, nargs);
-                STACK_POPN(nargs + 1);
+                cl->f->cfunc(vm, adr, nargs, adr - vm->stack - 1);
+                STACK_POPN(nargs);
             }
             break;
         }

@@ -187,7 +187,8 @@ static void class_print_iterate(hash_entry_t *node)
 
 void internal_class_print(class_t *c, uint8_t depth)
 {
-    print_tabs(depth); printf("nvars: %d\n", c->nvars);
+    class_t *super = c->superclass;
+    print_tabs(depth); printf("nvars: %d, super: '%s'\n", c->nvars, super ? super->identifier : "none");
     hashtable_iterate(c->htable, class_print_iterate);
     //hashtable_dump(c->htable);
 }
@@ -260,15 +261,32 @@ void closure_free(closure_t *closure)
     free(closure);
 }
 
-class_t *class_new(const char *identifier, uint16_t nvars)
+class_t *class_new(const char *identifier, uint16_t nvars, class_t *superclass)
 {
     class_t *c = (class_t*)calloc(1, sizeof(class_t));
+    c->superclass = superclass;
     c->identifier = identifier;
     c->nvars = nvars;
     c->htable = hashtable_new(384);
     c->meta_inited = false;
     c->static_vars = NULL;
     c->metaclass = NULL;
+    return c;
+}
+
+class_t *class_new_with_meta(const char *identifier, uint16_t nvars, uint16_t nstatic, class_t *superclass)
+{
+    class_t *c = (class_t*)calloc(1, sizeof(class_t));
+    c->identifier = identifier;
+    c->superclass = superclass;
+    c->nvars = nvars;
+    c->htable = hashtable_new(384);
+    c->meta_inited = true;
+    c->static_vars = nstatic > 0 ? (value_t*)calloc(nstatic, sizeof(value_t)) : NULL;
+    char buf[256];
+    snprintf(buf, sizeof(buf), "%s_meta", c->identifier);
+    class_t *supermeta = superclass->metaclass ? superclass->metaclass : melon_class_class;
+    c->metaclass = class_new(strdup(buf), nstatic, supermeta);
     return c;
 }
 
@@ -301,14 +319,34 @@ void class_print(class_t *c)
     if (c->metaclass) internal_class_print(c->metaclass, 0);
 }
 
+void class_set_superclass(class_t *c, class_t *super)
+{
+    c->superclass = super;
+}
+
 void class_bind(class_t *c, value_t key, value_t value)
 {
     hashtable_set(c->htable, key, value);
+    c->nvars = ((hashtable_t*)c->htable)->nentrys;
 }
 
 value_t *class_lookup(class_t *c, value_t key)
 {
     return hashtable_get(c->htable, key);
+}
+
+value_t *class_lookup_super(class_t *c, value_t key)
+{
+    class_t *current = c;
+    value_t *v = NULL;
+    while (current)
+    {
+        v = hashtable_get(current->htable, key);
+        if (v) break;
+        current = current->superclass;
+    }
+
+    return v;
 }
 
 closure_t *class_lookup_closure(class_t *c, value_t key)

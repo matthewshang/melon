@@ -16,6 +16,7 @@ typedef struct
 {
     uint32_t size;
     hash_entry_t **table;
+    uint32_t nentrys;
 
 } hashtable_t;
 

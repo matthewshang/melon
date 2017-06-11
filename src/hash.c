@@ -64,6 +64,7 @@ hashtable_t *hashtable_new(uint32_t size)
         htable->table[i] = NULL;
     }
     htable->size = size;
+    htable->nentrys = 0;
 
     return htable;
 }
@@ -131,6 +132,7 @@ void hashtable_set(hashtable_t *htable, value_t key, value_t value)
     }
     else
     {
+        htable->nentrys++;
         newpair = new_entry(key, value);
         if (next == htable->table[bin])
         {

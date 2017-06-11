@@ -245,13 +245,13 @@ static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
 
 static void gen_node_class_decl(struct astwalker *self, node_class_decl_t *node)
 {
-    class_t *c = class_new(strdup(node->identifier), node->num_instvars);
+    class_t *c = class_new(strdup(node->identifier), node->num_instvars, melon_class_object);
     closure_t *meta_init = NULL;
     if (node->num_staticvars > 0)
     {
         char buf[256];
         snprintf(buf, sizeof(buf), "%s_meta", c->identifier);
-        c->metaclass = class_new(strdup(buf), node->num_staticvars);
+        c->metaclass = class_new(strdup(buf), node->num_staticvars, melon_class_class);
         meta_init = closure_new(function_new(strdup("$init")));
         class_bind(c->metaclass, FROM_CSTR(strdup("$init")), FROM_CLOSURE(meta_init));
     }

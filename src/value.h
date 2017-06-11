@@ -15,6 +15,9 @@ typedef struct closure_s closure_t;
 typedef struct class_s class_t;
 typedef struct class_s object_t;
 
+class_t *melon_class_object;
+class_t *melon_class_class;
+
 typedef struct instance_s instance_t;
 
 typedef struct
@@ -38,7 +41,8 @@ typedef enum
     FUNC_MELON, FUNC_NATIVE
 } function_e;
 
-typedef void(*melon_c_func)(value_t *args, uint8_t nargs);
+typedef struct vm_s vm_t;
+typedef void(*melon_c_func)(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx);
 
 typedef struct function_s
 {
@@ -62,6 +66,7 @@ struct hashtable_t;
 typedef struct class_s
 {
     const char *identifier;
+    class_t *superclass;
 
     struct hashtable_t *htable;
     uint16_t nvars;
@@ -134,11 +139,14 @@ void upvalue_free(upvalue_t *upvalue);
 closure_t *closure_new(function_t *func);
 void closure_free(closure_t *closure);
 
-class_t *class_new(const char *identifier, uint16_t nvars);
+class_t *class_new(const char *identifier, uint16_t nvars, class_t *superclass);
+class_t *class_new_with_meta(const char *identifier, uint16_t nvars, uint16_t nstatic, class_t *superclass);
 void class_free(class_t *c);
 void class_print(class_t *c);
+void class_set_superclass(class_t *c, class_t *super);
 void class_bind(class_t *c, value_t key, value_t value);
 value_t *class_lookup(class_t *c, value_t key);
+value_t *class_lookup_super(class_t *c, value_t key);
 closure_t *class_lookup_closure(class_t *c, value_t key);
 
 instance_t *instance_new(class_t *c);

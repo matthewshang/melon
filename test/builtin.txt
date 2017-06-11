@@ -1,0 +1,13 @@
+class Polygon
+{
+	var nsides = 0;
+
+	func Polygon(sides)
+	{
+		nsides = sides;
+	}	
+}
+
+var poly = Polygon(4);
+println(poly.nsides);
+println(poly.classname());

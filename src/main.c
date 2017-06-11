@@ -59,6 +59,7 @@ int main(int argc, char **argv)
     }
 
     function_t *main_func = function_new(strdup("$main"));
+    core_init_classes();
     if (melon_compile(file, main_func, &options)) goto abort_compile;
      
     if (options.r_run)
@@ -71,11 +72,12 @@ int main(int argc, char **argv)
         printf("melon run time: %f ms\n", time);
 
         vm_destroy(&vm);
-        core_free();
+        core_free_vm();
     }
 
 abort_compile:
     function_free(main_func);
+    core_free_classes();
 abort_file:
 	return 0;
 }
