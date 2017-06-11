@@ -18,23 +18,19 @@ void value_destroy(value_t val)
 
 void value_print(value_t v)
 {
-    switch (v.type)
+    if (IS_BOOL(v)) printf("[bool]: %s\n", AS_BOOL(v) == 1 ? "true" : "false");
+    if (IS_INT(v)) printf("[int]: %d\n", AS_INT(v));
+    if (IS_STR(v)) printf("[string]: %s\n", AS_STR(v));
+    if (IS_FLOAT(v)) printf("[float]: %f\n", AS_FLOAT(v));
+    if (IS_CLOSURE(v)) 
     {
-    case VAL_BOOL: printf("[bool]: %s\n", AS_BOOL(v) == 1 ? "true" : "false"); break;
-    case VAL_INT: printf("[int]: %d\n", AS_INT(v)); break;
-    case VAL_STR: printf("[string]: %s\n", AS_STR(v)); break;
-    case VAL_FLOAT: printf("[float]: %f\n", AS_FLOAT(v)); break;
-    case VAL_CLOSURE: {
         if (AS_CLOSURE(v)->f->type == FUNC_MELON)
             printf("[closure]: %s\n", AS_CLOSURE(v)->f->identifier);
         else
             printf("[native function]\n");
-        break;
     }
-    case VAL_CLASS: printf("[class]: %s\n", AS_CLASS(v)->identifier); break;
-    case VAL_INST: printf("[instance]\n"); break;
-    default: break;
-    }
+    if (IS_CLASS(v)) printf("[class]: %s\n", AS_CLASS(v)->identifier);
+    if (IS_INSTANCE(v)) printf("[instance]\n");
 }
 
 bool value_equals(value_t v1, value_t v2)
@@ -141,24 +137,21 @@ static void internal_cpool_dump(function_t *func, uint8_t depth);
 
 static void debug_print_val(value_t v, uint8_t depth)
 {
-    switch (v.type)
-    {
-    case VAL_BOOL: printf("[bool] %s\n", AS_BOOL(v) == 1 ? "true" : "false"); break;
-    case VAL_INT: printf("[int] %d\n", AS_INT(v)); break;
-    case VAL_FLOAT: printf("[float] %f\n", AS_FLOAT(v)); break;
-    case VAL_STR: printf("[string] %s\n", AS_STR(v)); break;
-    case VAL_CLOSURE:
+    if (IS_BOOL(v)) printf("[bool]: %s\n", AS_BOOL(v) == 1 ? "true" : "false");
+    if (IS_INT(v)) printf("[int]: %d\n", AS_INT(v));
+    if (IS_STR(v)) printf("[string]: %s\n", AS_STR(v));
+    if (IS_FLOAT(v)) printf("[float]: %f\n", AS_FLOAT(v));
+    if (IS_CLOSURE(v))
     {
         printf("[function] %s\n", AS_CLOSURE(v)->f->identifier);
         internal_disassemble(AS_CLOSURE(v)->f, depth + 1);
         internal_cpool_dump(AS_CLOSURE(v)->f, depth + 1);
-        break;
     }
-    case VAL_CLASS:
+    if (IS_CLASS(v))
     {
         class_t *c = AS_CLASS(v);
         printf("[class] %s\n", c->identifier);
-        internal_class_print(c, depth + 1); 
+        internal_class_print(c, depth + 1);
         if (c->metaclass)
         {
             class_t *meta = c->metaclass;
@@ -166,10 +159,6 @@ static void debug_print_val(value_t v, uint8_t depth)
             printf("[class] %s\n", meta->identifier);
             internal_class_print(meta, depth + 1);
         }
-        
-        break;
-    }
-    default: break;
     }
 }
 

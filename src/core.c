@@ -18,14 +18,10 @@ static void melon_println(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retid
     if (nargs > 0)
     {
         value_t v = args[0];
-        switch (v.type)
-        {
-        case VAL_BOOL: printf("%s\n", AS_BOOL(v) == 1 ? "true" : "false"); break;
-        case VAL_INT: printf("%d\n", AS_INT(v)); break;
-        case VAL_STR: printf("%s\n", AS_STR(v)); break;
-        case VAL_FLOAT: printf("%f\n", AS_FLOAT(v)); break;
-        default: break;
-        }
+        if (IS_BOOL(v)) printf("%s\n", AS_BOOL(v) == 1 ? "true" : "false");
+        if (IS_INT(v)) printf("%d\n", AS_INT(v));
+        if (IS_STR(v)) printf("%s\n", AS_STR(v));
+        if (IS_FLOAT(v)) printf("%f\n", AS_FLOAT(v));
     }
     else
     {
@@ -38,14 +34,10 @@ static void melon_print(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
     if (nargs > 0)
     {
         value_t v = args[0];
-        switch (v.type)
-        {
-        case VAL_BOOL: printf("%s", AS_BOOL(v) == 1 ? "true" : "false"); break;
-        case VAL_INT: printf("%d", AS_INT(v)); break;
-        case VAL_STR: printf("%s", AS_STR(v)); break;
-        case VAL_FLOAT: printf("%f", AS_FLOAT(v)); break;
-        default: break;
-        }
+        if (IS_BOOL(v)) printf("%s", AS_BOOL(v) == 1 ? "true" : "false");
+        if (IS_INT(v)) printf("%d", AS_INT(v));
+        if (IS_STR(v)) printf("%s", AS_STR(v));
+        if (IS_FLOAT(v)) printf("%f", AS_FLOAT(v));
     }
 }
 
@@ -97,6 +89,13 @@ void core_init_classes()
     melon_class_class = class_new(strdup("Class"), 0, NULL);
     class_set_superclass(melon_class_class, melon_class_object);
 
+    melon_class_bool = class_new(strdup("Bool"), 0, NULL);
+    melon_class_int = class_new(strdup("Int"), 0, NULL);
+    melon_class_float = class_new(strdup("Float"), 0, NULL);
+    melon_class_string = class_new(strdup("String"), 0, NULL);
+    melon_class_closure = class_new(strdup("Closure"), 0, NULL);
+    melon_class_instance = class_new(strdup("Instance"), 0, NULL);
+
     class_bind(melon_class_object, FROM_CSTR(strdup("classname")),
         FROM_CLOSURE(closure_new(function_native_new(object_classname))));
 }
@@ -115,4 +114,11 @@ void core_free_classes()
 
     class_free(melon_class_object);
     class_free(melon_class_class);
+
+    class_free(melon_class_bool);
+    class_free(melon_class_int);
+    class_free(melon_class_float);
+    class_free(melon_class_string);
+    class_free(melon_class_closure);
+    class_free(melon_class_instance);
 }

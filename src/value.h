@@ -17,12 +17,18 @@ typedef struct class_s object_t;
 
 class_t *melon_class_object;
 class_t *melon_class_class;
+class_t *melon_class_bool;
+class_t *melon_class_int;
+class_t *melon_class_float;
+class_t *melon_class_string;
+class_t *melon_class_closure;
+class_t *melon_class_instance;
 
 typedef struct instance_s instance_t;
 
 typedef struct
 {
-    value_e type;
+    class_t *type;
     union
     {
         int i;
@@ -98,13 +104,13 @@ typedef struct closure_s
     upvalue_t **upvalues;
 } closure_t;
 
-#define FROM_BOOL(x) (value_t){.type = VAL_BOOL, .i = x}
-#define FROM_INT(x) (value_t){.type = VAL_INT, .i = x}
-#define FROM_FLOAT(x) (value_t){.type = VAL_FLOAT, .d = x}
-#define FROM_CSTR(x) (value_t){.type = VAL_STR, .s = x}
-#define FROM_CLOSURE(x) (value_t){.type = VAL_CLOSURE, .cl = x}
-#define FROM_CLASS(x) (value_t){.type = VAL_CLASS, .c = x}
-#define FROM_INSTANCE(x) (value_t){.type = VAL_INST, .inst = x}
+#define FROM_BOOL(x) (value_t){.type = melon_class_bool, .i = x}
+#define FROM_INT(x) (value_t){.type = melon_class_int, .i = x}
+#define FROM_FLOAT(x) (value_t){.type = melon_class_float, .d = x}
+#define FROM_CSTR(x) (value_t){.type = melon_class_string, .s = x}
+#define FROM_CLOSURE(x) (value_t){.type = melon_class_closure, .cl = x}
+#define FROM_CLASS(x) (value_t){.type = melon_class_class, .c = x}
+#define FROM_INSTANCE(x) (value_t){.type = melon_class_instance, .inst = x}
 
 #define AS_INT(x) (x).i
 #define AS_BOOL(x) (x).i
@@ -114,13 +120,13 @@ typedef struct closure_s
 #define AS_CLASS(x) (x).c
 #define AS_INSTANCE(x) (x).inst
 
-#define IS_BOOL(x) ((x).type == VAL_BOOL)
-#define IS_INT(x) ((x).type == VAL_INT)
-#define IS_FLOAT(x) ((x).type == VAL_FLOAT)
-#define IS_STR(x) ((x).type == VAL_STR)
-#define IS_CLOSURE(x) ((x).type == VAL_CLOSURE)
-#define IS_CLASS(x) ((x).type == VAL_CLASS)
-#define IS_INSTANCE(x) ((x).type == VAL_INST)
+#define IS_BOOL(x) ((x).type == melon_class_bool)
+#define IS_INT(x) ((x).type == melon_class_int)
+#define IS_FLOAT(x) ((x).type == melon_class_float)
+#define IS_STR(x) ((x).type == melon_class_string)
+#define IS_CLOSURE(x) ((x).type == melon_class_closure)
+#define IS_CLASS(x) ((x).type == melon_class_class)
+#define IS_INSTANCE(x) ((x).type == melon_class_instance)
 
 void value_destroy(value_t val);
 void value_print(value_t val);
