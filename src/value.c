@@ -58,7 +58,7 @@ class_t *value_get_class(value_t v)
 {
     if (v.type == melon_class_instance)
         return AS_INSTANCE(v)->c;
-    if (v.type == melon_class_class)
+    if (v.type == melon_class_class && AS_CLASS(v)->metaclass)
         return AS_CLASS(v)->metaclass;
     return v.type;
 }
@@ -242,6 +242,11 @@ closure_t *closure_new(function_t *func)
     return closure;
 }
 
+closure_t *closure_native(melon_c_func func)
+{
+    return closure_new(function_native_new(func));
+}
+
 void closure_free(closure_t *closure)
 {
     if (closure->upvalues)
@@ -283,7 +288,7 @@ class_t *class_new_with_meta(const char *identifier, uint16_t nvars, uint16_t ns
     c->meta_inited = true;
     c->static_vars = nstatic > 0 ? (value_t*)calloc(nstatic, sizeof(value_t)) : NULL;
     char buf[256];
-    snprintf(buf, sizeof(buf), "%s_meta", c->identifier);
+    snprintf(buf, sizeof(buf), "%s$meta", c->identifier);
     class_t *supermeta = superclass->metaclass ? superclass->metaclass : melon_class_class;
     c->metaclass = class_new(strdup(buf), nstatic, supermeta);
     return c;

@@ -1,0 +1,25 @@
+class Test
+{
+	var test;
+
+	func adder(x, y)
+	{
+		return x + y;
+	}
+}
+
+func add(x, y)
+{
+	return x + y;
+}
+
+var test = Test();
+
+println(add.name());
+println(test.adder.name());
+println(Test.name());
+
+println(test.class().name());
+println(test.class().class().name());
+
+println(add.class().class().class().name());

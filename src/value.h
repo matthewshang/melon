@@ -108,6 +108,7 @@ typedef struct closure_s
 #define FROM_INT(x) (value_t){.type = melon_class_int, .i = x}
 #define FROM_FLOAT(x) (value_t){.type = melon_class_float, .d = x}
 #define FROM_CSTR(x) (value_t){.type = melon_class_string, .s = x}
+#define FROM_STRLIT(x) (value_t){.type = melon_class_string, .s = strdup(x)}
 #define FROM_CLOSURE(x) (value_t){.type = melon_class_closure, .cl = x}
 #define FROM_CLASS(x) (value_t){.type = melon_class_class, .c = x}
 #define FROM_INSTANCE(x) (value_t){.type = melon_class_instance, .inst = x}
@@ -144,6 +145,7 @@ upvalue_t *upvalue_new(value_t *value);
 void upvalue_free(upvalue_t *upvalue);
 
 closure_t *closure_new(function_t *func);
+closure_t *closure_native(melon_c_func func);
 void closure_free(closure_t *closure);
 
 class_t *class_new(const char *identifier, uint16_t nvars, class_t *superclass);
