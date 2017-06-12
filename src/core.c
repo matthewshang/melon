@@ -13,6 +13,9 @@
         return;                                                                         \
     } while (0)
 
+#define RUNTIME_ERROR(...) do {printf("Runtime error: "); printf(__VA_ARGS__); return; } while (0)
+
+
 static void melon_println(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     if (nargs > 0)
@@ -57,6 +60,27 @@ static void closure_name(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx
     }
 }
 
+static void array_size(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+{
+    array_t *arr = AS_ARRAY(args[0]);
+    RETURN_VALUE(FROM_INT(vector_size(arr->arr)));
+}
+
+static void array_add(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+{
+    array_t *arr = AS_ARRAY(args[0]);
+    vector_push(value_t, arr->arr, args[1]);
+}
+
+static void array_get(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+{
+    if (!IS_INT(args[1]))
+        RUNTIME_ERROR("array_get: argument must be an integer\n");
+    array_t *arr = AS_ARRAY(args[0]);
+    int idx = AS_INT(args[1]);
+    RETURN_VALUE(vector_get(arr->arr, idx));
+}
+
 // temp stuff
 static closure_t *core_println_cl;
 static closure_t *core_print_cl;
@@ -81,6 +105,7 @@ void core_register_semantic(symtable_t *globals)
     symtable_add_local(globals, "String");
     symtable_add_local(globals, "Closure");
     symtable_add_local(globals, "Instance");
+    symtable_add_local(globals, "Array");
 }
 
 void core_register_vm(vm_t *vm)
@@ -102,6 +127,7 @@ void core_register_vm(vm_t *vm)
     vm_set_global(vm, FROM_CLASS(melon_class_string), 7);
     vm_set_global(vm, FROM_CLASS(melon_class_closure), 8);
     vm_set_global(vm, FROM_CLASS(melon_class_instance), 9);
+    vm_set_global(vm, FROM_CLASS(melon_class_array), 10);
 }
 
 void core_init_classes()
@@ -119,12 +145,17 @@ void core_init_classes()
     melon_class_string = class_new_with_meta(strdup("String"), 0, 0, melon_class_object);
     melon_class_closure = class_new_with_meta(strdup("Closure"), 0, 0, melon_class_object);
     melon_class_instance = class_new_with_meta(strdup("Instance"), 0, 0, melon_class_object);
+    melon_class_array = class_new_with_meta(strdup("Array"), 0, 0, melon_class_object);
 
     class_bind(melon_class_object, FROM_STRLIT("class"), FROM_CLOSURE(closure_native(object_class)));
 
     class_bind(melon_class_class, FROM_STRLIT("name"), FROM_CLOSURE(closure_native(class_name)));
 
     class_bind(melon_class_closure, FROM_STRLIT("name"), FROM_CLOSURE(closure_native(closure_name)));
+
+    class_bind(melon_class_array, FROM_STRLIT("size"), FROM_CLOSURE(closure_native(array_size)));
+    class_bind(melon_class_array, FROM_STRLIT("add"), FROM_CLOSURE(closure_native(array_add)));
+    class_bind(melon_class_array, FROM_STRLIT("get"), FROM_CLOSURE(closure_native(array_get)));
 }
 
 void core_free_vm()
@@ -148,4 +179,5 @@ void core_free_classes()
     class_free(melon_class_string);
     class_free(melon_class_closure);
     class_free(melon_class_instance);
+    class_free(melon_class_array);
 }

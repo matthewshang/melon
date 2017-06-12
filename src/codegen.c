@@ -382,7 +382,6 @@ static void gen_node_var(astwalker_t *self, node_var_t *node)
 static void gen_node_list(struct astwalker *self, node_list_t *node)
 {
     uint32_t len = vector_size(*node->items);
-    if (len < 1) return;
     if (len > 255)
     {
         codegen_error(self, "list size is greater than max [255]");

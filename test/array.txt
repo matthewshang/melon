@@ -1,2 +1,24 @@
 var array = [1, 2, 1.2, 5.3, "Hello"];
 println(array);
+println(array.size());
+
+array.add(6);
+println(array);
+
+var numbers = [];
+println(numbers);
+
+var i = 0;
+while (i < 10)
+{
+	numbers.add(i);
+	i += 1;
+}
+println(numbers);
+
+i = 0;
+while (i < numbers.size())
+{
+	println(numbers.get(i));
+	i += 1;
+}
