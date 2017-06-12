@@ -46,6 +46,8 @@ const char *op_to_str(opcode op)
     case OP_EQ: return "eq";
     case OP_NEQ: return "neq";
 
+    case OP_NEWARR: return "newarr";
+
     case OP_HALT: return "halt";
     }
     printf("Unrecognized op %d\n", op);

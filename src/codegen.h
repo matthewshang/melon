@@ -21,6 +21,6 @@ typedef struct
 
 codegen_t codegen_create(function_t *f);
 void codegen_destroy(codegen_t *gen);
-void codegen_run(codegen_t *gen, node_t *ast);
+bool codegen_run(codegen_t *gen, node_t *ast);
 
 #endif

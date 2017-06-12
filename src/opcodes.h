@@ -44,6 +44,8 @@ typedef enum
     OP_EQ,
     OP_NEQ,
 
+    OP_NEWARR,
+
     OP_HALT
 } opcode;
 

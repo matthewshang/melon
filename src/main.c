@@ -28,7 +28,7 @@ int melon_compile(const char *file, function_t *func, cli_options_t *options)
     if (!semantic_process(ast, &lexer)) goto compile_abort;
 
     codegen_t gen = codegen_create(func);
-    codegen_run(&gen, ast);
+    if (!codegen_run(&gen, ast)) goto codegen_abort;
 
     if (options->c_func_disasm) function_disassemble(func);
     if (options->c_dump_cpool) function_cpool_dump(func);
@@ -38,6 +38,8 @@ int melon_compile(const char *file, function_t *func, cli_options_t *options)
     lexer_destroy(&lexer);
     return 0;
 
+codegen_abort:
+    codegen_destroy(&gen);
 compile_abort:
     ast_free(ast);
 lexer_abort:

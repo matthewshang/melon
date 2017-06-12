@@ -181,6 +181,7 @@ static bool sema_build_global_symtables(node_t *ast, lexer_t *lexer)
         .visit_unary = NULL,
         .visit_postfix = NULL,
         .visit_var = NULL,
+        .visit_list = NULL,
         .visit_literal = NULL
     };
 
@@ -450,6 +451,14 @@ static void visit_var(struct astwalker *self, node_var_t *node)
     semantic_error(self, node->base.token, "Undeclared identifier %s\n", node->identifier);
 }
 
+static void visit_list(struct astwalker *self, node_list_t *node)
+{
+    for (size_t i = 0; i < vector_size(*node->items); i++)
+    {
+        walk_ast(self, vector_get(*node->items, i));
+    }
+}
+
 static bool sema_build_local_symtables(node_t *ast, lexer_t *lexer)
 {
     semantic_t sema;
@@ -474,6 +483,7 @@ static bool sema_build_local_symtables(node_t *ast, lexer_t *lexer)
         .visit_unary = visit_unary,
         .visit_postfix = visit_postfix,
         .visit_var = visit_var,
+        .visit_list = visit_list,
         .visit_literal = NULL
     };
 

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 #include "astwalker.h"
 #include "core.h"
@@ -21,6 +22,19 @@
 #define AS_GEN(self) ((codegen_t*)self->data)
 
 #define MAX_LITERAL_INT 256
+
+static void codegen_error(astwalker_t *self, const char *msg, ...)
+{
+    printf("error: ");
+    va_list args;
+
+    va_start(args, msg);
+    vprintf(msg, args);
+    va_end(args);
+    printf("\n");
+
+    self->nerrors++;
+}
 
 static void push_context(codegen_t *gen, value_t context)
 {
@@ -365,6 +379,23 @@ static void gen_node_var(astwalker_t *self, node_var_t *node)
     emit_loadstore(CODE, node->location, node->idx, node->base.is_assign);
 }
 
+static void gen_node_list(struct astwalker *self, node_list_t *node)
+{
+    uint32_t len = vector_size(*node->items);
+    if (len < 1) return;
+    if (len > 255)
+    {
+        codegen_error(self, "list size is greater than max [255]");
+        return;
+    }
+
+    for (size_t i = 0; i < len; i++)
+    {
+        walk_ast(self, vector_get(*node->items, i));
+    }
+    emit_bytes(CODE, OP_NEWARR, len);
+}
+
 static void gen_node_literal(astwalker_t *self, node_literal_t *node)
 {
     function_t *context = AS_CLOSURE(GET_CONTEXT)->f;
@@ -427,9 +458,10 @@ void codegen_destroy(codegen_t *gen)
     free(gen->main_cl);
 }
 
-void codegen_run(codegen_t *gen, node_t *ast)
+bool codegen_run(codegen_t *gen, node_t *ast)
 {
     astwalker_t walker = {
+        .nerrors = 0,
         .depth = 0,
         .data = (void*)gen,
 
@@ -446,9 +478,12 @@ void codegen_run(codegen_t *gen, node_t *ast)
         .visit_unary = gen_node_unary,
         .visit_postfix = gen_node_postfix,
         .visit_var = gen_node_var,
+        .visit_list = gen_node_list,
         .visit_literal = gen_node_literal
     };
 
     walk_ast(&walker, ast);
     emit_byte(gen->code, (uint8_t)OP_HALT);
+
+    return walker.nerrors == 0;
 }
