@@ -15,7 +15,30 @@
 #define STACK_PEEK      *(vm->stacktop - 1)
 #define STACK_POPN(n)   vm->stacktop -= (n)
 
-#define RUNTIME_ERROR(...) do {printf("Runtime error: "); printf(__VA_ARGS__); return; } while (0)
+#define RUNTIME_ERROR(...)                                                           \
+        do {                                                                         \
+            printf("Runtime error: ");                                               \
+            printf(__VA_ARGS__);                                                     \
+            return;                                                                  \
+        } while (0)
+
+#define CALL_FUNC(_cl, _bp, _nargs)                                                  \
+        do {                                                                         \
+            if (_cl->f->type == FUNC_MELON)                                          \
+            {                                                                        \
+                callstack_push(&vm->callstack, vm->ip, vm->closure, vm->bp);         \
+                vm->bp = _bp;                                                        \
+                vm->closure = _cl;                                                   \
+                vm->ip = &vector_get(_cl->f->bytecode, 0);                           \
+            }                                                                        \
+            else if (_cl->f->type == FUNC_NATIVE)                                    \
+            {                                                                        \
+                value_t *adr = vm->stacktop - 1;                                     \
+                adr -= _nargs == 0 ? 0 : _nargs - 1;                                 \
+                _cl->f->cfunc(vm, adr, _nargs, adr - vm->stack - 1);                 \
+                STACK_POPN(_nargs);                                                  \
+            }                                                                        \
+        } while (0)                                     
 
 #define INT_BIN_MATH(a, b, op) do {STACK_PUSH(FROM_INT(a op b)); break; } while (0)
 #define FLT_BIN_MATH(a, b, op) do {STACK_PUSH(FROM_FLOAT(a op b)); break; } while (0)
@@ -250,10 +273,7 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
                 closure_t *init = class_lookup_closure(c->metaclass, FROM_CSTR("$init"));
                 if (init)
                 {
-                    callstack_push(&vm->callstack, vm->ip, vm->closure, vm->bp);
-                    vm->bp = vm->stacktop - vm->stack - 1;
-                    vm->closure = init;
-                    vm->ip = &vector_get(init->f->bytecode, 0);
+                    CALL_FUNC(init, vm->stacktop - vm->stack - 1, 0);
                 }
             }
             break;
@@ -380,11 +400,7 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
                 closure_t *init = class_lookup_closure(c, FROM_CSTR("$init"));
                 if (!init) RUNTIME_ERROR("missing init function in class %s\n", c->identifier);
 
-                callstack_push(&vm->callstack, vm->ip, vm->closure, vm->bp);
-                vm->bp = vm->stacktop - vm->stack - nargs - 1;
-                vm->closure = init;
-                vm->ip = &vector_get(init->f->bytecode, 0);
-
+                CALL_FUNC(init, vm->stacktop - vm->stack - nargs - 1, nargs);
                 vm->stack[vm->bp] = instance;
 
                 break;
@@ -393,20 +409,7 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
                 RUNTIME_ERROR("cannot call non-class or non-closure\n");
 
             closure_t *cl = AS_CLOSURE(v);
-            if (cl->f->type == FUNC_MELON)
-            {
-                callstack_push(&vm->callstack, vm->ip, vm->closure, vm->bp);
-                vm->bp = vm->stacktop - vm->stack - nargs;
-                vm->closure = cl;
-                vm->ip = &vector_get(cl->f->bytecode, 0);
-            }
-            else if (cl->f->type == FUNC_NATIVE)
-            {
-                value_t *adr = vm->stacktop - 1;
-                adr -= nargs == 0 ? 0 : nargs - 1;
-                cl->f->cfunc(vm, adr, nargs, adr - vm->stack - 1);
-                STACK_POPN(nargs);
-            }
+            CALL_FUNC(cl, vm->stacktop - vm->stack - nargs, nargs);
             break;
         }
         case OP_JMP: vm->ip += *vm->ip; break;
@@ -422,10 +425,13 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
         {
             close_upvalues(&vm->upvalues, &vm->stack[vm->bp]);
             vm->stack[vm->bp - 1] = STACK_PEEK;
+
             bool ret = !is_main && vm->bp == ret_bp;
             if (ret && ret_val) *ret_val = &vm->stack[vm->bp - 1];
+
             STACK_POPN(vm->stacktop - vm->stack - vm->bp);
             vm->ip = callstack_ret(&vm->callstack, &vm->closure, &vm->bp);
+
             if (ret) return;
             break;
         }
@@ -478,13 +484,6 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
         default: continue;
 
         }
-
-        //callstack_print(vm->callstack);
-        //printf("Instruction: %s\n", op_to_str(inst));
-        //printf("bp: %d\n", bp);
-        //stack_dump(vm);
-        //printf("\n");
-
     }
 }
 
@@ -508,11 +507,7 @@ void vm_run_closure(vm_t *vm, closure_t *cl, value_t args[], uint16_t nargs, val
             stack_push(vm, args[i]);
         }
 
-        callstack_push(&vm->callstack, vm->ip, vm->closure, vm->bp);
-        vm->bp = vm->stacktop - vm->stack - nargs;
-        vm->closure = cl;
-        vm->ip = &vector_get(cl->f->bytecode, 0);
-
+        CALL_FUNC(cl, vm->stacktop - vm->stack - nargs, nargs);
         vm_run(vm, false, vm->bp, ret);
     }
     else if (cl->f->type == FUNC_NATIVE)
