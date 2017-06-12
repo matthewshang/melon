@@ -1,0 +1,10 @@
+var numbers = [1, 2, 3, 4, 5];
+
+var minus = 6;
+
+var squared = numbers.map(func(x) { return x * x; })
+					 .map(println)
+					 .map(func(x) { return x - minus; })
+					 .map(println);
+
+println(squared);

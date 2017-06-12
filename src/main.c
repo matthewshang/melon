@@ -67,8 +67,8 @@ int main(int argc, char **argv)
     if (options.r_run)
     {
         double start = milliseconds();
-        vm_t vm = vm_create(main_func);
-        vm_run(&vm);
+        vm_t vm = vm_create();
+        vm_run_main(&vm, main_func);
 
         double time = milliseconds() - start;
         printf("melon run time: %f ms\n", time);

@@ -81,6 +81,42 @@ static void array_get(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
     RETURN_VALUE(vector_get(arr->arr, idx));
 }
 
+static void array_map(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+{
+    if (!IS_CLOSURE(args[1]))
+        RUNTIME_ERROR("array_map: argument must be a closure\n");
+    array_t *arr = AS_ARRAY(args[0]);
+    array_t *new_arr = array_new();
+    bool new_elements = false;
+
+    closure_t *cl = AS_CLOSURE(args[1]);
+    value_t cl_args[1];
+    value_t *ret = NULL;
+    for (size_t i = 0; i < vector_size(arr->arr); i++)
+    {
+        value_t v = vector_get(arr->arr, i);
+        cl_args[0] = v;
+        vm_run_closure(vm, cl, cl_args, 1, &ret);
+        if (ret)
+        {
+            new_elements = true;
+            vector_push(value_t, new_arr->arr, *ret);
+        }
+    }
+
+    if (new_elements)
+    {
+        value_t arr_val = FROM_ARRAY(new_arr);
+        vm_push_mem(vm, arr_val);
+        RETURN_VALUE(arr_val);
+    }
+    else
+    {
+        array_free(new_arr);
+        RETURN_VALUE(args[0]);
+    }
+}
+
 // temp stuff
 static closure_t *core_println_cl;
 static closure_t *core_print_cl;
@@ -156,6 +192,7 @@ void core_init_classes()
     class_bind(melon_class_array, FROM_STRLIT("size"), FROM_CLOSURE(closure_native(array_size)));
     class_bind(melon_class_array, FROM_STRLIT("add"), FROM_CLOSURE(closure_native(array_add)));
     class_bind(melon_class_array, FROM_STRLIT("get"), FROM_CLOSURE(closure_native(array_get)));
+    class_bind(melon_class_array, FROM_STRLIT("map"), FROM_CLOSURE(closure_native(array_map)));
 }
 
 void core_free_vm()

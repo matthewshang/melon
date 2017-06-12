@@ -92,17 +92,17 @@ void callstack_print(callstack_t stack)
     }
 }
 
-vm_t vm_create(function_t *f)
+vm_t vm_create()
 {
     vm_t vm;
     vm.stack = (value_t*)calloc(VM_STACK_SIZE, sizeof(value_t));
     vm.stacksize = VM_STACK_SIZE;
     vm.stacktop = vm.stack;
     vm.upvalues = NULL;
-    vm.main_func = f;
-    vm.ip = &vector_get(vm.main_func->bytecode, 0);
     vector_init(vm.globals);
     vector_realloc(value_t, vm.globals, VM_GLOBALS_SIZE);
+    vm.bp = 0;
+    vm.ip = NULL;
 
     core_register_vm(&vm);
 
@@ -121,7 +121,7 @@ void vm_set_stack(vm_t *vm, value_t val, uint32_t idx)
     vm->stack[idx] = val;
 }
 
-static void vm_push_mem(vm_t *vm, value_t v)
+void vm_push_mem(vm_t *vm, value_t v)
 {
     vector_push(value_t, vm->mem, v);
 }
@@ -214,11 +214,9 @@ static void stack_push(vm_t *vm, value_t value)
     *vm->stacktop++ = value;
 }
 
-void vm_run(vm_t *vm)
+static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
 {
     uint8_t inst;
-    closure_t *closure = closure_new(vm->main_func);
-    uint16_t bp = 0;
 
     while (1)
     {
@@ -227,18 +225,20 @@ void vm_run(vm_t *vm)
         {
         case OP_RET0: 
         {
-            close_upvalues(&vm->upvalues, &vm->stack[bp]);
-            STACK_POPN(vm->stacktop - vm->stack - bp + 1);
-            vm->ip = callstack_ret(&vm->callstack, &closure, &bp);
+            close_upvalues(&vm->upvalues, &vm->stack[vm->bp]);
+            STACK_POPN(vm->stacktop - vm->stack - vm->bp + 1);
+            bool ret = !is_main && vm->bp == ret_bp;
+            vm->ip = callstack_ret(&vm->callstack, &vm->closure, &vm->bp);
+            if (ret) return;
             break;
         }
         case OP_NOP: continue;
 
-        case OP_LOADL: STACK_PUSH(vm->stack[bp + READ_BYTE]); break;
+        case OP_LOADL: STACK_PUSH(vm->stack[vm->bp + READ_BYTE]); break;
         case OP_LOADI: STACK_PUSH(FROM_INT(READ_BYTE)); break;
         case OP_LOADK: 
         {
-            value_t val = function_cpool_get(closure->f, READ_BYTE);
+            value_t val = function_cpool_get(vm->closure->f, READ_BYTE);
             STACK_PUSH(val); 
             if (IS_CLASS(val))
             {
@@ -250,9 +250,9 @@ void vm_run(vm_t *vm)
                 closure_t *init = class_lookup_closure(c->metaclass, FROM_CSTR("$init"));
                 if (init)
                 {
-                    callstack_push(&vm->callstack, vm->ip, closure, bp);
-                    bp = vm->stacktop - vm->stack - 1;
-                    closure = init;
+                    callstack_push(&vm->callstack, vm->ip, vm->closure, vm->bp);
+                    vm->bp = vm->stacktop - vm->stack - 1;
+                    vm->closure = init;
                     vm->ip = &vector_get(init->f->bytecode, 0);
                 }
             }
@@ -260,7 +260,7 @@ void vm_run(vm_t *vm)
         }
         case OP_LOADU: 
         {
-            STACK_PUSH(*closure->upvalues[READ_BYTE]->value); 
+            STACK_PUSH(*vm->closure->upvalues[READ_BYTE]->value);
             break;
         }
         case OP_LOADF:
@@ -302,10 +302,10 @@ void vm_run(vm_t *vm)
             break;
         }
         case OP_LOADG: STACK_PUSH(vector_get(vm->globals, READ_BYTE)); break;
-        case OP_STOREL: vm->stack[bp + READ_BYTE] = STACK_PEEK; break;
+        case OP_STOREL: vm->stack[vm->bp + READ_BYTE] = STACK_PEEK; break;
         case OP_STOREU: 
         {
-            *closure->upvalues[READ_BYTE]->value = STACK_PEEK; 
+            *vm->closure->upvalues[READ_BYTE]->value = STACK_PEEK;
             break;
         }
         case OP_STOREF:
@@ -361,7 +361,7 @@ void vm_run(vm_t *vm)
 
                 uint8_t is_direct = READ_BYTE;
                 newclose->upvalues[i] = is_direct ? 
-                    capture_upvalue(&vm->upvalues, &vm->stack[bp + READ_BYTE]) : closure->upvalues[READ_BYTE];
+                    capture_upvalue(&vm->upvalues, &vm->stack[vm->bp + READ_BYTE]) : vm->closure->upvalues[READ_BYTE];
 
             }
             STACK_PUSH(FROM_CLOSURE(newclose));
@@ -380,12 +380,12 @@ void vm_run(vm_t *vm)
                 closure_t *init = class_lookup_closure(c, FROM_CSTR("$init"));
                 if (!init) RUNTIME_ERROR("missing init function in class %s\n", c->identifier);
 
-                callstack_push(&vm->callstack, vm->ip, closure, bp);
-                bp = vm->stacktop - vm->stack - nargs - 1;
-                closure = init;
+                callstack_push(&vm->callstack, vm->ip, vm->closure, vm->bp);
+                vm->bp = vm->stacktop - vm->stack - nargs - 1;
+                vm->closure = init;
                 vm->ip = &vector_get(init->f->bytecode, 0);
 
-                vm->stack[bp] = instance;
+                vm->stack[vm->bp] = instance;
 
                 break;
             }
@@ -395,9 +395,9 @@ void vm_run(vm_t *vm)
             closure_t *cl = AS_CLOSURE(v);
             if (cl->f->type == FUNC_MELON)
             {
-                callstack_push(&vm->callstack, vm->ip, closure, bp);
-                bp = vm->stacktop - vm->stack - nargs;
-                closure = cl;
+                callstack_push(&vm->callstack, vm->ip, vm->closure, vm->bp);
+                vm->bp = vm->stacktop - vm->stack - nargs;
+                vm->closure = cl;
                 vm->ip = &vector_get(cl->f->bytecode, 0);
             }
             else if (cl->f->type == FUNC_NATIVE)
@@ -420,10 +420,13 @@ void vm_run(vm_t *vm)
         }
         case OP_RETURN:
         {
-            close_upvalues(&vm->upvalues, &vm->stack[bp]);
-            vm->stack[bp - 1] = STACK_PEEK;
-            STACK_POPN(vm->stacktop - vm->stack - bp);
-            vm->ip = callstack_ret(&vm->callstack, &closure, &bp);
+            close_upvalues(&vm->upvalues, &vm->stack[vm->bp]);
+            vm->stack[vm->bp - 1] = STACK_PEEK;
+            bool ret = !is_main && vm->bp == ret_bp;
+            if (ret && ret_val) *ret_val = &vm->stack[vm->bp - 1];
+            STACK_POPN(vm->stacktop - vm->stack - vm->bp);
+            vm->ip = callstack_ret(&vm->callstack, &vm->closure, &vm->bp);
+            if (ret) return;
             break;
         }
 
@@ -482,5 +485,38 @@ void vm_run(vm_t *vm)
         //stack_dump(vm);
         //printf("\n");
 
+    }
+}
+
+void vm_run_main(vm_t *vm, function_t *main)
+{
+    closure_t *cl = closure_new(main);
+    vm->closure = cl;
+    vm->ip = &vector_get(cl->f->bytecode, 0);
+
+    vm_run(vm, true, 0, NULL);
+
+    free(cl);
+}
+
+void vm_run_closure(vm_t *vm, closure_t *cl, value_t args[], uint16_t nargs, value_t **ret)
+{
+    if (cl->f->type == FUNC_MELON)
+    {
+        for (uint16_t i = 0; i < nargs; i++)
+        {
+            stack_push(vm, args[i]);
+        }
+
+        callstack_push(&vm->callstack, vm->ip, vm->closure, vm->bp);
+        vm->bp = vm->stacktop - vm->stack - nargs;
+        vm->closure = cl;
+        vm->ip = &vector_get(cl->f->bytecode, 0);
+
+        vm_run(vm, false, vm->bp, ret);
+    }
+    else if (cl->f->type == FUNC_NATIVE)
+    {
+        cl->f->cfunc(vm, args, nargs, vm->stacktop - vm->stack - 1);
     }
 }
