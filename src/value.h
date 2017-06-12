@@ -36,10 +36,7 @@ typedef struct
         int i;
         double d;
         const char *s;
-        closure_t *cl;
-        class_t *c;
-        instance_t *inst;
-        array_t *arr;
+        void *o;
     };
 } value_t;
 
@@ -116,21 +113,21 @@ typedef struct array_s
 #define FROM_BOOL(x) (value_t){.type = melon_class_bool, .i = x}
 #define FROM_INT(x) (value_t){.type = melon_class_int, .i = x}
 #define FROM_FLOAT(x) (value_t){.type = melon_class_float, .d = x}
-#define FROM_CSTR(x) (value_t){.type = melon_class_string, .s = x}
-#define FROM_STRLIT(x) (value_t){.type = melon_class_string, .s = strdup(x)}
-#define FROM_CLOSURE(x) (value_t){.type = melon_class_closure, .cl = x}
-#define FROM_CLASS(x) (value_t){.type = melon_class_class, .c = x}
-#define FROM_INSTANCE(x) (value_t){.type = melon_class_instance, .inst = x}
-#define FROM_ARRAY(x) (value_t){.type = melon_class_array, .arr = x}
+#define FROM_CSTR(x) (value_t){.type = melon_class_string, .o = x}
+#define FROM_STRLIT(x) (value_t){.type = melon_class_string, .o = (void*)strdup(x)}
+#define FROM_CLOSURE(x) (value_t){.type = melon_class_closure, .o = (void*)x}
+#define FROM_CLASS(x) (value_t){.type = melon_class_class, .o = (void*)x}
+#define FROM_INSTANCE(x) (value_t){.type = melon_class_instance, .o = (void*)x}
+#define FROM_ARRAY(x) (value_t){.type = melon_class_array, .o = (void*)x}
 
-#define AS_INT(x) (x).i
 #define AS_BOOL(x) (x).i
-#define AS_STR(x) (x).s
-#define AS_CLOSURE(x) (x).cl
+#define AS_INT(x) (x).i
 #define AS_FLOAT(x) (x).d
-#define AS_CLASS(x) (x).c
-#define AS_INSTANCE(x) (x).inst
-#define AS_ARRAY(x) (x).arr
+#define AS_STR(x) ((const char*)(x).o)
+#define AS_CLOSURE(x) ((closure_t*)(x).o)
+#define AS_CLASS(x) ((class_t*)(x).o)
+#define AS_INSTANCE(x) ((instance_t*)(x).o)
+#define AS_ARRAY(x) ((array_t*)(x).o)
 
 #define IS_BOOL(x) ((x).type == melon_class_bool)
 #define IS_INT(x) ((x).type == melon_class_int)
