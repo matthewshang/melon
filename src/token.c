@@ -36,6 +36,8 @@ token_type token_punc(char c)
     else if (c == '.') return TOK_DOT;
     else if (c == '{') return TOK_OPEN_BRACE;
     else if (c == '}') return TOK_CLOSED_BRACE;
+    else if (c == '[') return TOK_OPEN_BRACKET;
+    else if (c == ']') return TOK_CLOSED_BRACKET;
     else return TOK_ERROR;
 }
 
@@ -104,6 +106,8 @@ const char *token_type_string(token_type type)
     case TOK_DOT: return ".";
     case TOK_OPEN_BRACE: return "{";
     case TOK_CLOSED_BRACE: return "}";
+    case TOK_OPEN_BRACKET: return "[";
+    case TOK_CLOSED_BRACKET: return "]";
 
     case TOK_INT: return "int";
     case TOK_FLOAT: return "float";

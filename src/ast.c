@@ -142,6 +142,14 @@ node_t *node_var_new(token_t token, const char *identifier)
     return (node_t*)node;
 }
 
+node_t *node_list_new(node_r *items)
+{
+    node_list_t *node = (node_list_t*)calloc(1, sizeof(node_list_t));
+    NODE_SETBASE(node, NODE_LIST);
+    node->items = items;
+    return (node_t*)node;
+}
+
 node_t *node_literal_int_new(int value)
 {
     node_literal_t *node = (node_literal_t*)calloc(1, sizeof(node_literal_t));
@@ -308,6 +316,20 @@ static void free_node_var(astwalker_t *self, node_var_t *node)
     free(node);
 }
 
+static void free_node_list(astwalker_t *self, node_list_t *node)
+{
+    if (node->items)
+    {
+        for (size_t i = 0; i < vector_size(*node->items); i++)
+        {
+            walk_ast(self, vector_get(*node->items, i));
+        }
+        vector_destroy(*node->items);
+        free(node->items);
+    }
+    free(node);
+}
+
 static void free_node_literal(astwalker_t *self, node_literal_t *node)
 {
     if (node->type == LITERAL_STR) free(node->u.s);
@@ -330,6 +352,7 @@ void ast_free(node_t *root)
         .visit_unary = free_node_unary,
         .visit_postfix = free_node_postfix,
         .visit_var = free_node_var,
+        .visit_list = free_node_list,
         .visit_literal = free_node_literal
     };
     walk_ast(&visitor, root);
@@ -553,6 +576,21 @@ static void print_node_var(astwalker_t *self, node_var_t *node)
     printf("[var] name: %s\n", node->identifier);
 }
 
+static void print_node_list(astwalker_t *self, node_list_t *node)
+{
+    printf("[list] nitems: %d\n", vector_size(*node->items));
+    int depth = self->depth;
+
+    for (int i = 0; i < vector_size(*node->items); i++)
+    {
+        print_tabs(depth);
+        self->depth = depth + 1;
+        walk_ast(self, vector_get(*node->items, i));
+    }
+
+    self->depth = depth;
+}
+
 static void print_node_literal(astwalker_t *self, node_literal_t *node)
 {
     switch (node->type)
@@ -588,6 +626,7 @@ void ast_print(node_t *root)
         .visit_unary = print_node_unary,
         .visit_postfix = print_node_postfix,
         .visit_var = print_node_var,
+        .visit_list = print_node_list,
         .visit_literal = print_node_literal
     };
     walk_ast(&visitor, root);

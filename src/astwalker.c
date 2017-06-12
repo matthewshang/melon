@@ -21,6 +21,7 @@ void walk_ast(astwalker_t *self, node_t *node)
     case NODE_UNARY: VISIT(unary);
     case NODE_POSTFIX: VISIT(postfix);
     case NODE_VAR: VISIT(var);
+    case NODE_LIST: VISIT(list);
     case NODE_LITERAL: VISIT(literal);
     }
 }

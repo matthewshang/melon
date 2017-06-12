@@ -14,7 +14,7 @@ typedef enum
 
     NODE_VAR_DECL, NODE_FUNC_DECL, NODE_CLASS_DECL,
 
-    NODE_UNARY, NODE_BINARY, NODE_POSTFIX, NODE_VAR, NODE_LITERAL
+    NODE_UNARY, NODE_BINARY, NODE_POSTFIX, NODE_VAR, NODE_LIST, NODE_LITERAL
 
 } node_type;
 
@@ -171,6 +171,13 @@ typedef struct node_var_s
 typedef struct
 {
     node_t base;
+
+    node_r *items;
+} node_list_t;
+
+typedef struct
+{
+    node_t base;
     literal_type type;
     int str_size;
     union
@@ -197,6 +204,7 @@ postfix_expr_t *postfix_call_new(node_r *args);
 postfix_expr_t *postfix_access_new(node_t *accessor);
 node_t *node_postfix_new(node_t *target, postfix_expr_r *exprs);
 node_t *node_var_new(token_t token, const char *identifier);
+node_t *node_list_new(node_r *items);
 node_t *node_literal_int_new(int value);
 node_t *node_literal_float_new(double value);
 node_t *node_literal_str_new(const char *value, int len);

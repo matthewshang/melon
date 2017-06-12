@@ -25,6 +25,7 @@ typedef struct astwalker
     void(* visit_unary)(struct astwalker *self, node_unary_t *node);
     void(* visit_postfix)(struct astwalker *self, node_postfix_t *node);
     void(* visit_var)(struct astwalker *self, node_var_t *node);
+    void(* visit_list)(struct astwalker *self, node_list_t *node);
     void(* visit_literal)(struct astwalker *self, node_literal_t *node);
 } astwalker_t;
 
