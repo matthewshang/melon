@@ -18,15 +18,9 @@ static void melon_println(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retid
     if (nargs > 0)
     {
         value_t v = args[0];
-        if (IS_BOOL(v)) printf("%s\n", AS_BOOL(v) == 1 ? "true" : "false");
-        if (IS_INT(v)) printf("%d\n", AS_INT(v));
-        if (IS_STR(v)) printf("%s\n", AS_STR(v));
-        if (IS_FLOAT(v)) printf("%f\n", AS_FLOAT(v));
+        value_print_notag(v);
     }
-    else
-    {
-        printf("\n");
-    }
+    printf("\n");
 }
 
 static void melon_print(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
@@ -34,10 +28,7 @@ static void melon_print(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
     if (nargs > 0)
     {
         value_t v = args[0];
-        if (IS_BOOL(v)) printf("%s", AS_BOOL(v) == 1 ? "true" : "false");
-        if (IS_INT(v)) printf("%d", AS_INT(v));
-        if (IS_STR(v)) printf("%s", AS_STR(v));
-        if (IS_FLOAT(v)) printf("%f", AS_FLOAT(v));
+        value_print_notag(v);
     }
 }
 

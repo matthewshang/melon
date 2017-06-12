@@ -23,8 +23,10 @@ class_t *melon_class_float;
 class_t *melon_class_string;
 class_t *melon_class_closure;
 class_t *melon_class_instance;
+class_t *melon_class_array;
 
 typedef struct instance_s instance_t;
+typedef struct array_s array_t;
 
 typedef struct
 {
@@ -37,6 +39,7 @@ typedef struct
         closure_t *cl;
         class_t *c;
         instance_t *inst;
+        array_t *arr;
     };
 } value_t;
 
@@ -104,6 +107,12 @@ typedef struct closure_s
     upvalue_t **upvalues;
 } closure_t;
 
+typedef struct array_s
+{
+    value_r arr;
+
+} array_t;
+
 #define FROM_BOOL(x) (value_t){.type = melon_class_bool, .i = x}
 #define FROM_INT(x) (value_t){.type = melon_class_int, .i = x}
 #define FROM_FLOAT(x) (value_t){.type = melon_class_float, .d = x}
@@ -112,6 +121,7 @@ typedef struct closure_s
 #define FROM_CLOSURE(x) (value_t){.type = melon_class_closure, .cl = x}
 #define FROM_CLASS(x) (value_t){.type = melon_class_class, .c = x}
 #define FROM_INSTANCE(x) (value_t){.type = melon_class_instance, .inst = x}
+#define FROM_ARRAY(x) (value_t){.type = melon_class_array, .arr = x}
 
 #define AS_INT(x) (x).i
 #define AS_BOOL(x) (x).i
@@ -120,6 +130,7 @@ typedef struct closure_s
 #define AS_FLOAT(x) (x).d
 #define AS_CLASS(x) (x).c
 #define AS_INSTANCE(x) (x).inst
+#define AS_ARRAY(x) (x).arr
 
 #define IS_BOOL(x) ((x).type == melon_class_bool)
 #define IS_INT(x) ((x).type == melon_class_int)
@@ -128,9 +139,11 @@ typedef struct closure_s
 #define IS_CLOSURE(x) ((x).type == melon_class_closure)
 #define IS_CLASS(x) ((x).type == melon_class_class)
 #define IS_INSTANCE(x) ((x).type == melon_class_instance)
+#define IS_ARRAY(x) ((x).type == melon_class_array)
 
 void value_destroy(value_t val);
 void value_print(value_t val);
+void value_print_notag(value_t val);
 bool value_equals(value_t v1, value_t v2);
 class_t *value_get_class(value_t v);
 
@@ -160,5 +173,9 @@ closure_t *class_lookup_closure(class_t *c, value_t key);
 
 instance_t *instance_new(class_t *c);
 void instance_free(instance_t *inst);
+
+array_t *array_new();
+void array_free(array_t *a);
+void array_print(array_t *a);
 
 #endif

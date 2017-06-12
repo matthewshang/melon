@@ -16,6 +16,26 @@ void value_destroy(value_t val)
         class_free(AS_CLASS(val));
     else if (IS_INSTANCE(val))
         instance_free(AS_INSTANCE(val));
+    else if (IS_ARRAY(val))
+        array_free(AS_ARRAY(val));
+}
+
+void value_print_notag(value_t v)
+{
+    if (IS_BOOL(v)) printf("%s", AS_BOOL(v) == 1 ? "true" : "false");
+    if (IS_INT(v)) printf("%d", AS_INT(v));
+    if (IS_STR(v)) printf("%s", AS_STR(v));
+    if (IS_FLOAT(v)) printf("%f", AS_FLOAT(v));
+    if (IS_CLOSURE(v))
+    {
+        if (AS_CLOSURE(v)->f->type == FUNC_MELON)
+            printf("%s", AS_CLOSURE(v)->f->identifier);
+        else
+            printf("{native function}");
+    }
+    if (IS_CLASS(v)) printf("%s", AS_CLASS(v)->identifier);
+    if (IS_INSTANCE(v)) printf("{instance}");
+    if (IS_ARRAY(v)) array_print(AS_ARRAY(v));
 }
 
 void value_print(value_t v)
@@ -33,6 +53,7 @@ void value_print(value_t v)
     }
     if (IS_CLASS(v)) printf("[class]: %s\n", AS_CLASS(v)->identifier);
     if (IS_INSTANCE(v)) printf("[instance]\n");
+    if (IS_ARRAY(v)) array_print(AS_ARRAY(v));
 }
 
 bool value_equals(value_t v1, value_t v2)
@@ -376,4 +397,31 @@ void instance_free(instance_t *inst)
     if (!inst) return;
     if (inst->vars) free(inst->vars);
     free(inst);
+}
+
+array_t *array_new()
+{
+    array_t *a = (array_t*)calloc(1, sizeof(array_t));
+    vector_init(a->arr);
+    return a;
+}
+
+void array_free(array_t *a)
+{
+    vector_destroy(a->arr);
+    free(a);
+}
+
+void array_print(array_t *a)
+{
+    printf("[");
+    for (size_t i = 0; i < vector_size(a->arr); i++)
+    {
+        value_print_notag(vector_get(a->arr, i));
+        if (i + 1 < vector_size(a->arr))
+        {
+            printf(", ");
+        }
+    }
+    printf("]");
 }

@@ -1,1 +1,2 @@
-var array = [1, 2];
+var array = [1, 2, 1.2, 5.3, "Hello"];
+println(array);

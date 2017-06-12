@@ -457,6 +457,20 @@ void vm_run(vm_t *vm)
             break;
         }
 
+        case OP_NEWARR:
+        {
+            array_t *a = array_new();
+            uint8_t len = READ_BYTE;
+            for (uint8_t i = 0; i < len; i++)
+            {
+                vector_push(value_t, a->arr, *(vm->stacktop - len + i));
+            }
+            value_t a_val = FROM_ARRAY(a);
+            vm_push_mem(vm, a_val);
+            STACK_PUSH(a_val);
+            break;
+        }
+
         case OP_HALT: return;
         default: continue;
 
