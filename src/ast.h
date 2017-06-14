@@ -35,7 +35,8 @@ typedef enum
 typedef enum
 {
     POST_CALL,
-    POST_ACCESS
+    POST_ACCESS,
+    POST_SUBSCRIPT
 } postfix_type;
 
 typedef struct node_s
@@ -202,6 +203,7 @@ node_t *node_binary_new(token_t op, node_t *left, node_t *right);
 node_t *node_unary_new(token_t op, node_t *right);
 postfix_expr_t *postfix_call_new(node_r *args);
 postfix_expr_t *postfix_access_new(node_t *accessor);
+postfix_expr_t *postfix_subscript_new(node_t *subscript);
 node_t *node_postfix_new(node_t *target, postfix_expr_r *exprs);
 node_t *node_var_new(token_t token, const char *identifier);
 node_t *node_list_new(node_r *items);

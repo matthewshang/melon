@@ -365,6 +365,14 @@ static void gen_node_postfix(astwalker_t *self, node_postfix_t *node)
             else
                 emit_bytes(CODE, OP_LOADF, is_method ? 1 : 0);
         }
+        else if (expr->type == POST_SUBSCRIPT)
+        {
+            walk_ast(self, expr->accessor);
+            if (node->base.is_assign && i == len - 1)
+                emit_byte(CODE, OP_STOREF);
+            else
+                emit_bytes(CODE, OP_LOADF, 0);
+        }
     }
 
 }

@@ -124,6 +124,14 @@ postfix_expr_t *postfix_access_new(node_t *accessor)
     return expr;
 }
 
+postfix_expr_t *postfix_subscript_new(node_t *subscript)
+{
+    postfix_expr_t *expr = (postfix_expr_t*)calloc(1, sizeof(postfix_expr_t));
+    expr->type = POST_SUBSCRIPT;
+    expr->accessor = subscript;
+    return expr;
+}
+
 node_t *node_postfix_new(node_t *target, postfix_expr_r *exprs)
 {
     node_postfix_t *node = (node_postfix_t*)calloc(1, sizeof(node_postfix_t));
@@ -298,7 +306,7 @@ static void free_node_postfix(astwalker_t *self, node_postfix_t *node)
                 vector_destroy(*expr->args);
                 free(expr->args);
             }
-            else if (expr->type == POST_ACCESS)
+            else if (expr->type == POST_ACCESS || expr->type == POST_SUBSCRIPT)
             {
                 walk_ast(self, expr->accessor);
             }
@@ -562,6 +570,12 @@ static void print_node_postfix(astwalker_t *self, node_postfix_t *node)
             else if (expr->type == POST_ACCESS)
             {
                 printf("[post-access]: ");
+                self->depth = depth + 1;
+                walk_ast(self, expr->accessor);
+            }
+            else if (expr->type == POST_SUBSCRIPT)
+            {
+                printf("[post-subscript]: ");
                 self->depth = depth + 1;
                 walk_ast(self, expr->accessor);
             }

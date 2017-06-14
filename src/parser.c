@@ -229,7 +229,9 @@ static node_t *parse_postfix_access(lexer_t *lexer)
 
 static node_t *parse_postfix_subscript(lexer_t *lexer)
 {
-    return NULL;
+    node_t *expr = parse_expression(lexer);
+    parse_required(lexer, TOK_CLOSED_BRACKET, true);
+    return postfix_subscript_new(expr);
 }
 
 static node_t *parse_postfix(lexer_t *lexer, node_t *node, token_t token)
@@ -240,13 +242,16 @@ static node_t *parse_postfix(lexer_t *lexer, node_t *node, token_t token)
     postfix_expr_t *current = NULL;
     if (token.type == TOK_DOT) current = parse_postfix_access(lexer);
     else if (token.type == TOK_OPEN_PAREN) current = parse_postfix_call(lexer);
+    else if (token.type == TOK_OPEN_BRACKET) current = parse_postfix_subscript(lexer);
     vector_push(postfix_expr_t*, *exprs, current);
 
-    while (lexer_match(lexer, TOK_DOT) || lexer_match(lexer, TOK_OPEN_PAREN))
+    while (lexer_match(lexer, TOK_DOT) || lexer_match(lexer, TOK_OPEN_PAREN)
+           || lexer_match(lexer, TOK_OPEN_BRACKET))
     {
         token_t previous = lexer_previous(lexer);
         if (previous.type == TOK_DOT) current = parse_postfix_access(lexer);
         else if (previous.type == TOK_OPEN_PAREN) current = parse_postfix_call(lexer);
+        else if (token.type == TOK_OPEN_BRACKET) current = parse_postfix_subscript(lexer);
         vector_push(postfix_expr_t*, *exprs, current);
     }
 
@@ -317,7 +322,8 @@ static node_t *parse_precedence(lexer_t *lexer, precedence_t prec)
 
     if (!prefix)
     {
-        report_error("Prefix parse function does not exist for token %s\n", token_type_string(token.type));
+        parser_error(lexer, token, "Prefix parse function does not exist for token %s\n", token_type_string(token.type));
+        //report_error("Prefix parse function does not exist for token %s\n", token_type_string(token.type));
         return NULL;
     }
 

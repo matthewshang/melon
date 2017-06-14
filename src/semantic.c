@@ -68,7 +68,7 @@ static void print_error_line(const char *buffer, token_t token)
 
 static void report_error(const char *msg, ...)
 {
-    printf("[Error::Semantic] ");
+    printf("error: ");
     va_list args;
 
     va_start(args, msg);
@@ -352,6 +352,10 @@ static void visit_postfix(struct astwalker *self, node_postfix_t *node)
                     walk_ast(self, vector_get(*expr->args, i));
                 }
             }
+        }
+        else if (expr->type == POST_SUBSCRIPT)
+        {
+            walk_ast(self, expr->accessor);
         }
     }
 
