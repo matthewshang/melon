@@ -36,12 +36,12 @@
             else if (_cl->f->type == FUNC_NATIVE)                                    \
             {                                                                        \
                 value_t *adr = vm->stacktop - _nargs;                                \
-                _cl->f->cfunc(vm, adr, _nargs, adr - vm->stack);                     \
+                _cl->f->cfunc(vm, adr, _nargs, adr - vm->stack - 1);                     \
                 STACK_POPN(_nargs);                                                  \
             }                                                                        \
         } while (0)                                     
 
-#define CALL_FUNC_POP(_cl, _bp, _nargs, _pop)                                        \
+#define CALL_FUNC_NOSTACK(_cl, _bp, _nargs, _pop)                                    \
         do {                                                                         \
             if (_cl->f->type == FUNC_MELON)                                          \
             {                                                                        \
@@ -317,7 +317,7 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
             value_t object = STACK_PEEKN(2);
             closure_t *loadf;
             CLASS_LOOKUP(object, "$loadfield", loadf);
-            CALL_FUNC_POP(loadf, STACK_SIZE - 2, 2, 1);
+            CALL_FUNC_NOSTACK(loadf, STACK_SIZE - 2, 2, 1);
 
             if (READ_BYTE) STACK_PUSH(object);
             break;
@@ -327,7 +327,7 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
             value_t object = STACK_PEEKN(2);
             closure_t *loada;
             CLASS_LOOKUP(object, "$loadat", loada);
-            CALL_FUNC_POP(loada, STACK_SIZE - 2, 2, 1);
+            CALL_FUNC_NOSTACK(loada, STACK_SIZE - 2, 2, 1);
 
             break;
         }
@@ -517,7 +517,7 @@ void vm_run_closure(vm_t *vm, closure_t *cl, value_t args[], uint16_t nargs, val
             stack_push(vm, args[i]);
         }
 
-        CALL_FUNC(cl, vm->stacktop - vm->stack - nargs, nargs);
+        CALL_FUNC_NOSTACK(cl, vm->stacktop - vm->stack - nargs, nargs, nargs);
         vm_run(vm, false, vm->bp, ret);
     }
     else if (cl->f->type == FUNC_NATIVE)
