@@ -1,0 +1,15 @@
+var array = [];
+var i = 0;
+while (i < 10)
+{
+	array.add(i);
+	i += 1;
+}
+
+#println(array);
+
+#array[2] = 1;
+var x = array[6];
+
+println(array);
+println(x);

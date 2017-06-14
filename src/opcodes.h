@@ -1,20 +1,25 @@
 #ifndef __OPCODES__
 #define __OPCODES__
-                        
+                     
 typedef enum
 {
+//  MNEMONIC         DESCRIPTION             PARAMETERS            STACK
+
+
     OP_RET0,
     OP_NOP,
 
-    OP_LOADL,        // LOAD_LOCAL
-    OP_LOADI,        // LOAD_IMPLICIT
-    OP_LOADK,        // LOAD_CONSTANT
-    OP_LOADU,        // LOAD_UPVALUE
-    OP_LOADF,        // LOAD_FIELD
-    OP_LOADG,        // LOAD_GLOBAL
+    OP_LOADL,        // LOAD_LOCAL           idx
+    OP_LOADI,        // LOAD_IMPLICIT        int
+    OP_LOADK,        // LOAD_CONSTANT        idx
+    OP_LOADU,        // LOAD_UPVALUE         idx, is_local
+    OP_LOADF,        // LOAD_FIELD           keep_object           [2: object, accessor]
+    OP_LOADA,        // LOAD_AT                                    [2: object, accessor]
+    OP_LOADG,        // LOAD_GLOBAL          idx
     OP_STOREL,
     OP_STOREU,
     OP_STOREF,
+    OP_STOREA,
     OP_STOREG,
 
     OP_NEWUP,

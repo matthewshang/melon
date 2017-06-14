@@ -13,7 +13,9 @@
 #define STACK_POP       *(--vm->stacktop)
 #define STACK_PUSH(x)   stack_push(vm, x)
 #define STACK_PEEK      *(vm->stacktop - 1)
+#define STACK_PEEKN(n)  *(vm->stacktop - n)
 #define STACK_POPN(n)   vm->stacktop -= (n)
+#define STACK_SIZE      vm->stacktop - vm->stack
 
 #define RUNTIME_ERROR(...)                                                           \
         do {                                                                         \
@@ -33,12 +35,39 @@
             }                                                                        \
             else if (_cl->f->type == FUNC_NATIVE)                                    \
             {                                                                        \
-                value_t *adr = vm->stacktop - 1;                                     \
-                adr -= _nargs == 0 ? 0 : _nargs - 1;                                 \
-                _cl->f->cfunc(vm, adr, _nargs, adr - vm->stack - 1);                 \
+                value_t *adr = vm->stacktop - _nargs;                                \
+                _cl->f->cfunc(vm, adr, _nargs, adr - vm->stack);                     \
                 STACK_POPN(_nargs);                                                  \
             }                                                                        \
         } while (0)                                     
+
+#define CALL_FUNC_POP(_cl, _bp, _nargs, _pop)                                        \
+        do {                                                                         \
+            if (_cl->f->type == FUNC_MELON)                                          \
+            {                                                                        \
+                callstack_push(&vm->callstack, vm->ip, vm->closure, vm->bp);         \
+                vm->bp = _bp;                                                        \
+                vm->closure = _cl;                                                   \
+                vm->ip = &vector_get(_cl->f->bytecode, 0);                           \
+            }                                                                        \
+            else if (_cl->f->type == FUNC_NATIVE)                                    \
+            {                                                                        \
+                value_t *adr = vm->stacktop - _nargs;                                \
+                _cl->f->cfunc(vm, adr, _nargs, adr - vm->stack);                     \
+                STACK_POPN(_pop);                                                    \
+            }                                                                        \
+        } while (0)        
+
+#define CLASS_LOOKUP(_object, _name, _cl)                                            \
+        do {                                                                         \
+            value_t *v = class_lookup_super(value_get_class(_object), FROM_CSTR(_name)); \
+            if (!v)                                                                  \
+            {                                                                        \
+                RUNTIME_ERROR("class %s does not have method '%s'\n",                \
+                    value_get_class(_object)->identifier, _name);                    \
+            }                                                                        \
+            _cl = AS_CLOSURE(*v);                                                    \
+        } while (0)
 
 #define INT_BIN_MATH(a, b, op) do {STACK_PUSH(FROM_INT(a op b)); break; } while (0)
 #define FLT_BIN_MATH(a, b, op) do {STACK_PUSH(FROM_FLOAT(a op b)); break; } while (0)
@@ -285,40 +314,21 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
         }
         case OP_LOADF:
         {
-            value_t accessor = STACK_POP;
-            bool keepobj = READ_BYTE;
-            value_t object = STACK_POP;
-            value_t *index = NULL;
-            if (IS_INT(accessor))
-            {
-                index = &accessor;
-            }
-            else
-            {
-                index = class_lookup_super(value_get_class(object), accessor);
-            }
+            value_t object = STACK_PEEKN(2);
+            closure_t *loadf;
+            CLASS_LOOKUP(object, "$loadfield", loadf);
+            CALL_FUNC_POP(loadf, STACK_SIZE - 2, 2, 1);
 
-            if (!index)
-            {
-                RUNTIME_ERROR("class %s does not have property %s\n",
-                    value_get_class(object)->identifier, AS_STR(accessor));
-            }
+            if (READ_BYTE) STACK_PUSH(object);
+            break;
+        }
+        case OP_LOADA:
+        {
+            value_t object = STACK_PEEKN(2);
+            closure_t *loada;
+            CLASS_LOOKUP(object, "$loadat", loada);
+            CALL_FUNC_POP(loada, STACK_SIZE - 2, 2, 1);
 
-            if (IS_INT(*index))
-            {
-                if (IS_CLASS(object))
-                    STACK_PUSH(AS_CLASS(object)->static_vars[AS_INT(*index)]);
-                else if (IS_INSTANCE(object))
-                    STACK_PUSH(AS_INSTANCE(object)->vars[AS_INT(*index)]);
-                else
-                    RUNTIME_ERROR("tried to access an instance variable of non-instance object\n");
-            }
-            else
-            {
-                STACK_PUSH(*index);
-            }
-
-            if (keepobj) STACK_PUSH(object);
             break;
         }
         case OP_LOADG: STACK_PUSH(vector_get(vm->globals, READ_BYTE)); break;

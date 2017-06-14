@@ -369,9 +369,9 @@ static void gen_node_postfix(astwalker_t *self, node_postfix_t *node)
         {
             walk_ast(self, expr->accessor);
             if (node->base.is_assign && i == len - 1)
-                emit_byte(CODE, OP_STOREF);
+                emit_byte(CODE, OP_STOREA);
             else
-                emit_bytes(CODE, OP_LOADF, 0);
+                emit_byte(CODE, OP_LOADA);
         }
     }
 
