@@ -382,6 +382,14 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
             if (IS_CLASS(v))
             {
                 class_t *c = AS_CLASS(v);
+
+                closure_t *newcl = class_lookup_closure(c->metaclass, FROM_CSTR("$new"));
+                if (newcl)
+                {
+                    CALL_FUNC(newcl, vm->stacktop - vm->stack - nargs - 1, nargs);
+                    break;
+                }
+
                 value_t instance = FROM_INSTANCE(instance_new(c));
                 vm_push_mem(vm, instance);
 

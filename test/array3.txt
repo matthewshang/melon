@@ -6,7 +6,7 @@ while (i < 10)
 	i += 1;
 }
 
-#println(array);
+println(array);
 
 array[2] = 1;
 var x = array[6];

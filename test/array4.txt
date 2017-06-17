@@ -1,0 +1,13 @@
+var a = Array(5);
+println(a.size());
+
+a[0] = 1;
+a[1] = 2;
+a[2] = 3;
+a[3] = 4;
+a[4] = 5;
+
+println(a);
+
+a = a.map(func(x) { return x * 0.5; });
+println(a);

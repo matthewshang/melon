@@ -130,32 +130,54 @@ static void closure_name(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx
     }
 }
 
+static void array_new_inst(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+{
+    array_t *a = array_new();
+    value_t v = FROM_ARRAY(a);
+    vm_push_mem(vm, v);
+
+    if (nargs > 0)
+    {
+        vector_realloc(value_t, a->arr, AS_INT(args[0]));
+        a->arr.n = AS_INT(args[0]);
+    }
+    RETURN_VALUE(v);
+}
+
 static void array_loadat(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
-    value_t object = args[0];
-    value_t accessor = args[1];
-
-    if (!IS_INT(accessor))
+    if (!IS_INT(args[1]))
     {
         RUNTIME_ERROR("Array accessor must be an int\n");
     }
+    array_t *object = AS_ARRAY(args[0]);
+    int accessor = AS_INT(args[1]);
 
-    value_t v = vector_get(AS_ARRAY(object)->arr, AS_INT(accessor));
+    if (accessor >= vector_size(object->arr))
+    {
+        RUNTIME_ERROR("Array accessor out of bounds\n");
+    }
+
+    value_t v = vector_get(object->arr, accessor);
     RETURN_VALUE(v);
 }
 
 static void array_storeat(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
-    value_t tostore = args[0];
-    value_t object = args[1];
-    value_t accessor = args[2];
-
-    if (!IS_INT(accessor))
+    if (!IS_INT(args[2]))
     {
         RUNTIME_ERROR("Array accessor must be an int\n");
     }
+    value_t tostore = args[0];
+    array_t *object = AS_ARRAY(args[1]);
+    int accessor = AS_INT(args[2]);
+    
+    if (accessor >= vector_size(object->arr))
+    {
+        RUNTIME_ERROR("Array accessor out of bounds\n");
+    }
 
-    vector_set(AS_ARRAY(object)->arr, AS_INT(accessor), tostore);
+    vector_set(object->arr, accessor, tostore);
 }
 
 static void array_size(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
@@ -168,15 +190,6 @@ static void array_add(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     array_t *arr = AS_ARRAY(args[0]);
     vector_push(value_t, arr->arr, args[1]);
-}
-
-static void array_get(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
-{
-    if (!IS_INT(args[1]))
-        RUNTIME_ERROR("array_get: argument must be an integer\n");
-    array_t *arr = AS_ARRAY(args[0]);
-    int idx = AS_INT(args[1]);
-    RETURN_VALUE(vector_get(arr->arr, idx));
 }
 
 static void array_map(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
@@ -293,8 +306,11 @@ void core_init_classes()
     class_bind(melon_class_array, FROM_STRLIT("$storeat"), FROM_CLOSURE(closure_native(array_storeat)));
     class_bind(melon_class_array, FROM_STRLIT("size"), FROM_CLOSURE(closure_native(array_size)));
     class_bind(melon_class_array, FROM_STRLIT("add"), FROM_CLOSURE(closure_native(array_add)));
-    class_bind(melon_class_array, FROM_STRLIT("get"), FROM_CLOSURE(closure_native(array_get)));
+    class_bind(melon_class_array, FROM_STRLIT("get"), FROM_CLOSURE(closure_native(array_loadat)));
     class_bind(melon_class_array, FROM_STRLIT("map"), FROM_CLOSURE(closure_native(array_map)));
+
+    class_t *array_meta = melon_class_array->metaclass;
+    class_bind(array_meta, FROM_STRLIT("$new"), FROM_CLOSURE(closure_native(array_new_inst)));
 }
 
 void core_free_vm()
