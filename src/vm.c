@@ -36,7 +36,7 @@
             else if (_cl->f->type == FUNC_NATIVE)                                    \
             {                                                                        \
                 value_t *adr = vm->stacktop - _nargs;                                \
-                _cl->f->cfunc(vm, adr, _nargs, adr - vm->stack - 1);                     \
+                if(!_cl->f->cfunc(vm, adr, _nargs, adr - vm->stack - 1)) return;     \
                 STACK_POPN(_nargs);                                                  \
             }                                                                        \
         } while (0)                                     
@@ -53,7 +53,7 @@
             else if (_cl->f->type == FUNC_NATIVE)                                    \
             {                                                                        \
                 value_t *adr = vm->stacktop - _nargs;                                \
-                _cl->f->cfunc(vm, adr, _nargs, adr - vm->stack);                     \
+                if(!_cl->f->cfunc(vm, adr, _nargs, adr - vm->stack)) return;         \
                 STACK_POPN(_pop);                                                    \
             }                                                                        \
         } while (0)        

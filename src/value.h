@@ -48,7 +48,7 @@ typedef enum
 } function_e;
 
 typedef struct vm_s vm_t;
-typedef void(*melon_c_func)(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx);
+typedef bool(*melon_c_func)(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx);
 
 typedef struct function_s
 {

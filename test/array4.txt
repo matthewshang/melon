@@ -11,3 +11,4 @@ println(a);
 
 a = a.map(func(x) { return x * 0.5; });
 println(a);
+

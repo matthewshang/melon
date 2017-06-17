@@ -1,5 +1,6 @@
 #include "core.h"
 
+#include <stdbool.h>
 #include <stdio.h>
 
 #include "ast.h"
@@ -8,15 +9,25 @@
 #define PRINTLN_SLOT 0
 #define PRINT_SLOT   1
 #define RETURN_VALUE(val)                                                               \
-    do {                                                                                \
-        vm_set_stack(vm, val, retidx);                                                  \
-        return;                                                                         \
-    } while (0)
+        do {                                                                            \
+            vm_set_stack(vm, val, retidx);                                              \
+            return true;                                                                \
+        } while (0)
 
-#define RUNTIME_ERROR(...) do {printf("Runtime error: "); printf(__VA_ARGS__); return; } while (0)
+#define RETURN                                                                     \
+        do {                                                                            \
+            return true;                                                                \
+        } while (0)
+
+#define RUNTIME_ERROR(...)                                                              \
+        do {                                                                            \
+            printf("Runtime error: ");                                                  \
+            printf(__VA_ARGS__);                                                        \
+            return false;                                                               \
+        } while (0)
 
 
-static void melon_println(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+static bool melon_println(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     if (nargs > 0)
     {
@@ -24,24 +35,26 @@ static void melon_println(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retid
         value_print_notag(v);
     }
     printf("\n");
+    RETURN;
 }
 
-static void melon_print(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+static bool melon_print(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     if (nargs > 0)
     {
         value_t v = args[0];
         value_print_notag(v);
     }
+    RETURN;
 }
 
-static void object_class(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+static bool object_class(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     value_t v = args[0];
     RETURN_VALUE(FROM_CLASS(value_get_class(v)));
 }
 
-static void object_loadfield(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+static bool object_loadfield(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     value_t object = args[0];
     value_t accessor = args[1];
@@ -76,7 +89,7 @@ static void object_loadfield(vm_t *vm, value_t *args, uint8_t nargs, uint32_t re
     }
 }
 
-static void object_storefield(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+static bool object_storefield(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     value_t tostore = args[0];
     value_t object = args[1];
@@ -109,9 +122,10 @@ static void object_storefield(vm_t *vm, value_t *args, uint8_t nargs, uint32_t r
     {
         RUNTIME_ERROR("tried to modify an instance variable of non-instance object\n");
     }
+    RETURN;
 }
 
-static void class_name(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+static bool class_name(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     value_t v = args[0];
     if (IS_CLASS(v))
@@ -120,7 +134,7 @@ static void class_name(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
     }
 }
 
-static void closure_name(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+static bool closure_name(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     value_t v = args[0];
     if (IS_CLOSURE(v))
@@ -130,7 +144,7 @@ static void closure_name(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx
     }
 }
 
-static void array_new_inst(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+static bool array_new_inst(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     array_t *a = array_new();
     value_t v = FROM_ARRAY(a);
@@ -144,7 +158,7 @@ static void array_new_inst(vm_t *vm, value_t *args, uint8_t nargs, uint32_t reti
     RETURN_VALUE(v);
 }
 
-static void array_loadat(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+static bool array_loadat(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     if (!IS_INT(args[1]))
     {
@@ -162,7 +176,7 @@ static void array_loadat(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx
     RETURN_VALUE(v);
 }
 
-static void array_storeat(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+static bool array_storeat(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     if (!IS_INT(args[2]))
     {
@@ -178,21 +192,23 @@ static void array_storeat(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retid
     }
 
     vector_set(object->arr, accessor, tostore);
+    RETURN;
 }
 
-static void array_size(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+static bool array_size(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     array_t *arr = AS_ARRAY(args[0]);
     RETURN_VALUE(FROM_INT(vector_size(arr->arr)));
 }
 
-static void array_add(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+static bool array_add(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     array_t *arr = AS_ARRAY(args[0]);
     vector_push(value_t, arr->arr, args[1]);
+    RETURN;
 }
 
-static void array_map(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+static bool array_map(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     if (!IS_CLOSURE(args[1]))
         RUNTIME_ERROR("array_map: argument must be a closure\n");
