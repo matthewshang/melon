@@ -76,6 +76,41 @@ static void object_loadfield(vm_t *vm, value_t *args, uint8_t nargs, uint32_t re
     }
 }
 
+static void object_storefield(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+{
+    value_t tostore = args[0];
+    value_t object = args[1];
+    value_t accessor = args[2];
+    value_t *index;
+    if (IS_INT(accessor))
+    {
+        index = &accessor;
+    }
+    else
+    {
+        index = class_lookup_super(value_get_class(object), accessor);
+    }
+
+    if (!index)
+    {
+        RUNTIME_ERROR("class %s does not have property %s\n",
+            value_get_class(object)->identifier, AS_STR(accessor));
+    }
+
+    if (IS_CLASS(object))
+    {
+        AS_CLASS(object)->static_vars[AS_INT(*index)] = tostore;
+    }
+    else if (IS_INSTANCE(object))
+    {
+        AS_INSTANCE(object)->vars[AS_INT(*index)] = tostore;
+    }
+    else
+    {
+        RUNTIME_ERROR("tried to modify an instance variable of non-instance object\n");
+    }
+}
+
 static void class_name(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     value_t v = args[0];
@@ -107,6 +142,20 @@ static void array_loadat(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx
 
     value_t v = vector_get(AS_ARRAY(object)->arr, AS_INT(accessor));
     RETURN_VALUE(v);
+}
+
+static void array_storeat(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+{
+    value_t tostore = args[0];
+    value_t object = args[1];
+    value_t accessor = args[2];
+
+    if (!IS_INT(accessor))
+    {
+        RUNTIME_ERROR("Array accessor must be an int\n");
+    }
+
+    vector_set(AS_ARRAY(object)->arr, AS_INT(accessor), tostore);
 }
 
 static void array_size(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
@@ -234,12 +283,14 @@ void core_init_classes()
 
     class_bind(melon_class_object, FROM_STRLIT("class"), FROM_CLOSURE(closure_native(object_class)));
     class_bind(melon_class_object, FROM_STRLIT("$loadfield"), FROM_CLOSURE(closure_native(object_loadfield)));
+    class_bind(melon_class_object, FROM_STRLIT("$storefield"), FROM_CLOSURE(closure_native(object_storefield)));
 
     class_bind(melon_class_class, FROM_STRLIT("name"), FROM_CLOSURE(closure_native(class_name)));
 
     class_bind(melon_class_closure, FROM_STRLIT("name"), FROM_CLOSURE(closure_native(closure_name)));
 
     class_bind(melon_class_array, FROM_STRLIT("$loadat"), FROM_CLOSURE(closure_native(array_loadat)));
+    class_bind(melon_class_array, FROM_STRLIT("$storeat"), FROM_CLOSURE(closure_native(array_storeat)));
     class_bind(melon_class_array, FROM_STRLIT("size"), FROM_CLOSURE(closure_native(array_size)));
     class_bind(melon_class_array, FROM_STRLIT("add"), FROM_CLOSURE(closure_native(array_add)));
     class_bind(melon_class_array, FROM_STRLIT("get"), FROM_CLOSURE(closure_native(array_get)));

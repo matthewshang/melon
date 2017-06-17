@@ -328,7 +328,6 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
             closure_t *loada;
             CLASS_LOOKUP(object, "$loadat", loada);
             CALL_FUNC_NOSTACK(loada, STACK_SIZE - 2, 2, 1);
-
             break;
         }
         case OP_LOADG: STACK_PUSH(vector_get(vm->globals, READ_BYTE)); break;
@@ -340,39 +339,18 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
         }
         case OP_STOREF:
         {
-            value_t accessor = STACK_POP;
-            value_t object = STACK_POP;
-            bool is_class = IS_CLASS(object);
-            value_t tostore = STACK_PEEK;
-            value_t *index;
-            if (IS_INT(accessor))
-            {
-                index = &accessor;
-            }
-            else
-            {
-                index = class_lookup_super(value_get_class(object), accessor);
-            }
-
-            if (!index)
-            {
-                RUNTIME_ERROR("class %s does not have property %s\n",
-                    value_get_class(object)->identifier, AS_STR(accessor));
-            }
-
-            if (IS_CLASS(object))
-            {
-                AS_CLASS(object)->static_vars[AS_INT(*index)] = tostore;
-            }
-            else if (IS_INSTANCE(object))
-            {
-                AS_INSTANCE(object)->vars[AS_INT(*index)] = tostore;
-            }
-            else
-            {
-                RUNTIME_ERROR("tried to modify an instance variable of non-instance object\n");
-            }
-
+            value_t object = STACK_PEEKN(2);
+            closure_t *storef;
+            CLASS_LOOKUP(object, "$storefield", storef);
+            CALL_FUNC_NOSTACK(storef, STACK_SIZE - 3, 3, 2);
+            break;
+        }
+        case OP_STOREA:
+        {
+            value_t object = STACK_PEEKN(2);
+            closure_t *storea;
+            CLASS_LOOKUP(object, "$storeat", storea);
+            CALL_FUNC_NOSTACK(storea, STACK_SIZE - 3, 3, 2);
             break;
         }
         case OP_STOREG: vector_set(vm->globals, READ_BYTE, STACK_PEEK); break;
