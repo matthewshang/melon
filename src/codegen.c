@@ -223,7 +223,7 @@ static void gen_node_var_decl(astwalker_t *self, node_var_decl_t *node)
         if (node->storage.type == TOK_STATIC)
             c = c->metaclass;
 
-        class_bind(c, FROM_CSTR(strdup(node->ident)), FROM_INT(node->idx));
+        class_bind(c, FROM_CSTR(node->ident), FROM_INT(node->idx));
 
         if (node->init)
         {
@@ -266,10 +266,10 @@ static void gen_node_class_decl(struct astwalker *self, node_class_decl_t *node)
     if (node->num_staticvars > 0)
     {
         meta_init = closure_new(function_new(strdup("$init")));
-        class_bind(c->metaclass, FROM_CSTR(strdup("$init")), FROM_CLOSURE(meta_init));
+        class_bind(c->metaclass, FROM_CSTR("$init"), FROM_CLOSURE(meta_init));
     }
     closure_t *init = closure_new(function_new(strdup("$init")));
-    class_bind(c, FROM_CSTR(strdup("$init")), FROM_CLOSURE(init));
+    class_bind(c, FROM_CSTR("$init"), FROM_CLOSURE(init));
 
     PUSH_CONTEXT(FROM_CLASS(c));
 
@@ -359,7 +359,7 @@ static void gen_node_postfix(astwalker_t *self, node_postfix_t *node)
             bool is_method = i < len - 1 && vector_get(*node->exprs, i + 1)->type == POST_CALL;
             node_var_t *var = (node_var_t*)expr->accessor;
             emit_bytes(CODE, (uint8_t)OP_LOADK, 
-                cpool_add_constant(CONSTANTS, FROM_CSTR(strdup(var->identifier))));
+                cpool_add_constant(CONSTANTS, FROM_CSTR(var->identifier)));
             if (node->base.is_assign && i == len - 1)
                 emit_byte(CODE, OP_STOREF);
             else
@@ -440,7 +440,7 @@ static void gen_node_literal(astwalker_t *self, node_literal_t *node)
     case LITERAL_STR:
     {
         emit_bytes(code, OP_LOADK, 
-            cpool_add_constant(constpool, FROM_CSTR(strdup(node->u.s))));
+            cpool_add_constant(constpool, FROM_CSTR(node->u.s)));
         break;
     }
     default: break;

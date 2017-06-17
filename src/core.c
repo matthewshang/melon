@@ -14,7 +14,7 @@
             return true;                                                                \
         } while (0)
 
-#define RETURN                                                                     \
+#define RETURN                                                                          \
         do {                                                                            \
             return true;                                                                \
         } while (0)
@@ -71,7 +71,7 @@ static bool object_loadfield(vm_t *vm, value_t *args, uint8_t nargs, uint32_t re
     if (!index)
     {
         RUNTIME_ERROR("class %s does not have property %s\n",
-            value_get_class(object)->identifier, AS_STR(accessor));
+            value_get_class(object)->identifier, AS_STR(accessor)->s);
     }
 
     if (IS_INT(*index))
@@ -107,7 +107,7 @@ static bool object_storefield(vm_t *vm, value_t *args, uint8_t nargs, uint32_t r
     if (!index)
     {
         RUNTIME_ERROR("class %s does not have property %s\n",
-            value_get_class(object)->identifier, AS_STR(accessor));
+            value_get_class(object)->identifier, AS_STR(accessor)->s);
     }
 
     if (IS_CLASS(object))
@@ -310,23 +310,23 @@ void core_init_classes()
     melon_class_instance = class_new_with_meta(strdup("Instance"), 0, 0, melon_class_object);
     melon_class_array = class_new_with_meta(strdup("Array"), 0, 0, melon_class_object);
 
-    class_bind(melon_class_object, FROM_STRLIT("class"), FROM_CLOSURE(closure_native(object_class)));
-    class_bind(melon_class_object, FROM_STRLIT("$loadfield"), FROM_CLOSURE(closure_native(object_loadfield)));
-    class_bind(melon_class_object, FROM_STRLIT("$storefield"), FROM_CLOSURE(closure_native(object_storefield)));
+    class_bind(melon_class_object, FROM_CSTR("class"), FROM_CLOSURE(closure_native(object_class)));
+    class_bind(melon_class_object, FROM_CSTR("$loadfield"), FROM_CLOSURE(closure_native(object_loadfield)));
+    class_bind(melon_class_object, FROM_CSTR("$storefield"), FROM_CLOSURE(closure_native(object_storefield)));
 
-    class_bind(melon_class_class, FROM_STRLIT("name"), FROM_CLOSURE(closure_native(class_name)));
+    class_bind(melon_class_class, FROM_CSTR("name"), FROM_CLOSURE(closure_native(class_name)));
 
-    class_bind(melon_class_closure, FROM_STRLIT("name"), FROM_CLOSURE(closure_native(closure_name)));
+    class_bind(melon_class_closure, FROM_CSTR("name"), FROM_CLOSURE(closure_native(closure_name)));
 
-    class_bind(melon_class_array, FROM_STRLIT("$loadat"), FROM_CLOSURE(closure_native(array_loadat)));
-    class_bind(melon_class_array, FROM_STRLIT("$storeat"), FROM_CLOSURE(closure_native(array_storeat)));
-    class_bind(melon_class_array, FROM_STRLIT("size"), FROM_CLOSURE(closure_native(array_size)));
-    class_bind(melon_class_array, FROM_STRLIT("add"), FROM_CLOSURE(closure_native(array_add)));
-    class_bind(melon_class_array, FROM_STRLIT("get"), FROM_CLOSURE(closure_native(array_loadat)));
-    class_bind(melon_class_array, FROM_STRLIT("map"), FROM_CLOSURE(closure_native(array_map)));
+    class_bind(melon_class_array, FROM_CSTR("$loadat"), FROM_CLOSURE(closure_native(array_loadat)));
+    class_bind(melon_class_array, FROM_CSTR("$storeat"), FROM_CLOSURE(closure_native(array_storeat)));
+    class_bind(melon_class_array, FROM_CSTR("size"), FROM_CLOSURE(closure_native(array_size)));
+    class_bind(melon_class_array, FROM_CSTR("add"), FROM_CLOSURE(closure_native(array_add)));
+    class_bind(melon_class_array, FROM_CSTR("get"), FROM_CLOSURE(closure_native(array_loadat)));
+    class_bind(melon_class_array, FROM_CSTR("map"), FROM_CLOSURE(closure_native(array_map)));
 
     class_t *array_meta = melon_class_array->metaclass;
-    class_bind(array_meta, FROM_STRLIT("$new"), FROM_CLOSURE(closure_native(array_new_inst)));
+    class_bind(array_meta, FROM_CSTR("$new"), FROM_CLOSURE(closure_native(array_new_inst)));
 }
 
 void core_free_vm()

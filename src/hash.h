@@ -31,4 +31,6 @@ value_t *hashtable_get(hashtable_t *htable, value_t key);
 
 void hashtable_iterate(hashtable_t *htable, hash_iterator_func iterator);
 
+uint32_t hash_string(const char *s);
+
 #endif

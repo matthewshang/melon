@@ -9,7 +9,7 @@
 void value_destroy(value_t val)
 {
     if (IS_STR(val))
-        free(AS_STR(val));
+        string_free(AS_STR(val));
     else if (IS_CLOSURE(val))
         closure_free(AS_CLOSURE(val));
     else if (IS_CLASS(val))
@@ -24,7 +24,7 @@ void value_print_notag(value_t v)
 {
     if (IS_BOOL(v)) printf("%s", AS_BOOL(v) == 1 ? "true" : "false");
     if (IS_INT(v)) printf("%d", AS_INT(v));
-    if (IS_STR(v)) printf("%s", AS_STR(v));
+    if (IS_STR(v)) printf("%s", AS_STR(v)->s);
     if (IS_FLOAT(v)) printf("%f", AS_FLOAT(v));
     if (IS_CLOSURE(v))
     {
@@ -42,7 +42,7 @@ void value_print(value_t v)
 {
     if (IS_BOOL(v)) printf("[bool]: %s\n", AS_BOOL(v) == 1 ? "true" : "false");
     if (IS_INT(v)) printf("[int]: %d\n", AS_INT(v));
-    if (IS_STR(v)) printf("[string]: %s\n", AS_STR(v));
+    if (IS_STR(v)) printf("[string]: %s\n", AS_STR(v)->s);
     if (IS_FLOAT(v)) printf("[float]: %f\n", AS_FLOAT(v));
     if (IS_CLOSURE(v)) 
     {
@@ -70,7 +70,7 @@ bool value_equals(value_t v1, value_t v2)
     }
     else if (IS_STR(v1))
     {
-        return strcmp(AS_STR(v1), AS_STR(v2)) == 0;
+        return strcmp(AS_STR(v1)->s, AS_STR(v2)->s) == 0;
     }  
     return false;
 }
@@ -171,7 +171,7 @@ static void debug_print_val(value_t v, uint8_t depth)
 {
     if (IS_BOOL(v)) printf("[bool]: %s\n", AS_BOOL(v) == 1 ? "true" : "false");
     if (IS_INT(v)) printf("[int]: %d\n", AS_INT(v));
-    if (IS_STR(v)) printf("[string]: %s\n", AS_STR(v));
+    if (IS_STR(v)) printf("[string]: %s\n", AS_STR(v)->s);
     if (IS_FLOAT(v)) printf("[float]: %f\n", AS_FLOAT(v));
     if (IS_CLOSURE(v))
     {
@@ -319,7 +319,7 @@ static void free_class_iterate(hash_entry_t *node)
 {
     if (IS_STR(node->key))
     {
-        free(AS_STR(node->key));
+        string_free(AS_STR(node->key));
     }
     value_destroy(node->value);
 }
@@ -424,4 +424,19 @@ void array_print(array_t *a)
         }
     }
     printf("]");
+}
+
+string_t *string_new(const char *s)
+{
+    string_t *str = (string_t*)calloc(1, sizeof(string_t));
+    str->s = _strdup(s);
+    str->len = strlen(s);
+    str->hash = hash_string(s);
+    return str;
+}
+
+void string_free(string_t *s)
+{
+    free(s->s);
+    free(s);
 }

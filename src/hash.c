@@ -99,7 +99,7 @@ void hashtable_dump(hashtable_t *htable)
     }
 }
 
-static uint32_t hash_string(const char *s)
+uint32_t hash_string(const char *s)
 {
     return murmur3_32(s, strlen(s), HASH_SEED);
 }
@@ -108,7 +108,7 @@ static uint32_t hash_value(value_t v)
 {
     if (IS_STR(v))
     {
-        return hash_string(AS_STR(v));
+        return AS_STR(v)->hash;
     }
 }
 
