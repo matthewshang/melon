@@ -134,6 +134,50 @@ static bool class_name(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
     }
 }
 
+static bool string_length(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+{
+    RETURN_VALUE(FROM_INT(AS_STR(args[0])->len));
+}
+
+static bool string_equals(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+{
+    string_t *s1 = AS_STR(args[0]);
+    string_t *s2 = AS_STR(args[1]);
+    RETURN_VALUE(FROM_BOOL(strcmp(s1->s, s2->s) == 0));
+}
+
+static bool string_charat(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+{
+    string_t *s = AS_STR(args[0]);
+    int idx = AS_INT(args[1]);
+    if (idx >= s->len)
+    {
+        RUNTIME_ERROR("string_charat: out of bounds\n");
+    }
+
+    char buffer[4];
+    sprintf(buffer, "%c", s->s[idx]);
+    string_t *c = string_new(buffer);
+    vm_push_mem(vm, FROM_STR(c));
+    RETURN_VALUE(FROM_STR(c));
+}
+
+static bool string_concat(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+{
+    string_t *s1 = AS_STR(args[0]);
+    string_t *s2 = AS_STR(args[1]);
+
+    char *buffer = (char*)calloc(s1->len + s2->len + 1, sizeof(char));
+    for (size_t i = 0; i < s1->len; i++) buffer[i] = s1->s[i];
+    for (size_t i = 0; i < s2->len; i++) buffer[s1->len + i] = s2->s[i];
+    buffer[s1->len + s2->len] = '\0';
+
+    value_t str = FROM_STR(string_new(buffer));
+    vm_push_mem(vm, str);
+    free(buffer);
+    RETURN_VALUE(str);
+}
+
 static bool closure_name(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     value_t v = args[0];
@@ -315,6 +359,11 @@ void core_init_classes()
     class_bind(melon_class_object, FROM_CSTR("$storefield"), FROM_CLOSURE(closure_native(object_storefield)));
 
     class_bind(melon_class_class, FROM_CSTR("name"), FROM_CLOSURE(closure_native(class_name)));
+
+    class_bind(melon_class_string, FROM_CSTR("length"), FROM_CLOSURE(closure_native(string_length)));
+    class_bind(melon_class_string, FROM_CSTR("equals"), FROM_CLOSURE(closure_native(string_equals)));
+    class_bind(melon_class_string, FROM_CSTR("charAt"), FROM_CLOSURE(closure_native(string_charat)));
+    class_bind(melon_class_string, FROM_CSTR("concat"), FROM_CLOSURE(closure_native(string_concat)));
 
     class_bind(melon_class_closure, FROM_CSTR("name"), FROM_CLOSURE(closure_native(closure_name)));
 

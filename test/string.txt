@@ -1,0 +1,13 @@
+var s1 = "Hello, World!";
+println(s1);
+println(s1.length());
+
+var s2 = "Hello, World!";
+var s3 = "Hello world";
+
+println(s1.equals(s2));
+println(s1.equals(s3));
+
+println(s1.charAt(4));
+
+println(s1.concat(s2));
