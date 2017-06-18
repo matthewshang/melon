@@ -26,7 +26,7 @@ void value_print_notag(value_t v)
     if (IS_INT(v)) printf("%d", AS_INT(v));
     if (IS_STR(v)) printf("%s", AS_STR(v)->s);
     if (IS_FLOAT(v)) printf("%f", AS_FLOAT(v));
-    if (IS_NULL(v)) printf("null");
+    if (IS_NULL(v)) printf("{null}");
     if (IS_CLOSURE(v))
     {
         if (AS_CLOSURE(v)->f->type == FUNC_MELON)
@@ -72,6 +72,10 @@ bool value_equals(value_t v1, value_t v2)
     {
         return strcmp(AS_STR(v1)->s, AS_STR(v2)->s) == 0;
     }  
+    else if (IS_NULL(v1))
+    {
+        return IS_NULL(v2);
+    }
     return false;
 }
 
@@ -169,15 +173,12 @@ static void internal_cpool_dump(function_t *func, uint8_t depth);
 
 static void debug_print_val(value_t v, uint8_t depth)
 {
-    if (IS_BOOL(v)) printf("[bool]: %s\n", AS_BOOL(v) == 1 ? "true" : "false");
-    if (IS_INT(v)) printf("[int]: %d\n", AS_INT(v));
-    if (IS_STR(v)) printf("[string]: %s\n", AS_STR(v)->s);
-    if (IS_FLOAT(v)) printf("[float]: %f\n", AS_FLOAT(v));
     if (IS_CLOSURE(v))
     {
         printf("[function] %s\n", AS_CLOSURE(v)->f->identifier);
         internal_disassemble(AS_CLOSURE(v)->f, depth + 1);
         internal_cpool_dump(AS_CLOSURE(v)->f, depth + 1);
+        return;
     }
     if (IS_CLASS(v))
     {
@@ -191,7 +192,9 @@ static void debug_print_val(value_t v, uint8_t depth)
             printf("[class] %s\n", meta->identifier);
             internal_class_print(meta, depth + 1);
         }
+        return;
     }
+    value_print(v);
 }
 
 static void class_print_iterate(hash_entry_t *node)

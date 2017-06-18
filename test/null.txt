@@ -1,2 +1,8 @@
 var a = Array(5);
 println(a);
+
+var x;
+var y;
+var z = 2;
+
+println(x + y + z);

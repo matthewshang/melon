@@ -86,10 +86,8 @@ static void emit_loadstore(byte_r *code, location_e loc, uint8_t idx, bool store
     }
     else if (loc == LOC_CLASS)
     {
-        if (store)
-            emit_byte(code, OP_STOREF);
-        else
-            emit_bytes(code, OP_LOADF, 0);
+        if (store) emit_byte(code, OP_STOREF);
+        else emit_bytes(code, OP_LOADF, 0);
     }
 }
 
@@ -209,12 +207,13 @@ static void gen_node_var_decl(astwalker_t *self, node_var_decl_t *node)
         if (node->init)
         {
             walk_ast(self, node->init);
-            emit_loadstore(CODE, node->loc, node->idx, true);
         }
         else
         {
-            emit_bytes(CODE, (uint8_t)OP_LOADI, 0);
+            value_r *cpool = &AS_CLOSURE(context)->f->constpool;
+            emit_bytes(CODE, (uint8_t)OP_LOADK, cpool_add_constant(cpool, FROM_NULL));
         }
+        emit_loadstore(CODE, node->loc, node->idx, true);
     }
     else if (env_class)
     {
