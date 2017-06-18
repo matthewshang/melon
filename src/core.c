@@ -199,7 +199,11 @@ static bool array_new_inst(vm_t *vm, value_t *args, uint8_t nargs, uint32_t reti
     if (nargs > 0)
     {
         vector_realloc(value_t, a->arr, AS_INT(args[0]));
-        a->arr.n = AS_INT(args[0]);
+        a->size = AS_INT(args[0]);
+        for (uint32_t i = 0; i < a->size; i++)
+        {
+            vector_push(value_t, a->arr, FROM_INT(0));
+        }
     }
     RETURN_VALUE(v);
 }
@@ -213,7 +217,7 @@ static bool array_loadat(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx
     array_t *object = AS_ARRAY(args[0]);
     int accessor = AS_INT(args[1]);
 
-    if (accessor >= vector_size(object->arr))
+    if (accessor >= object->size)
     {
         RUNTIME_ERROR("Array accessor out of bounds\n");
     }
@@ -232,7 +236,7 @@ static bool array_storeat(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retid
     array_t *object = AS_ARRAY(args[1]);
     int accessor = AS_INT(args[2]);
     
-    if (accessor >= vector_size(object->arr))
+    if (accessor >= object->size)
     {
         RUNTIME_ERROR("Array accessor out of bounds\n");
     }
@@ -244,13 +248,13 @@ static bool array_storeat(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retid
 static bool array_size(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     array_t *arr = AS_ARRAY(args[0]);
-    RETURN_VALUE(FROM_INT(vector_size(arr->arr)));
+    RETURN_VALUE(FROM_INT(arr->size));
 }
 
 static bool array_add(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     array_t *arr = AS_ARRAY(args[0]);
-    vector_push(value_t, arr->arr, args[1]);
+    array_push(arr, args[1]);
     RETURN;
 }
 

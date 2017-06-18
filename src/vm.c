@@ -468,7 +468,7 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
             uint8_t len = READ_BYTE;
             for (uint8_t i = 0; i < len; i++)
             {
-                vector_push(value_t, a->arr, *(vm->stacktop - len + i));
+                array_push(a, *(vm->stacktop - len + i));
             }
             value_t a_val = FROM_ARRAY(a);
             vm_push_mem(vm, a_val);

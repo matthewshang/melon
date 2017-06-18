@@ -403,6 +403,7 @@ array_t *array_new()
 {
     array_t *a = (array_t*)calloc(1, sizeof(array_t));
     vector_init(a->arr);
+    a->size = 0;
     return a;
 }
 
@@ -410,6 +411,12 @@ void array_free(array_t *a)
 {
     vector_destroy(a->arr);
     free(a);
+}
+
+void array_push(array_t *a, value_t v)
+{
+    vector_push(value_t, a->arr, v);
+    a->size++;
 }
 
 void array_print(array_t *a)

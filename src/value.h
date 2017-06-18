@@ -104,6 +104,7 @@ typedef struct closure_s
 typedef struct array_s
 {
     value_r arr;
+    uint32_t size;
 
 } array_t;
 
@@ -177,6 +178,7 @@ void instance_free(instance_t *inst);
 
 array_t *array_new();
 void array_free(array_t *a);
+void array_push(array_t * a, value_t v);
 void array_print(array_t *a);
 
 string_t *string_new(const char *s);
