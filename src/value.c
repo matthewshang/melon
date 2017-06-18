@@ -26,6 +26,7 @@ void value_print_notag(value_t v)
     if (IS_INT(v)) printf("%d", AS_INT(v));
     if (IS_STR(v)) printf("%s", AS_STR(v)->s);
     if (IS_FLOAT(v)) printf("%f", AS_FLOAT(v));
+    if (IS_NULL(v)) printf("null");
     if (IS_CLOSURE(v))
     {
         if (AS_CLOSURE(v)->f->type == FUNC_MELON)
@@ -40,20 +41,19 @@ void value_print_notag(value_t v)
 
 void value_print(value_t v)
 {
-    if (IS_BOOL(v)) printf("[bool]: %s\n", AS_BOOL(v) == 1 ? "true" : "false");
-    if (IS_INT(v)) printf("[int]: %d\n", AS_INT(v));
-    if (IS_STR(v)) printf("[string]: %s\n", AS_STR(v)->s);
-    if (IS_FLOAT(v)) printf("[float]: %f\n", AS_FLOAT(v));
+    if (IS_BOOL(v)) printf("[bool]: ");
+    if (IS_INT(v)) printf("[int]: ");
+    if (IS_STR(v)) printf("[string]: ");
+    if (IS_FLOAT(v)) printf("[float]: ");
     if (IS_CLOSURE(v)) 
     {
         if (AS_CLOSURE(v)->f->type == FUNC_MELON)
-            printf("[closure]: %s\n", AS_CLOSURE(v)->f->identifier);
-        else
-            printf("[native function]\n");
+            printf("[closure]: ");
     }
-    if (IS_CLASS(v)) printf("[class]: %s\n", AS_CLASS(v)->identifier);
-    if (IS_INSTANCE(v)) printf("[instance]\n");
-    if (IS_ARRAY(v)) array_print(AS_ARRAY(v));
+    if (IS_CLASS(v)) printf("[class]: ");
+    if (IS_ARRAY(v)) printf("[array]: ");
+    value_print_notag(v);
+    printf("\n");
 }
 
 bool value_equals(value_t v1, value_t v2)
@@ -308,6 +308,10 @@ class_t *class_new_with_meta(const char *identifier, uint16_t nvars, uint16_t ns
     c->htable = hashtable_new(384);
     c->meta_inited = true;
     c->static_vars = nstatic > 0 ? (value_t*)calloc(nstatic, sizeof(value_t)) : NULL;
+    for (size_t i = 0; i < nstatic; i++)
+    {
+        c->static_vars[i] = FROM_NULL;
+    }
     char buf[256];
     snprintf(buf, sizeof(buf), "%s$meta", c->identifier);
     class_t *supermeta = superclass->metaclass ? superclass->metaclass : melon_class_class;
@@ -389,6 +393,10 @@ instance_t *instance_new(class_t *c)
     inst->c = c;
     inst->nvars = c->nvars;
     inst->vars = (value_t*)calloc(inst->nvars, sizeof(value_t));
+    for (size_t i = 0; i < inst->nvars; i++)
+    {
+        inst->vars[i] = FROM_NULL;
+    }
     return inst;
 }
 

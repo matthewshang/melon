@@ -20,6 +20,7 @@ class_t *melon_class_class;
 class_t *melon_class_bool;
 class_t *melon_class_int;
 class_t *melon_class_float;
+class_t *melon_class_null;
 class_t *melon_class_string;
 class_t *melon_class_closure;
 class_t *melon_class_instance;
@@ -124,6 +125,7 @@ typedef struct
 #define FROM_CLASS(x) (value_t){.type = melon_class_class, .o = (void*)x}
 #define FROM_INSTANCE(x) (value_t){.type = melon_class_instance, .o = (void*)x}
 #define FROM_ARRAY(x) (value_t){.type = melon_class_array, .o = (void*)x}
+#define FROM_NULL (value_t){.type = melon_class_null, .i = 0}
 
 #define AS_BOOL(x) (x).i
 #define AS_INT(x) (x).i
@@ -142,6 +144,7 @@ typedef struct
 #define IS_CLASS(x) ((x).type == melon_class_class)
 #define IS_INSTANCE(x) ((x).type == melon_class_instance)
 #define IS_ARRAY(x) ((x).type == melon_class_array)
+#define IS_NULL(x) ((x).type == melon_class_null)
 
 void value_destroy(value_t val);
 void value_print(value_t val);

@@ -202,7 +202,7 @@ static bool array_new_inst(vm_t *vm, value_t *args, uint8_t nargs, uint32_t reti
         a->size = AS_INT(args[0]);
         for (uint32_t i = 0; i < a->size; i++)
         {
-            vector_push(value_t, a->arr, FROM_INT(0));
+            vector_push(value_t, a->arr, FROM_NULL);
         }
     }
     RETURN_VALUE(v);
@@ -315,6 +315,7 @@ void core_register_semantic(symtable_t *globals)
     symtable_add_local(globals, "Bool");
     symtable_add_local(globals, "Int");
     symtable_add_local(globals, "Float");
+    symtable_add_local(globals, "Null");
     symtable_add_local(globals, "String");
     symtable_add_local(globals, "Closure");
     symtable_add_local(globals, "Instance");
@@ -337,10 +338,11 @@ void core_register_vm(vm_t *vm)
     vm_set_global(vm, FROM_CLASS(melon_class_bool), 4);
     vm_set_global(vm, FROM_CLASS(melon_class_int), 5);
     vm_set_global(vm, FROM_CLASS(melon_class_float), 6);
-    vm_set_global(vm, FROM_CLASS(melon_class_string), 7);
-    vm_set_global(vm, FROM_CLASS(melon_class_closure), 8);
-    vm_set_global(vm, FROM_CLASS(melon_class_instance), 9);
-    vm_set_global(vm, FROM_CLASS(melon_class_array), 10);
+    vm_set_global(vm, FROM_CLASS(melon_class_null), 7);
+    vm_set_global(vm, FROM_CLASS(melon_class_string), 8);
+    vm_set_global(vm, FROM_CLASS(melon_class_closure), 9);
+    vm_set_global(vm, FROM_CLASS(melon_class_instance), 10);
+    vm_set_global(vm, FROM_CLASS(melon_class_array), 11);
 }
 
 void core_init_classes()
@@ -355,6 +357,7 @@ void core_init_classes()
     melon_class_bool = class_new_with_meta(strdup("Bool"), 0, 0, melon_class_object);
     melon_class_int = class_new_with_meta(strdup("Int"), 0, 0, melon_class_object);
     melon_class_float = class_new_with_meta(strdup("Float"), 0, 0, melon_class_object);
+    melon_class_null = class_new_with_meta(strdup("Null"), 0, 0, melon_class_object);
     melon_class_string = class_new_with_meta(strdup("String"), 0, 0, melon_class_object);
     melon_class_closure = class_new_with_meta(strdup("Closure"), 0, 0, melon_class_object);
     melon_class_instance = class_new_with_meta(strdup("Instance"), 0, 0, melon_class_object);
@@ -402,6 +405,7 @@ void core_free_classes()
     class_free(melon_class_bool);
     class_free(melon_class_int);
     class_free(melon_class_float);
+    class_free(melon_class_null);
     class_free(melon_class_string);
     class_free(melon_class_closure);
     class_free(melon_class_instance);
