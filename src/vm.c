@@ -299,7 +299,7 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
                 if (c->meta_inited || !c->metaclass) break;
                 c->static_vars = (value_t*)calloc(c->metaclass->nvars, sizeof(value_t));
                 c->meta_inited = true;
-                closure_t *init = class_lookup_closure(c->metaclass, FROM_CSTR("$init"));
+                closure_t *init = class_lookup_closure(c->metaclass, FROM_CSTR(CORE_INIT_STRING));
                 if (init)
                 {
                     CALL_FUNC(init, vm->stacktop - vm->stack - 1, 0);
@@ -316,7 +316,7 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
         {
             value_t object = STACK_PEEKN(2);
             closure_t *loadf;
-            CLASS_LOOKUP(object, "$loadfield", loadf);
+            CLASS_LOOKUP(object, CORE_LOADF_STRING, loadf);
             CALL_FUNC_NOSTACK(loadf, STACK_SIZE - 2, 2, 1);
 
             if (READ_BYTE) STACK_PUSH(object);
@@ -326,7 +326,7 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
         {
             value_t object = STACK_PEEKN(2);
             closure_t *loada;
-            CLASS_LOOKUP(object, "$loadat", loada);
+            CLASS_LOOKUP(object, CORE_LOADAT_STRING, loada);
             CALL_FUNC_NOSTACK(loada, STACK_SIZE - 2, 2, 1);
             break;
         }
@@ -341,7 +341,7 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
         {
             value_t object = STACK_PEEKN(2);
             closure_t *storef;
-            CLASS_LOOKUP(object, "$storefield", storef);
+            CLASS_LOOKUP(object, CORE_STOREF_STRING, storef);
             CALL_FUNC_NOSTACK(storef, STACK_SIZE - 3, 3, 2);
             break;
         }
@@ -349,7 +349,7 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
         {
             value_t object = STACK_PEEKN(2);
             closure_t *storea;
-            CLASS_LOOKUP(object, "$storeat", storea);
+            CLASS_LOOKUP(object, CORE_STOREAT_STRING, storea);
             CALL_FUNC_NOSTACK(storea, STACK_SIZE - 3, 3, 2);
             break;
         }
@@ -383,7 +383,7 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
             {
                 class_t *c = AS_CLASS(v);
 
-                closure_t *newcl = class_lookup_closure(c->metaclass, FROM_CSTR("$new"));
+                closure_t *newcl = class_lookup_closure(c->metaclass, FROM_CSTR(CORE_NEW_STRING));
                 if (newcl)
                 {
                     CALL_FUNC(newcl, vm->stacktop - vm->stack - nargs - 1, nargs);
@@ -393,7 +393,7 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
                 value_t instance = FROM_INSTANCE(instance_new(c));
                 vm_push_mem(vm, instance);
 
-                closure_t *init = class_lookup_closure(c, FROM_CSTR("$init"));
+                closure_t *init = class_lookup_closure(c, FROM_CSTR(CORE_INIT_STRING));
                 if (!init) RUNTIME_ERROR("missing init function in class %s\n", c->identifier);
 
                 CALL_FUNC(init, vm->stacktop - vm->stack - nargs - 1, nargs);

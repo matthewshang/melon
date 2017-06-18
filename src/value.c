@@ -357,9 +357,9 @@ void class_set_superclass(class_t *c, class_t *super)
     c->superclass = super;
 }
 
-void class_bind(class_t *c, value_t key, value_t value)
+void class_bind(class_t *c, const char *key, value_t value)
 {
-    hashtable_set(c->htable, key, value);
+    hashtable_set(c->htable, FROM_CSTR(key), value);
     c->nvars = ((hashtable_t*)c->htable)->nentrys;
 }
 

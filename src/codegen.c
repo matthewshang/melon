@@ -222,11 +222,11 @@ static void gen_node_var_decl(astwalker_t *self, node_var_decl_t *node)
         if (node->storage.type == TOK_STATIC)
             c = c->metaclass;
 
-        class_bind(c, FROM_CSTR(node->ident), FROM_INT(node->idx));
+        class_bind(c, node->ident, FROM_INT(node->idx));
 
         if (node->init)
         {
-            closure_t *initf = class_lookup_closure(c, FROM_CSTR("$init"));
+            closure_t *initf = class_lookup_closure(c, FROM_CSTR(CORE_INIT_STRING));
             if (!initf) return;
 
             PUSH_CONTEXT(FROM_CLOSURE(initf));
@@ -264,11 +264,11 @@ static void gen_node_class_decl(struct astwalker *self, node_class_decl_t *node)
     closure_t *meta_init = NULL;
     if (node->num_staticvars > 0)
     {
-        meta_init = closure_new(function_new(strdup("$init")));
-        class_bind(c->metaclass, FROM_CSTR("$init"), FROM_CLOSURE(meta_init));
+        meta_init = closure_new(function_new(strdup(CORE_INIT_STRING)));
+        class_bind(c->metaclass, CORE_INIT_STRING, FROM_CLOSURE(meta_init));
     }
-    closure_t *init = closure_new(function_new(strdup("$init")));
-    class_bind(c, FROM_CSTR("$init"), FROM_CLOSURE(init));
+    closure_t *init = closure_new(function_new(strdup(CORE_INIT_STRING)));
+    class_bind(c, CORE_INIT_STRING, FROM_CLOSURE(init));
 
     PUSH_CONTEXT(FROM_CLASS(c));
 

@@ -171,7 +171,7 @@ class_t *class_new_with_meta(const char *identifier, uint16_t nvars, uint16_t ns
 void class_free(class_t *c);
 void class_print(class_t *c);
 void class_set_superclass(class_t *c, class_t *super);
-void class_bind(class_t *c, value_t key, value_t value);
+void class_bind(class_t *c, const char *key, value_t value);
 value_t *class_lookup(class_t *c, value_t key);
 value_t *class_lookup_super(class_t *c, value_t key);
 closure_t *class_lookup_closure(class_t *c, value_t key);

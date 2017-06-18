@@ -363,28 +363,28 @@ void core_init_classes()
     melon_class_instance = class_new_with_meta(strdup("Instance"), 0, 0, melon_class_object);
     melon_class_array = class_new_with_meta(strdup("Array"), 0, 0, melon_class_object);
 
-    class_bind(melon_class_object, FROM_CSTR("class"), NATIVE_CLOSURE(object_class));
-    class_bind(melon_class_object, FROM_CSTR("$loadfield"), NATIVE_CLOSURE(object_loadfield));
-    class_bind(melon_class_object, FROM_CSTR("$storefield"), NATIVE_CLOSURE(object_storefield));
+    class_bind(melon_class_object, "class", NATIVE_CLOSURE(object_class));
+    class_bind(melon_class_object, CORE_LOADF_STRING, NATIVE_CLOSURE(object_loadfield));
+    class_bind(melon_class_object, CORE_STOREF_STRING, NATIVE_CLOSURE(object_storefield));
 
-    class_bind(melon_class_class, FROM_CSTR("name"), NATIVE_CLOSURE(class_name));
+    class_bind(melon_class_class, "name", NATIVE_CLOSURE(class_name));
 
-    class_bind(melon_class_string, FROM_CSTR("length"), NATIVE_CLOSURE(string_length));
-    class_bind(melon_class_string, FROM_CSTR("equals"), NATIVE_CLOSURE(string_equals));
-    class_bind(melon_class_string, FROM_CSTR("charAt"), NATIVE_CLOSURE(string_charat));
-    class_bind(melon_class_string, FROM_CSTR("concat"), NATIVE_CLOSURE(string_concat));
+    class_bind(melon_class_string, "length", NATIVE_CLOSURE(string_length));
+    class_bind(melon_class_string, "equals", NATIVE_CLOSURE(string_equals));
+    class_bind(melon_class_string, "charAt", NATIVE_CLOSURE(string_charat));
+    class_bind(melon_class_string, "concat", NATIVE_CLOSURE(string_concat));
 
-    class_bind(melon_class_closure, FROM_CSTR("name"), NATIVE_CLOSURE(closure_name));
+    class_bind(melon_class_closure, "name", NATIVE_CLOSURE(closure_name));
 
-    class_bind(melon_class_array, FROM_CSTR("$loadat"), NATIVE_CLOSURE(array_loadat));
-    class_bind(melon_class_array, FROM_CSTR("$storeat"), NATIVE_CLOSURE(array_storeat));
-    class_bind(melon_class_array, FROM_CSTR("size"), NATIVE_CLOSURE(array_size));
-    class_bind(melon_class_array, FROM_CSTR("add"), NATIVE_CLOSURE(array_add));
-    class_bind(melon_class_array, FROM_CSTR("get"), NATIVE_CLOSURE(array_loadat));
-    class_bind(melon_class_array, FROM_CSTR("map"), NATIVE_CLOSURE(array_map));
+    class_bind(melon_class_array, CORE_LOADAT_STRING, NATIVE_CLOSURE(array_loadat));
+    class_bind(melon_class_array, CORE_STOREAT_STRING, NATIVE_CLOSURE(array_storeat));
+    class_bind(melon_class_array, "size", NATIVE_CLOSURE(array_size));
+    class_bind(melon_class_array, "add", NATIVE_CLOSURE(array_add));
+    class_bind(melon_class_array, "get", NATIVE_CLOSURE(array_loadat));
+    class_bind(melon_class_array, "map", NATIVE_CLOSURE(array_map));
 
     class_t *array_meta = melon_class_array->metaclass;
-    class_bind(array_meta, FROM_CSTR("$new"), NATIVE_CLOSURE(array_new_inst));
+    class_bind(array_meta, CORE_NEW_STRING, NATIVE_CLOSURE(array_new_inst));
 }
 
 void core_free_vm()
