@@ -6,3 +6,4 @@ var y;
 var z = 2;
 
 println(x + y + z);
+println(z + y);

@@ -28,6 +28,16 @@
             return false;                                                               \
         } while (0)
 
+static int value_to_int(value_t v)
+{
+    if (IS_INT(v)) return AS_INT(v);
+    if (IS_FLOAT(v)) return (int)AS_FLOAT(v);
+    if (IS_BOOL(v)) return AS_BOOL(v);
+    if (IS_NULL(v)) return 0;
+
+    printf("Runtime error: no conversion exists for class '%s' to class int\n", v.type->identifier);
+    return 0;
+}
 
 static bool melon_println(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
@@ -133,6 +143,25 @@ static bool class_name(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
     if (IS_CLASS(v))
     {
         RETURN_VALUE(FROM_CSTR(AS_CLASS(v)->identifier));
+    }
+}
+
+static bool int_add(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+{
+    int a = AS_INT(args[0]);
+    int b = value_to_int(args[1]);
+    RETURN_VALUE(FROM_INT(a + b));
+}
+
+static bool null_add(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+{
+    if (IS_NULL(args[1]))
+    {
+        RETURN_VALUE(FROM_NULL);
+    }
+    else
+    {
+        RETURN_VALUE(args[1]);
     }
 }
 
@@ -368,6 +397,10 @@ void core_init_classes()
     class_bind(melon_class_object, CORE_STOREF_STRING, NATIVE_CLOSURE(object_storefield));
 
     class_bind(melon_class_class, "name", NATIVE_CLOSURE(class_name));
+
+    class_bind(melon_class_int, CORE_ADD_STRING, NATIVE_CLOSURE(int_add));
+
+    class_bind(melon_class_null, CORE_ADD_STRING, NATIVE_CLOSURE(null_add));
 
     class_bind(melon_class_string, "length", NATIVE_CLOSURE(string_length));
     class_bind(melon_class_string, "equals", NATIVE_CLOSURE(string_equals));

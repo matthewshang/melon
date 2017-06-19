@@ -80,13 +80,31 @@
             {                                                                        \
                 if (IS_INT(b)) INT_BIN_MATH(a.i, b.i, op);                           \
                 else if (IS_FLOAT(b)) FLT_BIN_MATH((double)a.i, b.d, op);            \
+                break;                                                               \
             }                                                                        \
             else if (IS_FLOAT(a))                                                    \
             {                                                                        \
                 if (IS_INT(b)) FLT_BIN_MATH(a.d, (double)b.i, op);                   \
                 else if (IS_FLOAT(b)) FLT_BIN_MATH(a.d, b.d, op);                    \
+                break;                                                               \
             }                                                                        \
+            STACK_PUSH(a); STACK_PUSH(b);                                            \
         } while (0)
+
+#define DO_FAST_BIN_MATH2(op)                                                        \
+            value_t b = STACK_POP, a = STACK_POP;                                    \
+            if (IS_INT(a))                                                           \
+            {                                                                        \
+                if (IS_INT(b)) { INT_BIN_MATH(a.i, b.i, op); break; }                \
+                else if (IS_FLOAT(b)) { FLT_BIN_MATH((double)a.i, b.d, op); break; } \
+            }                                                                        \
+            else if (IS_FLOAT(a))                                                    \
+            {                                                                        \
+                if (IS_INT(b)) { FLT_BIN_MATH(a.d, (double)b.i, op); break; }        \
+                else if (IS_FLOAT(b)) { FLT_BIN_MATH(a.d, b.d, op); break; }         \
+                break;                                                               \
+            }                                                                        \
+            STACK_PUSH(a); STACK_PUSH(b);                                            \
 
 #define DO_FAST_INT_MATH(op)                                                         \
         do {                                                                         \
@@ -114,6 +132,13 @@
                 if (IS_INT(b)) BOOL_BIN_MATH(a.d, (double)b.i, op);                  \
                 else if (IS_FLOAT(b)) BOOL_BIN_MATH(a.d, b.d, op);                   \
             }                                                                        \
+        } while (0)
+
+#define DO_OVERLOAD_OP(_opstr)                                                       \
+        do {                                                                         \
+            closure_t *_cl;                                                           \
+            CLASS_LOOKUP(STACK_PEEKN(2), _opstr, _cl);                               \
+            CALL_FUNC_NOSTACK(_cl, STACK_SIZE - 2, 2, 1);                            \
         } while (0)
 
 void callstack_push(callstack_t *stack, uint8_t *ret, closure_t *closure, uint16_t bp)
@@ -432,7 +457,12 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
             break;
         }
 
-        case OP_ADD: DO_FAST_BIN_MATH(+); break;
+        case OP_ADD: 
+        {
+            DO_FAST_BIN_MATH2(+); 
+            DO_OVERLOAD_OP(CORE_ADD_STRING);
+            break;
+        }
         case OP_SUB: DO_FAST_BIN_MATH(-); break;
         case OP_MUL: DO_FAST_BIN_MATH(*); break;
         case OP_DIV: DO_FAST_BIN_MATH(/ ); break;
