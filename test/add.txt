@@ -5,8 +5,32 @@ var null;
 var string = "This is a string";
 var array = [1, 2, 3, 4, 5];
 
+println("Adding to ints:");
 println(int + float);
 println(int + bool);
 println(int + null);
 println(int + string);
 println(int + array);
+println();
+
+println("Adding to strings:");
+println(string + string);
+println(string + int);
+println(string + float);
+println();
+
+println("Adding to floats:");
+println(float + int);
+println(float + float);
+println(float + bool);
+println(float + null);
+println(float + string);
+println();
+
+println("Adding to bools:");
+println(bool + int);
+println(bool + float);
+println(bool + bool);
+println(bool + null);
+println(bool + string);
+println();

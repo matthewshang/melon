@@ -39,6 +39,55 @@ static int value_to_int(value_t v)
     return 0;
 }
 
+static bool value_to_bool(value_t v)
+{
+    if (IS_INT(v)) return !(AS_INT(v) == 0);
+    if (IS_FLOAT(v)) return !(AS_FLOAT(v) == 0.0);
+    if (IS_BOOL(v)) return AS_BOOL(v);
+    if (IS_NULL(v)) return false;
+
+    printf("Runtime error: no conversion exists for class '%s' to class bool\n", v.type->identifier);
+    return false;
+}
+
+static double value_to_float(value_t v)
+{
+    if (IS_INT(v)) return (double)AS_INT(v);
+    if (IS_FLOAT(v)) return AS_FLOAT(v);
+    if (IS_BOOL(v)) return (double)AS_BOOL(v);
+    if (IS_NULL(v)) return 0.0;
+
+    printf("Runtime error: no conversion exists for class '%s' to class float\n", v.type->identifier);
+    return 0;
+}
+
+static string_t *value_to_string(value_t v)
+{
+    char buffer[64];
+    if (IS_INT(v)) sprintf(buffer, "%d", AS_INT(v));
+    if (IS_FLOAT(v)) sprintf(buffer, "%f", AS_FLOAT(v));
+    if (IS_BOOL(v)) sprintf(buffer, "%s", AS_BOOL(v) ? "true" : "false");
+    if (IS_NULL(v)) sprintf(buffer, "");
+    if (IS_STR(v)) return AS_STR(v);
+
+    return string_new(buffer);
+
+    printf("Runtime error: no conversion exists for class '%s' to class string\n", v.type->identifier);
+    return string_new("");
+}
+
+static string_t *concat_strings(string_t *s1, string_t *s2)
+{
+    char *buffer = (char*)calloc(s1->len + s2->len + 1, sizeof(char));
+    for (size_t i = 0; i < s1->len; i++) buffer[i] = s1->s[i];
+    for (size_t i = 0; i < s2->len; i++) buffer[s1->len + i] = s2->s[i];
+    buffer[s1->len + s2->len] = '\0';
+
+    string_t *concat = string_new(buffer);
+    free(buffer);
+    return concat;
+}
+
 static bool melon_println(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     if (nargs > 0)
@@ -148,9 +197,41 @@ static bool class_name(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 
 static bool int_add(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
+    if (IS_STR(args[1]))
+    {
+        string_t *concat = concat_strings(value_to_string(args[0]), AS_STR(args[1]));
+        vm_push_mem(vm, FROM_STR(concat));
+        RETURN_VALUE(FROM_STR(concat));
+    }
     int a = AS_INT(args[0]);
     int b = value_to_int(args[1]);
     RETURN_VALUE(FROM_INT(a + b));
+}
+
+static bool bool_add(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+{
+    if (IS_STR(args[1]))
+    {
+        string_t *concat = concat_strings(value_to_string(args[0]), AS_STR(args[1]));
+        vm_push_mem(vm, FROM_STR(concat));
+        RETURN_VALUE(FROM_STR(concat));
+    }
+    bool a = AS_BOOL(args[0]);
+    bool b = value_to_bool(args[1]);
+    RETURN_VALUE(a && b ? FROM_INT(a + b) : FROM_BOOL(a + b));
+}
+
+static bool float_add(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+{
+    if (IS_STR(args[1]))
+    {
+        string_t *concat = concat_strings(value_to_string(args[0]), AS_STR(args[1]));
+        vm_push_mem(vm, FROM_STR(concat));
+        RETURN_VALUE(FROM_STR(concat));
+    }
+    double a = AS_FLOAT(args[0]);
+    double b = value_to_float(args[1]);
+    RETURN_VALUE(FROM_FLOAT(a + b));
 }
 
 static bool null_add(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
@@ -163,6 +244,16 @@ static bool null_add(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
     {
         RETURN_VALUE(args[1]);
     }
+}
+
+static bool string_add(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+{
+    string_t *s1 = AS_STR(args[0]);
+    string_t *s2 = value_to_string(args[1]);
+    value_t str = FROM_STR(concat_strings(s1, s2));
+    vm_push_mem(vm, str);
+
+    RETURN_VALUE(str);
 }
 
 static bool string_length(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
@@ -197,15 +288,9 @@ static bool string_concat(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retid
 {
     string_t *s1 = AS_STR(args[0]);
     string_t *s2 = AS_STR(args[1]);
-
-    char *buffer = (char*)calloc(s1->len + s2->len + 1, sizeof(char));
-    for (size_t i = 0; i < s1->len; i++) buffer[i] = s1->s[i];
-    for (size_t i = 0; i < s2->len; i++) buffer[s1->len + i] = s2->s[i];
-    buffer[s1->len + s2->len] = '\0';
-
-    value_t str = FROM_STR(string_new(buffer));
+    value_t str = FROM_STR(concat_strings(s1, s2));
     vm_push_mem(vm, str);
-    free(buffer);
+
     RETURN_VALUE(str);
 }
 
@@ -400,12 +485,17 @@ void core_init_classes()
 
     class_bind(melon_class_int, CORE_ADD_STRING, NATIVE_CLOSURE(int_add));
 
+    class_bind(melon_class_bool, CORE_ADD_STRING, NATIVE_CLOSURE(bool_add));
+
+    class_bind(melon_class_float, CORE_ADD_STRING, NATIVE_CLOSURE(float_add));
+
     class_bind(melon_class_null, CORE_ADD_STRING, NATIVE_CLOSURE(null_add));
 
     class_bind(melon_class_string, "length", NATIVE_CLOSURE(string_length));
     class_bind(melon_class_string, "equals", NATIVE_CLOSURE(string_equals));
     class_bind(melon_class_string, "charAt", NATIVE_CLOSURE(string_charat));
     class_bind(melon_class_string, "concat", NATIVE_CLOSURE(string_concat));
+    class_bind(melon_class_string, CORE_ADD_STRING, NATIVE_CLOSURE(string_add));
 
     class_bind(melon_class_closure, "name", NATIVE_CLOSURE(closure_name));
 
