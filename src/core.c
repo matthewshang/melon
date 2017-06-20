@@ -61,18 +61,34 @@ static double value_to_float(value_t v)
     return 0;
 }
 
-static string_t *value_to_string(value_t v)
+static string_t *value_to_string(vm_t *vm, value_t v)
 {
     char buffer[64];
-    if (IS_INT(v)) sprintf(buffer, "%d", AS_INT(v));
-    if (IS_FLOAT(v)) sprintf(buffer, "%f", AS_FLOAT(v));
-    if (IS_BOOL(v)) sprintf(buffer, "%s", AS_BOOL(v) ? "true" : "false");
-    if (IS_NULL(v)) sprintf(buffer, "");
-    if (IS_STR(v)) return AS_STR(v);
+    if (IS_INT(v))
+    {
+        sprintf(buffer, "%d", AS_INT(v));
+        return string_new(buffer);
+    }
+    if (IS_FLOAT(v))
+    {
+        sprintf(buffer, "%f", AS_FLOAT(v));
+        return string_new(buffer);
+    }
+    if (IS_BOOL(v)) return string_new(AS_BOOL(v) ? "true" : "false");
+    if (IS_NULL(v)) return string_new("");
+    if (IS_STR(v)) return string_copy(AS_STR(v));
 
-    return string_new(buffer);
+    value_t *tostrv = class_lookup(value_get_class(v), FROM_CSTR(CORE_TOSTR_STRING));
+    if (tostrv)
+    {
+        closure_t *tostr = AS_CLOSURE(AS_INSTANCE(v)->vars[AS_INT(*tostrv)]);
+        value_t args[1] = { v };
+        value_t *ret = NULL;
+        vm_run_closure(vm, tostr, args, 1, &ret);
+        return string_copy(AS_STR(*ret));
+    }
 
-    printf("Runtime error: no conversion exists for class '%s' to class string\n", v.type->identifier);
+    printf("Runtime error: no conversion exists for class '%s' to class string\n", value_get_class(v)->identifier);
     return string_new("");
 }
 
@@ -199,8 +215,10 @@ static bool int_add(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     if (IS_STR(args[1]))
     {
-        string_t *concat = concat_strings(value_to_string(args[0]), AS_STR(args[1]));
+        string_t *string = value_to_string(vm, args[0]);
+        string_t *concat = concat_strings(string, AS_STR(args[1]));
         vm_push_mem(vm, FROM_STR(concat));
+        string_free(string);
         RETURN_VALUE(FROM_STR(concat));
     }
     int a = AS_INT(args[0]);
@@ -212,8 +230,10 @@ static bool bool_add(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     if (IS_STR(args[1]))
     {
-        string_t *concat = concat_strings(value_to_string(args[0]), AS_STR(args[1]));
+        string_t *string = value_to_string(vm, args[0]);
+        string_t *concat = concat_strings(string, AS_STR(args[1]));
         vm_push_mem(vm, FROM_STR(concat));
+        string_free(string);
         RETURN_VALUE(FROM_STR(concat));
     }
     bool a = AS_BOOL(args[0]);
@@ -225,8 +245,10 @@ static bool float_add(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     if (IS_STR(args[1]))
     {
-        string_t *concat = concat_strings(value_to_string(args[0]), AS_STR(args[1]));
+        string_t *string = value_to_string(vm, args[0]);
+        string_t *concat = concat_strings(string, AS_STR(args[1]));
         vm_push_mem(vm, FROM_STR(concat));
+        string_free(string);
         RETURN_VALUE(FROM_STR(concat));
     }
     double a = AS_FLOAT(args[0]);
@@ -249,9 +271,10 @@ static bool null_add(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 static bool string_add(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
 {
     string_t *s1 = AS_STR(args[0]);
-    string_t *s2 = value_to_string(args[1]);
+    string_t *s2 = value_to_string(vm, args[1]);
     value_t str = FROM_STR(concat_strings(s1, s2));
     vm_push_mem(vm, str);
+    string_free(s2);
 
     RETURN_VALUE(str);
 }

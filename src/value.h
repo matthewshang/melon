@@ -186,5 +186,6 @@ void array_print(array_t *a);
 
 string_t *string_new(const char *s);
 void string_free(string_t *s);
+string_t *string_copy(string_t *s);
 
 #endif

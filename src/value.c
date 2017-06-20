@@ -458,3 +458,12 @@ void string_free(string_t *s)
     free(s->s);
     free(s);
 }
+
+string_t *string_copy(string_t *s)
+{
+    string_t *str = (string_t*)calloc(1, sizeof(string_t));
+    str->s = _strdup(s->s);
+    str->len = s->len;
+    str->hash = s->hash;
+    return str;
+}
