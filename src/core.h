@@ -10,6 +10,7 @@
 #define CORE_STOREAT_STRING "$storeat"
 #define CORE_NEW_STRING "$new"
 #define CORE_INIT_STRING "$init"
+#define CORE_CONSTRUCT_STRING "$construct"
 #define CORE_TOSTR_STRING "string"
 #define CORE_ADD_STRING "$add"
 

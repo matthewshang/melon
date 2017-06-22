@@ -125,6 +125,18 @@ static void visit_func_decl_global(struct astwalker *self, node_func_decl_t *nod
     node->loc = LOC_GLOBAL;
 }
 
+static void fix_constructor_name(const char *classname, node_var_decl_t *decl)
+{
+    if (decl->init && decl->init->type == NODE_FUNC_DECL)
+    {
+        if (strcmp(classname, decl->ident) == 0)
+        {
+            free(decl->ident);
+            decl->ident = _strdup(CORE_CONSTRUCT_STRING);
+        }
+    }
+}
+
 static void visit_class_decl_global(struct astwalker *self, node_class_decl_t *node)
 {
     symtable_t *symtable = (symtable_t*)self->data;
@@ -146,6 +158,7 @@ static void visit_class_decl_global(struct astwalker *self, node_class_decl_t *n
             if (decl->type == NODE_VAR_DECL)
             {
                 ident = ((node_var_decl_t*)decl)->ident;
+                fix_constructor_name(node->identifier, (node_var_decl_t*)decl);
             }
             else
             {
@@ -284,7 +297,7 @@ static void visit_var_decl(struct astwalker *self, node_var_decl_t *node)
     else if (env_class)
     {
         node_class_decl_t *c = (node_class_decl_t*)context;
-        if (node->init && node->init->type == NODE_FUNC_DECL && strcmp(node->ident, c->identifier) == 0) 
+        if (node->init && node->init->type == NODE_FUNC_DECL && strcmp(node->ident, CORE_CONSTRUCT_STRING) == 0)
             c->constructor = node;
 
         node->idx = node->storage.type == TOK_STATIC ? c->num_staticvars++ : c->num_instvars++;

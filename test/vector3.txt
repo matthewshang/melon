@@ -13,9 +13,7 @@ class Vector3
 
 	operator +(v)
 	{
-		x += v.x;
-		y += v.y;
-		z += v.z;
+		return Vector3(x + v.x, y + v.y, z + v.z);
 	}
 
 	func string()
@@ -31,5 +29,5 @@ println(b);
 
 println("Object: " + a);
 
-a + b;
-println(a);
+var c = a + b;
+println(c);
