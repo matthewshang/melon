@@ -226,7 +226,9 @@ static void gen_node_var_decl(astwalker_t *self, node_var_decl_t *node)
 
         if (node->init)
         {
-            closure_t *initf = class_lookup_closure(c, FROM_CSTR(CORE_INIT_STRING));
+            value_t lookup = FROM_CSTR(CORE_INIT_STRING);
+            closure_t *initf = class_lookup_closure(c, lookup);
+            string_free(AS_STR(lookup));
             if (!initf) return;
 
             PUSH_CONTEXT(FROM_CLOSURE(initf));

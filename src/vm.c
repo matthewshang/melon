@@ -60,7 +60,9 @@
 
 #define CLASS_LOOKUP(_object, _name, _cl)                                            \
         do {                                                                         \
-            value_t *v = class_lookup_super(value_get_class(_object), FROM_CSTR(_name)); \
+            value_t lookup = FROM_CSTR(_name);                                       \
+            value_t *v = class_lookup_super(value_get_class(_object), lookup);       \
+            string_free(AS_STR(lookup));                                             \
             if (!v)                                                                  \
             {                                                                        \
                 RUNTIME_ERROR("class %s does not have method '%s'\n",                \
@@ -305,7 +307,9 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
                 if (c->meta_inited || !c->metaclass) break;
                 c->static_vars = (value_t*)calloc(c->metaclass->nvars, sizeof(value_t));
                 c->meta_inited = true;
-                closure_t *init = class_lookup_closure(c->metaclass, FROM_CSTR(CORE_INIT_STRING));
+                value_t lookup = FROM_CSTR(CORE_INIT_STRING);
+                closure_t *init = class_lookup_closure(c->metaclass, lookup);
+                string_free(AS_STR(lookup));
                 if (init)
                 {
                     CALL_FUNC(init, vm->stacktop - vm->stack - 1, 0);
@@ -389,7 +393,9 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
             {
                 class_t *c = AS_CLASS(v);
 
-                closure_t *newcl = class_lookup_closure(c->metaclass, FROM_CSTR(CORE_NEW_STRING));
+                value_t lookup = FROM_CSTR(CORE_NEW_STRING);
+                closure_t *newcl = class_lookup_closure(c->metaclass, lookup);
+                string_free(AS_STR(lookup));
                 if (newcl)
                 {
                     CALL_FUNC(newcl, vm->stacktop - vm->stack - nargs - 1, nargs);
@@ -399,7 +405,9 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
                 value_t instance = FROM_INSTANCE(instance_new(c));
                 vm_push_mem(vm, instance);
 
-                closure_t *init = class_lookup_closure(c, FROM_CSTR(CORE_INIT_STRING));
+                lookup = FROM_CSTR(CORE_INIT_STRING);
+                closure_t *init = class_lookup_closure(c, lookup);
+                string_free(AS_STR(lookup));
                 if (!init) RUNTIME_ERROR("missing init function in class %s\n", c->identifier);
 
                 CALL_FUNC(init, vm->stacktop - vm->stack - nargs - 1, nargs);

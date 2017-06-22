@@ -77,8 +77,10 @@ static string_t *value_to_string(vm_t *vm, value_t v)
     if (IS_BOOL(v)) return string_new(AS_BOOL(v) ? "true" : "false");
     if (IS_NULL(v)) return string_new("");
     if (IS_STR(v)) return string_copy(AS_STR(v));
-
-    value_t *tostrv = class_lookup(value_get_class(v), FROM_CSTR(CORE_TOSTR_STRING));
+    
+    value_t lookup = FROM_CSTR(CORE_TOSTR_STRING);
+    value_t *tostrv = class_lookup(value_get_class(v), lookup);
+    string_free(AS_STR(lookup));
     if (tostrv)
     {
         closure_t *tostr = AS_CLOSURE(AS_INSTANCE(v)->vars[AS_INT(*tostrv)]);
@@ -207,7 +209,9 @@ static bool class_name(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
     value_t v = args[0];
     if (IS_CLASS(v))
     {
-        RETURN_VALUE(FROM_CSTR(AS_CLASS(v)->identifier));
+        value_t name = FROM_CSTR(AS_CLASS(v)->identifier);
+        vm_push_mem(vm, name);
+        RETURN_VALUE(name);
     }
 }
 
@@ -323,7 +327,9 @@ static bool closure_name(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx
     if (IS_CLOSURE(v))
     {
         closure_t *cl = AS_CLOSURE(v);
-        RETURN_VALUE(cl->f->type == FUNC_MELON ? FROM_CSTR(cl->f->identifier) : FROM_CSTR("{native func}"));
+        value_t name = cl->f->type == FUNC_MELON ? FROM_CSTR(cl->f->identifier) : FROM_CSTR("{native func}");
+        vm_push_mem(vm, name);
+        RETURN_VALUE(name);
     }
 }
 
