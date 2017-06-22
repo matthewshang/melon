@@ -111,7 +111,25 @@ static bool melon_println(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retid
     if (nargs > 0)
     {
         value_t v = args[0];
-        value_print_notag(v);
+        if (!IS_INSTANCE(v))
+        {
+            value_print_notag(v);
+        }
+        else
+        {
+            value_t lookup = FROM_CSTR(CORE_TOSTR_STRING);
+            value_t *tostrv = class_lookup(value_get_class(v), lookup);
+            string_free(AS_STR(lookup));
+            if (tostrv)
+            {
+                closure_t *tostr = AS_CLOSURE(AS_INSTANCE(v)->vars[AS_INT(*tostrv)]);
+                value_t args[1] = { v };
+                value_t *ret = NULL;
+                vm_run_closure(vm, tostr, args, 1, &ret);
+                printf("%s", AS_STR(*ret)->s);
+                // returned string already in gc
+            }
+        }
     }
     printf("\n");
     RETURN;
@@ -122,7 +140,25 @@ static bool melon_print(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
     if (nargs > 0)
     {
         value_t v = args[0];
-        value_print_notag(v);
+        if (!IS_INSTANCE(v))
+        {
+            value_print_notag(v);
+        }
+        else
+        {
+            value_t lookup = FROM_CSTR(CORE_TOSTR_STRING);
+            value_t *tostrv = class_lookup(value_get_class(v), lookup);
+            string_free(AS_STR(lookup));
+            if (tostrv)
+            {
+                closure_t *tostr = AS_CLOSURE(AS_INSTANCE(v)->vars[AS_INT(*tostrv)]);
+                value_t args[1] = { v };
+                value_t *ret = NULL;
+                vm_run_closure(vm, tostr, args, 1, &ret);
+                printf("%s", AS_STR(*ret)->s);
+                // returned string already in gc
+            }
+        }
     }
     RETURN;
 }

@@ -10,7 +10,7 @@ func fact(x)
 	}
 }
 
-print("Factorial of 1 is: "); println(fact(1));
-print("Factorial of 4 is: "); println(fact(4));
-print("Factorial of 6 is: "); println(fact(6));
-print("Factorial of 9 is: "); println(fact(9));
+println(1 + "! = " + fact(1));
+println(4 + "! = " + fact(4));
+println(6 + "! = " + fact(6));
+println(9 + "! = " + fact(9));

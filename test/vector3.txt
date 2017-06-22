@@ -18,6 +18,6 @@ class Vector3
 }
 
 var a = Vector3(1, 2, 3);
-println(a.string());
+println(a);
 
 println("Object: " + a);
