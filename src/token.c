@@ -124,6 +124,7 @@ const char *token_type_string(token_type type)
     case TOK_FUNC: return "func";
     case TOK_RETURN: return "return";
     case TOK_STATIC: return "static";
+    case TOK_OPERATOR: return "operator";
     default: return "token";
     }
 }

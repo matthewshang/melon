@@ -1,5 +1,7 @@
 #include "parser.h"
 
+#include "core.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -475,15 +477,38 @@ static node_t *parse_var_decl(lexer_t *lexer, token_t storage)
     return node_var_decl_new(token, storage, (const char*)ident, init);
 }
 
-static node_t *parse_func_decl(lexer_t *lexer, token_t storage)
+static const char *op_to_core_str(token_type op)
 {
-    if (!parse_required(lexer, TOK_IDENTIFIER, false))
+    switch (op)
     {
-        parser_error(lexer, lexer_previous(lexer), "Missing identifier for function\n");
-        return NULL;
+    case TOK_ADD: return CORE_ADD_STRING;
+    default: return NULL;
     }
+}
+
+static node_t *parse_func_decl(lexer_t *lexer, token_t storage, bool is_operator)
+{
+    if (is_operator)
+    {
+        token_type op = lexer_advance(lexer).type;
+        if (op < TOK_ADD || op > TOK_OR)
+        {
+            parser_error(lexer, lexer_previous(lexer), "Invalid overload\n");
+            return NULL;
+        }
+    }
+    else
+    {
+        if (!parse_required(lexer, TOK_IDENTIFIER, false))
+        {
+            parser_error(lexer, lexer_previous(lexer), "Missing identifier for function\n");
+            return NULL;
+        }
+    }
+
     token_t token = lexer_previous(lexer);
-    char *ident = substr(lexer->source.buffer, token.offset, token.length);
+    char *ident = is_operator ? _strdup(op_to_core_str(token.type)) : 
+        substr(lexer->source.buffer, token.offset, token.length);
 
     parse_required(lexer, TOK_OPEN_PAREN, true);
     vector_t(node_var_t*) *params = parse_func_params(lexer);
@@ -520,8 +545,8 @@ static node_t *parse_decl(lexer_t *lexer)
 
     if (lexer_match(lexer, TOK_VAR)) 
         return parse_var_decl(lexer, storage);
-    if (lexer_match(lexer, TOK_FUNC))
-        return parse_func_decl(lexer, storage);
+    if (lexer_match(lexer, TOK_FUNC) || lexer_match(lexer, TOK_OPERATOR))
+        return parse_func_decl(lexer, storage, lexer_previous(lexer).type == TOK_OPERATOR);
     if (lexer_match(lexer, TOK_CLASS))
         return parse_class_decl(lexer);
 

@@ -11,6 +11,13 @@ class Vector3
 		z = _z;
 	}
 
+	operator +(v)
+	{
+		x += v.x;
+		y += v.y;
+		z += v.z;
+	}
+
 	func string()
 	{
 		return "(" + x + ", " + y + ", " + z + ")";
@@ -18,6 +25,11 @@ class Vector3
 }
 
 var a = Vector3(1, 2, 3);
+var b = Vector3(-3, -2, -1);
 println(a);
+println(b);
 
 println("Object: " + a);
+
+a + b;
+println(a);
