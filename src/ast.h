@@ -107,6 +107,7 @@ typedef struct
     vector_t(ast_upvalue_t) *upvalues;
     location_e loc;
     uint32_t idx;
+    node_var_decl_t *parent;
 } node_func_decl_t;
 
 typedef struct

@@ -69,6 +69,7 @@ node_t *node_func_decl_new(token_t token, const char *identifier, vector_t(node_
 
     node->upvalues = (vector_t(ast_upvalue_t)*)calloc(1, sizeof(*node->upvalues));
     vector_init(*node->upvalues);
+    node->parent = NULL;
     return (node_t*)node;
 }
 

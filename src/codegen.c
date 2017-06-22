@@ -16,6 +16,7 @@
 #define SYMTABLE ((codegen_t*)self->data)->symtable
 
 #define GET_CONTEXT vector_peek(((codegen_t*)self->data)->decls)
+#define CONTEXT_PEEKN(_n) vector_get(((codegen_t*)self->data)->decls, vector_size(((codegen_t*)self->data)->decls) - _n)
 #define PUSH_CONTEXT(x) push_context((codegen_t*)self->data, x)
 #define POP_CONTEXT pop_context((codegen_t*)self->data)
 
@@ -91,6 +92,24 @@ static void emit_loadstore(byte_r *code, location_e loc, uint8_t idx, bool store
     }
 }
 
+static uint8_t cpool_add_constant(value_r *cpool, value_t v)
+{
+    if (vector_size(*cpool) > 255)
+    {
+        printf("error: maximum amount of constants\n");
+        return 255;
+    }
+
+    for (int i = 0; i < vector_size(*cpool); i++)
+    {
+        value_t val = vector_get(*cpool, i);
+        if (value_equals(val, v)) return i;
+    }
+
+    vector_push(value_t, *cpool, v);
+    return vector_size(*cpool) - 1;
+}
+
 static void gen_node_block(astwalker_t *self, node_block_t *node)
 {
     for (int i = 0; i < vector_size(*node->stmts); i++)
@@ -147,13 +166,23 @@ static void gen_node_return(astwalker_t *self, node_return_t *node)
     emit_byte(CODE, (uint8_t)OP_RETURN);
 }
 
-static void store_decl(astwalker_t *self, value_t decl, node_func_decl_t *node)
+static void store_decl(astwalker_t *self, value_t decl, bool isstatic, node_func_decl_t *node)
 {
     value_t context = GET_CONTEXT;
-    bool env_local = IS_CLOSURE(context);
-    bool env_class = IS_CLASS(context);
+    bool env_initf = IS_CLOSURE(context) && strcmp(AS_CLOSURE(context)->f->identifier, CORE_INIT_STRING) == 0;
 
-    if (env_local)
+    if (env_initf)
+    {
+        function_t *contextf = AS_CLOSURE(context)->f;
+        class_t *contextc = AS_CLASS(CONTEXT_PEEKN(2));
+        if (isstatic) contextc = contextc->metaclass;
+        const char *identifier = AS_CLOSURE(decl)->f->identifier;
+        class_bind(contextc, identifier, decl);
+        emit_bytes(&contextf->bytecode, OP_LOADL, 0);
+        emit_bytes(&contextf->bytecode, OP_LOADK, cpool_add_constant(&contextf->constpool, FROM_CSTR(identifier)));
+        emit_bytes(&contextf->bytecode, OP_LOADF, 0);
+    }
+    else
     {
         function_t *contextf = AS_CLOSURE(context)->f;
         vector_push(value_t, contextf->constpool, decl);
@@ -176,24 +205,6 @@ static void store_decl(astwalker_t *self, value_t decl, node_func_decl_t *node)
             }
         }
     }
-}
-
-static uint8_t cpool_add_constant(value_r *cpool, value_t v)
-{
-    if (vector_size(*cpool) > 255)
-    {
-        printf("error: maximum amount of constants\n");
-        return 255;
-    }
-
-    for (int i = 0; i < vector_size(*cpool); i++)
-    {
-        value_t val = vector_get(*cpool, i);
-        if (value_equals(val, v)) return i;
-    }
-
-    vector_push(value_t, *cpool, v);
-    return vector_size(*cpool) - 1;
 }
 
 static void gen_node_var_decl(astwalker_t *self, node_var_decl_t *node)
@@ -235,9 +246,12 @@ static void gen_node_var_decl(astwalker_t *self, node_var_decl_t *node)
             walk_ast(self, node->init);
             POP_CONTEXT;
 
-            emit_bytes(&initf->f->bytecode, (uint8_t)OP_LOADL, 0);
-            emit_bytes(&initf->f->bytecode, (uint8_t)OP_LOADI, node->idx);
-            emit_loadstore(&initf->f->bytecode, LOC_CLASS, node->idx, true);
+            //if (node->init->type != NODE_FUNC_DECL)
+            {
+                emit_bytes(&initf->f->bytecode, (uint8_t)OP_LOADL, 0);
+                emit_bytes(&initf->f->bytecode, (uint8_t)OP_LOADI, node->idx);
+                emit_loadstore(&initf->f->bytecode, LOC_CLASS, node->idx, true);
+            }
         }
     }
 }
@@ -255,7 +269,11 @@ static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
 
     POP_CONTEXT;
 
-    store_decl(self, FROM_CLOSURE(cl), node);
+    bool is_static;
+    if (!node->parent) is_static = false;
+    else is_static = node->parent->storage.type == TOK_STATIC;
+
+    store_decl(self, FROM_CLOSURE(cl), is_static, node);
 }
 
 static void gen_node_class_decl(struct astwalker *self, node_class_decl_t *node)
@@ -305,7 +323,7 @@ static void gen_node_class_decl(struct astwalker *self, node_class_decl_t *node)
         emit_byte(&meta_init->f->bytecode, (uint8_t)OP_RETURN);
     }
 
-    store_decl(self, FROM_CLASS(c), NULL);
+    store_decl(self, FROM_CLASS(c), false, NULL);
 
     emit_loadstore(CODE, LOC_GLOBAL, node->idx, true);
 }

@@ -6,8 +6,7 @@ class Foo
 
 	static func static_test()
 	{
-		print("Foo total: ");
-		println(total);
+		println("Foo total: " + total);
 	}
 
 	static func static_inc()

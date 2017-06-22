@@ -83,7 +83,7 @@ static string_t *value_to_string(vm_t *vm, value_t v)
     string_free(AS_STR(lookup));
     if (tostrv)
     {
-        closure_t *tostr = AS_CLOSURE(AS_INSTANCE(v)->vars[AS_INT(*tostrv)]);
+        closure_t *tostr = AS_CLOSURE(*tostrv);
         value_t args[1] = { v };
         value_t *ret = NULL;
         vm_run_closure(vm, tostr, args, 1, &ret);
@@ -122,7 +122,7 @@ static bool melon_println(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retid
             string_free(AS_STR(lookup));
             if (tostrv)
             {
-                closure_t *tostr = AS_CLOSURE(AS_INSTANCE(v)->vars[AS_INT(*tostrv)]);
+                closure_t *tostr = AS_CLOSURE(*tostrv);
                 value_t args[1] = { v };
                 value_t *ret = NULL;
                 vm_run_closure(vm, tostr, args, 1, &ret);
@@ -151,7 +151,7 @@ static bool melon_print(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
             string_free(AS_STR(lookup));
             if (tostrv)
             {
-                closure_t *tostr = AS_CLOSURE(AS_INSTANCE(v)->vars[AS_INT(*tostrv)]);
+                closure_t *tostr = AS_CLOSURE(*tostrv);
                 value_t args[1] = { v };
                 value_t *ret = NULL;
                 vm_run_closure(vm, tostr, args, 1, &ret);

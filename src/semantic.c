@@ -261,7 +261,14 @@ static void visit_var_decl(struct astwalker *self, node_var_decl_t *node)
     bool env_class = context->type == NODE_CLASS_DECL;
     bool env_func = context->type == NODE_FUNC_DECL;
 
-    if (node->init) walk_ast(self, node->init);
+    if (node->init)
+    {
+        walk_ast(self, node->init);
+        if (node->init->type == NODE_FUNC_DECL)
+        {
+            ((node_func_decl_t*)node->init)->parent = node;
+        }
+    }
 
     if (env_func)
     {
