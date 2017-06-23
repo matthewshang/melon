@@ -11,3 +11,5 @@ println(s1.equals(s3));
 println(s1.charAt(4));
 
 println(s1.concat(s2));
+
+println(s1 == s2);

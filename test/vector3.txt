@@ -44,13 +44,15 @@ class Vector3
 }
 
 var a = Vector3(1, 2, 3);
-var b = Vector3(-3, -2, -1);
+# var b = Vector3(-3, -2, -1);
+var b = Vector3(2, 3, 4);
+
 println(a);
 println(b);
 
 println("Object: " + a);
-
 println(a + b);
+
 println(a - b);
 println(a * 2);
 println(a / 2);

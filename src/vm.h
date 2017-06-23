@@ -11,6 +11,7 @@ typedef struct callframe_s
     uint8_t *ret;
     closure_t *closure;
     uint16_t bp;
+    bool caller_stack;
 
 } callframe_t;
 

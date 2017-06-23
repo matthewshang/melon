@@ -28,7 +28,7 @@
         do {                                                                         \
             if (_cl->f->type == FUNC_MELON)                                          \
             {                                                                        \
-                callstack_push(&vm->callstack, vm->ip, vm->closure, vm->bp);         \
+                callstack_push(&vm->callstack, vm->ip, vm->closure, vm->bp, true);   \
                 vm->bp = _bp;                                                        \
                 vm->closure = _cl;                                                   \
                 vm->ip = &vector_get(_cl->f->bytecode, 0);                           \
@@ -45,7 +45,7 @@
         do {                                                                         \
             if (_cl->f->type == FUNC_MELON)                                          \
             {                                                                        \
-                callstack_push(&vm->callstack, vm->ip, vm->closure, vm->bp);         \
+                callstack_push(&vm->callstack, vm->ip, vm->closure, vm->bp, false);  \
                 vm->bp = _bp;                                                        \
                 vm->closure = _cl;                                                   \
                 vm->ip = &vector_get(_cl->f->bytecode, 0);                           \
@@ -114,7 +114,7 @@
                 if (IS_INT(b)) { BOOL_BIN_MATH(a.d, (double)b.i, op); break; }       \
                 else if (IS_FLOAT(b)) { BOOL_BIN_MATH(a.d, b.d, op); break; }        \
             }                                                                        \
-            STACK_PUSH(FROM_NULL); STACK_PUSH(a); STACK_PUSH(b);                     \
+            STACK_PUSH(a); STACK_PUSH(b);                     \
 
 #define DO_OVERLOAD_OP(_opstr)                                                       \
         do {                                                                         \
@@ -123,12 +123,13 @@
             CALL_FUNC_NOSTACK(_cl, STACK_SIZE - 2, 2, 1);                            \
         } while (0)
 
-void callstack_push(callstack_t *stack, uint8_t *ret, closure_t *closure, uint16_t bp)
+void callstack_push(callstack_t *stack, uint8_t *ret, closure_t *closure, uint16_t bp, bool caller_stack)
 {
     callframe_t newframe;
     newframe.ret = ret;
     newframe.closure = closure;
     newframe.bp = bp;
+    newframe.caller_stack = caller_stack;
     vector_push(callframe_t, *stack, newframe);
 }
 
@@ -139,6 +140,11 @@ uint8_t *callstack_ret(callstack_t *stack, closure_t **closure, uint16_t *bp)
     *closure = frame.closure;
     *bp = frame.bp;
     return ret;
+}
+
+bool caller_on_stack(callstack_t *stack)
+{
+    return vector_peek(*stack).caller_stack;
 }
 
 void callstack_print(callstack_t stack)
@@ -433,12 +439,13 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
         case OP_RETURN:
         {
             close_upvalues(&vm->upvalues, &vm->stack[vm->bp]);
-            vm->stack[vm->bp - 1] = STACK_PEEK;
+            bool caller_stack = vector_peek(vm->callstack).caller_stack;
+            vm->stack[vm->bp - caller_stack] = STACK_PEEK;
 
             bool ret = !is_main && vm->bp == ret_bp;
-            if (ret && ret_val) *ret_val = &vm->stack[vm->bp - 1];
+            if (ret && ret_val) *ret_val = &vm->stack[vm->bp - caller_stack];
 
-            STACK_POPN(vm->stacktop - vm->stack - vm->bp);
+            STACK_POPN(vm->stacktop - vm->stack - vm->bp - !caller_stack);
             vm->ip = callstack_ret(&vm->callstack, &vm->closure, &vm->bp);
 
             if (ret) return;
@@ -562,6 +569,7 @@ void vm_run_closure(vm_t *vm, closure_t *cl, value_t args[], uint16_t nargs, val
         }
 
         CALL_FUNC_NOSTACK(cl, vm->stacktop - vm->stack - nargs, nargs, nargs);
+        vector_peek(vm->callstack).caller_stack = true;
         vm_run(vm, false, vm->bp, ret);
     }
     else if (cl->f->type == FUNC_NATIVE)

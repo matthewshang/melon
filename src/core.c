@@ -558,6 +558,7 @@ void core_init_classes()
 
     class_bind(melon_class_string, "length", NATIVE_CLOSURE(string_length));
     class_bind(melon_class_string, "equals", NATIVE_CLOSURE(string_equals));
+    class_bind(melon_class_string, CORE_EQEQ_STRING, NATIVE_CLOSURE(string_equals));
     class_bind(melon_class_string, "charAt", NATIVE_CLOSURE(string_charat));
     class_bind(melon_class_string, "concat", NATIVE_CLOSURE(string_concat));
     class_bind(melon_class_string, CORE_ADD_STRING, NATIVE_CLOSURE(string_add));
