@@ -131,6 +131,7 @@ static void fix_constructor_name(const char *classname, node_var_decl_t *decl)
     {
         if (strcmp(classname, decl->ident) == 0)
         {
+            int x = 0;
             free(decl->ident);
             decl->ident = _strdup(CORE_CONSTRUCT_STRING);
         }

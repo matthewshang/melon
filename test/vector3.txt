@@ -16,6 +16,27 @@ class Vector3
 		return Vector3(x + v.x, y + v.y, z + v.z);
 	}
 
+	operator -(v)
+	{
+		return Vector3(x - v.x, y - v.y, z - v.z);
+	}
+
+	operator *(s)
+	{
+		return Vector3(x * s, y * s, z * s);
+	}
+
+	operator /(s)
+	{
+		var inv = 1.0 / s;
+		return Vector3(x * inv, y * inv, z * inv);
+	}
+
+	operator ==(v)
+	{
+		return x == v.x && y == v.y && z == v.z;
+	}
+
 	func string()
 	{
 		return "(" + x + ", " + y + ", " + z + ")";
@@ -29,5 +50,12 @@ println(b);
 
 println("Object: " + a);
 
-var c = a + b;
-println(c);
+println(a + b);
+println(a - b);
+println(a * 2);
+println(a / 2);
+var c = Vector3(1, 2, 3);    
+
+
+println(a == b);
+println(a == c);

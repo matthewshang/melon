@@ -103,23 +103,22 @@
         } while (0)                 
 
 #define DO_FAST_CMP_MATH(op)                                                         \
-        do {                                                                         \
             value_t b = STACK_POP, a = STACK_POP;                                    \
             if (IS_INT(a))                                                           \
             {                                                                        \
-                if (IS_INT(b)) BOOL_BIN_MATH(a.i, b.i, op);                          \
-                else if (IS_FLOAT(b)) BOOL_BIN_MATH((double)a.i, b.d, op);           \
+                if (IS_INT(b)) { BOOL_BIN_MATH(a.i, b.i, op); break; }               \
+                else if (IS_FLOAT(b)) { BOOL_BIN_MATH((double)a.i, b.d, op); break; }\
             }                                                                        \
             else if (IS_FLOAT(a))                                                    \
             {                                                                        \
-                if (IS_INT(b)) BOOL_BIN_MATH(a.d, (double)b.i, op);                  \
-                else if (IS_FLOAT(b)) BOOL_BIN_MATH(a.d, b.d, op);                   \
+                if (IS_INT(b)) { BOOL_BIN_MATH(a.d, (double)b.i, op); break; }       \
+                else if (IS_FLOAT(b)) { BOOL_BIN_MATH(a.d, b.d, op); break; }        \
             }                                                                        \
-        } while (0)
+            STACK_PUSH(FROM_NULL); STACK_PUSH(a); STACK_PUSH(b);                     \
 
 #define DO_OVERLOAD_OP(_opstr)                                                       \
         do {                                                                         \
-            closure_t *_cl;                                                           \
+            closure_t *_cl;                                                          \
             CLASS_LOOKUP(STACK_PEEKN(2), _opstr, _cl);                               \
             CALL_FUNC_NOSTACK(_cl, STACK_SIZE - 2, 2, 1);                            \
         } while (0)
@@ -454,27 +453,58 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
         }
         case OP_SUB: 
         {
-            DO_FAST_BIN_MATH(-); break;
+            DO_FAST_BIN_MATH(-); 
+            DO_OVERLOAD_OP(CORE_SUB_STRING);
+            break;
         }
         case OP_MUL: 
         {
-            DO_FAST_BIN_MATH(*); break;
+            DO_FAST_BIN_MATH(*); 
+            DO_OVERLOAD_OP(CORE_MUL_STRING);
+            break;
         }
         case OP_DIV: 
         {
-            DO_FAST_BIN_MATH(/ ); break;
+            DO_FAST_BIN_MATH(/ ); 
+            DO_OVERLOAD_OP(CORE_DIV_STRING);
+            break;
         }
         case OP_MOD: DO_FAST_INT_MATH(%); break;
       
         case OP_AND: DO_FAST_BOOL_MATH(&&); break;
         case OP_OR: DO_FAST_BOOL_MATH(||); break;
 
-        case OP_LT: DO_FAST_CMP_MATH(<); break;
-        case OP_GT: DO_FAST_CMP_MATH(>); break;
-        case OP_LTE: DO_FAST_CMP_MATH(<= ); break;
-        case OP_GTE: DO_FAST_CMP_MATH(>= ); break;
-        case OP_EQ: DO_FAST_CMP_MATH(== ); break;
-        case OP_NEQ: DO_FAST_CMP_MATH(!= ); break;
+        case OP_LT: 
+        {
+            DO_FAST_CMP_MATH(< ); 
+            break;
+        }
+        case OP_GT: 
+        {
+            DO_FAST_CMP_MATH(> ); 
+            break;
+        }
+        case OP_LTE: 
+        {
+            DO_FAST_CMP_MATH(<= ); 
+            break;
+        }
+        case OP_GTE: 
+        {
+            DO_FAST_CMP_MATH(>= ); 
+            break;
+        }
+        case OP_EQ:
+        {
+            DO_FAST_CMP_MATH(== ); 
+            DO_OVERLOAD_OP(CORE_EQEQ_STRING);
+            break;
+        }
+        case OP_NEQ: 
+        {
+            DO_FAST_CMP_MATH(!= ); 
+            break;
+        }
 
         case OP_NOT: 
         {

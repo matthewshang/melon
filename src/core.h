@@ -13,6 +13,10 @@
 #define CORE_CONSTRUCT_STRING "$construct"
 #define CORE_TOSTR_STRING "string"
 #define CORE_ADD_STRING "$add"
+#define CORE_SUB_STRING "$sub"
+#define CORE_MUL_STRING "$mul"
+#define CORE_DIV_STRING "$div"
+#define CORE_EQEQ_STRING "$eqeq"
 
 void core_register_semantic(symtable_t *globals);
 void core_register_vm(vm_t *vm);

@@ -482,6 +482,10 @@ static const char *op_to_core_str(token_type op)
     switch (op)
     {
     case TOK_ADD: return CORE_ADD_STRING;
+    case TOK_SUB: return CORE_SUB_STRING;
+    case TOK_MUL: return CORE_MUL_STRING;
+    case TOK_DIV: return CORE_DIV_STRING;
+    case TOK_EQEQ: return CORE_EQEQ_STRING;
     default: return NULL;
     }
 }
@@ -517,7 +521,7 @@ static node_t *parse_func_decl(lexer_t *lexer, token_t storage, bool is_operator
     node_t *body = parse_block(lexer);
 
     return node_var_decl_new(token, storage, (const char*)ident,
-        node_func_decl_new(token, (const char*)ident, params, (node_block_t*)body));
+        node_func_decl_new(token, (const char*)_strdup(ident), params, (node_block_t*)body));
 }
 
 static node_t *parse_class_decl(lexer_t *lexer)
