@@ -39,6 +39,13 @@ typedef enum
     POST_SUBSCRIPT
 } postfix_type;
 
+typedef enum
+{
+    LOOP_CFOR,
+    LOOP_FORIN,
+    LOOP_WHILE
+} loop_type;
+
 typedef struct node_s
 {
     node_type type;
@@ -66,6 +73,8 @@ typedef struct
 typedef struct
 {
     node_t base;
+    loop_type type;
+
     node_t *init;
     node_t *cond;
     node_t *inc;
@@ -196,7 +205,9 @@ typedef struct
 
 node_t *node_block_new(node_r *stmts);
 node_t *node_if_new(node_t *cond, node_t *then, node_t *els);
-node_t *node_loop_new(node_t *init, node_t *cond, node_t *inc, node_t *body);
+node_t *node_loop_while_new(node_t *cond, node_t *body);
+node_t *node_loop_cfor_new(node_t *init, node_t *cond, node_t *inc, node_t *body);
+node_t *node_loop_forin_new(node_t *init, node_t *target, node_t *body);
 node_t *node_return_new(node_t *expr);
 
 node_t *node_var_decl_new(token_t token, token_t storage, const char *ident, node_t *init);

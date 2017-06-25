@@ -28,13 +28,37 @@ node_t *node_if_new(node_t *cond, node_t *then, node_t *els)
     return (node_t*)node;
 }
 
-node_t *node_loop_new(node_t *init, node_t *cond, node_t *inc, node_t *body)
+node_t *node_loop_while_new(node_t *cond, node_t *body)
 {
     node_loop_t *node = (node_loop_t*)calloc(1, sizeof(node_loop_t));
     NODE_SETBASE(node, NODE_LOOP);
+    node->type = LOOP_WHILE;
+    node->init = NULL;
+    node->cond = cond;
+    node->inc = NULL;
+    node->body = body;
+    return (node_t*)node;
+}
+
+node_t *node_loop_cfor_new(node_t *init, node_t *cond, node_t *inc, node_t *body)
+{
+    node_loop_t *node = (node_loop_t*)calloc(1, sizeof(node_loop_t));
+    NODE_SETBASE(node, NODE_LOOP);
+    node->type = LOOP_CFOR;
     node->init = init;
     node->cond = cond;
     node->inc = inc;
+    node->body = body;
+    return (node_t*)node;
+}
+
+node_t *node_loop_forin_new(node_t *init, node_t *target, node_t *body)
+{
+    node_loop_t *node = (node_loop_t*)calloc(1, sizeof(node_loop_t));
+    NODE_SETBASE(node, NODE_LOOP);
+    node->type = LOOP_FORIN;
+    node->init = init;
+    node->cond = target;
     node->body = body;
     return (node_t*)node;
 }
@@ -420,7 +444,7 @@ static void print_node_if(astwalker_t *self, node_if_t *node)
 
 static void print_node_loop(astwalker_t *self, node_loop_t *node)
 {
-    printf("[loop]\n");
+    printf("[loop] type: %d\n", node->type);
     int depth = self->depth;
 
     if (node->init)
