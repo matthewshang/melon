@@ -146,12 +146,22 @@ static void gen_node_if(astwalker_t *self, node_if_t *node)
 
 static void gen_node_loop(astwalker_t *self, node_loop_t *node)
 {
+    if (node->init)
+    {
+        walk_ast(self, node->init);
+    }
+
     int loop_idx = vector_size(*CODE) - 1;
     walk_ast(self, node->cond);
 
     emit_bytes(CODE, (uint8_t)OP_JIF, 0);
     int jif_idx = vector_size(*CODE) - 1;
     walk_ast(self, node->body);
+    if (node->inc)
+    {
+        walk_ast(self, node->inc);
+    }
+
     int loop_jmp = vector_size(*CODE) - loop_idx;
 
     emit_bytes(CODE, (uint8_t)OP_LOOP, (uint8_t)loop_jmp);

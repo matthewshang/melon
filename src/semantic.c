@@ -259,8 +259,16 @@ static void visit_if(struct astwalker *self, node_if_t *node)
 
 static void visit_loop(struct astwalker *self, node_loop_t *node)
 {
+    node_t *context = GET_CONTEXT;
+    symtable_t *env_symtable = node_get_symtable(context);
+    symtable_enter_scope(env_symtable);
+
+    walk_ast(self, node->init);
     walk_ast(self, node->cond);
+    walk_ast(self, node->inc);
     walk_ast(self, node->body);
+
+    symtable_exit_scope(env_symtable);
 }
 
 static void visit_return(struct astwalker *self, node_return_t *node)
@@ -273,7 +281,8 @@ static void visit_var_decl(struct astwalker *self, node_var_decl_t *node)
     node_t *context = GET_CONTEXT;
     symtable_t *env_symtable = node_get_symtable(context);
     bool env_class = context->type == NODE_CLASS_DECL;
-    bool env_func = context->type == NODE_FUNC_DECL;
+    bool env_global = context->type == NODE_BLOCK && !symtable_is_global(env_symtable);
+    bool env_func = context->type == NODE_FUNC_DECL || env_global;
 
     if (node->init)
     {
@@ -293,7 +302,7 @@ static void visit_var_decl(struct astwalker *self, node_var_decl_t *node)
         }
 
         node->idx = symtable_add_local(env_symtable, node->ident);
-        node->loc = LOC_LOCAL;
+        node->loc = env_global ? LOC_GLOBAL : LOC_LOCAL;
     }
     else if (env_class)
     {

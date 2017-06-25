@@ -1,4 +1,42 @@
+println("Normal loop");
 for (var i = 0; i < 10; i += 1)
 {
 	println(i);
 }
+
+println();
+println("Nested loops");
+for (var i = 0; i < 5; i += 1)
+{
+	for (var j = 0; j < 5; j += 1)
+	{
+		println(i + ", " + j);
+	}
+}
+
+func fb(n)
+{
+	for (var i = 1; i < n; i += 1)
+	{
+		if (i % 15 == 0)
+		{
+			println("fizzbuzz");
+		}
+		if (i % 3 == 0)
+		{
+			println("fizz");
+		}
+		else if (i % 5 == 0)
+		{
+			println("buzz");
+		}
+		else
+		{
+			println(i);
+		}
+	}
+}
+
+println();
+println("Fizzbuzz");
+fb(25);

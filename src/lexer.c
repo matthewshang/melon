@@ -177,8 +177,8 @@ static token_t scan_identifier(charstream_t *source)
 
 static token_t scan_punc(charstream_t *source)
 {
-    char c = *source->pos;
-    char next = charstream_next(source);
+    char c = charstream_next(source);
+    char next = charstream_peek(source);
     if (c == '.' && next == '.')
     {
         return token_create(TOK_RANGE, source->offset - 2, 2, source->line, source->col - 1);
