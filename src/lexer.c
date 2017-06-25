@@ -83,6 +83,7 @@ static token_t scan_number(charstream_t *source)
     int start = source->offset;
     int bytes = 0;
     bool dot_found = false;
+    uint32_t dot_offset = 0;
 
     while (is_number(charstream_peek(source)))
     {
@@ -90,10 +91,15 @@ static token_t scan_number(charstream_t *source)
         {
             if (dot_found)
             {
+                if (source->offset - dot_offset == 1)
+                {
+                    return token_create(TOK_INT, start, bytes - 1, source->line, source->col);
+                }
                 printf("Error: float cannot have more than one decimal point\n");
                 return token_error();
             }
             dot_found = true;
+            dot_offset = source->offset;
         }
         charstream_next(source);
         bytes++;
@@ -121,10 +127,12 @@ static token_type get_keyword(charstream_t *source, int start, int bytes)
     if (bytes == 2)
     {
         if (strequals(iden, bytes, "if")) return TOK_IF;
+        if (strequals(iden, bytes, "in")) return TOK_IN;
     }
     if (bytes == 3)
     {
         if (strequals(iden, bytes, "var")) return TOK_VAR;
+        if (strequals(iden, bytes, "for")) return TOK_FOR;
     }
     if (bytes == 4)
     {
@@ -170,7 +178,11 @@ static token_t scan_identifier(charstream_t *source)
 static token_t scan_punc(charstream_t *source)
 {
     char c = *source->pos;
-    charstream_next(source);
+    char next = charstream_next(source);
+    if (c == '.' && next == '.')
+    {
+        return token_create(TOK_RANGE, source->offset - 2, 2, source->line, source->col - 1);
+    }
     return token_create(token_punc(c), source->offset - 1, 1, source->line, source->col);
 }
 

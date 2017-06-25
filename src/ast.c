@@ -28,11 +28,13 @@ node_t *node_if_new(node_t *cond, node_t *then, node_t *els)
     return (node_t*)node;
 }
 
-node_t *node_loop_new(node_t *cond, node_t *body)
+node_t *node_loop_new(node_t *init, node_t *cond, node_t *inc, node_t *body)
 {
     node_loop_t *node = (node_loop_t*)calloc(1, sizeof(node_loop_t));
     NODE_SETBASE(node, NODE_LOOP);
+    node->init = init;
     node->cond = cond;
+    node->inc = inc;
     node->body = body;
     return (node_t*)node;
 }
@@ -221,7 +223,9 @@ static void free_node_if(astwalker_t *self, node_if_t *node)
 
 static void free_node_loop(astwalker_t *self, node_loop_t *node)
 {
+    if (node->init) walk_ast(self, node->init);
     if (node->cond) walk_ast(self, node->cond);
+    if (node->inc) walk_ast(self, node->inc);
     if (node->body) walk_ast(self, node->body);
     free(node);
 }
@@ -419,9 +423,23 @@ static void print_node_loop(astwalker_t *self, node_loop_t *node)
     printf("[loop]\n");
     int depth = self->depth;
 
+    if (node->init)
+    {
+        print_tabs(depth); printf("loop-init: ");
+        self->depth = depth + 1;
+        walk_ast(self, node->init);
+    }
+
     print_tabs(depth); printf("loop-condition: ");
     self->depth = depth + 1;
     walk_ast(self, node->cond);
+
+    if (node->inc)
+    {
+        print_tabs(depth); printf("loop-inc: ");
+        self->depth = depth + 1;
+        walk_ast(self, node->inc);
+    }
 
     print_tabs(depth); printf("loop-body: ");
     self->depth = depth + 1;

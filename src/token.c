@@ -108,6 +108,7 @@ const char *token_type_string(token_type type)
     case TOK_CLOSED_BRACE: return "}";
     case TOK_OPEN_BRACKET: return "[";
     case TOK_CLOSED_BRACKET: return "]";
+    case TOK_RANGE: return "..";
 
     case TOK_INT: return "int";
     case TOK_FLOAT: return "float";
@@ -119,6 +120,8 @@ const char *token_type_string(token_type type)
     case TOK_IF: return "if";
     case TOK_ELSE: return "else";
     case TOK_WHILE: return "while";
+    case TOK_FOR: return "for";
+    case TOK_IN: return "in";
     case TOK_TRUE: return "true";
     case TOK_FALSE: return "false";
     case TOK_FUNC: return "func";

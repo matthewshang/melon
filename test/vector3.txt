@@ -54,8 +54,8 @@ println("Object: " + a);
 println(a + b);
 
 println(a - b);
-println(a * 2);
-println(a / 2);
+println(a * 2)
+;println(a / 2);
 var c = Vector3(1, 2, 3);    
 
 

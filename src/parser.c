@@ -429,7 +429,31 @@ static node_t *parse_while(lexer_t *lexer)
     parse_required(lexer, TOK_CLOSED_PAREN, true);
 
     body = parse_block(lexer);
-    return node_loop_new(cond, body);
+    return node_loop_new(NULL, cond, NULL, body);
+}
+
+static node_t *parse_var_decl(lexer_t *lexer, token_t storage);
+
+static node_t *parse_for(lexer_t *lexer)
+{
+    node_t *init = NULL;
+    node_t *cond = NULL;
+    node_t *inc = NULL;
+    node_t *body = NULL;
+
+    parse_required(lexer, TOK_OPEN_PAREN, true);
+    parse_required(lexer, TOK_VAR, true);
+    init = parse_var_decl(lexer, token_none());
+
+    cond = parse_expression(lexer);
+
+    parse_required(lexer, TOK_SEMICOLON, true);
+    inc = parse_expression(lexer);
+
+    parse_required(lexer, TOK_CLOSED_PAREN, true);
+
+    body = parse_block(lexer);
+    return node_loop_new(init, cond, inc, body);
 }
 
 static node_t *parse_return(lexer_t *lexer)
@@ -452,6 +476,7 @@ static node_t *parse_stmt(lexer_t *lexer)
 {
     if (lexer_match(lexer, TOK_IF)) return parse_if(lexer);
     else if (lexer_match(lexer, TOK_WHILE)) return parse_while(lexer);
+    else if (lexer_match(lexer, TOK_FOR)) return parse_for(lexer);
     else if (lexer_match(lexer, TOK_RETURN)) return parse_return(lexer);
     else return parse_expr_stmt(lexer);
 }
