@@ -59,6 +59,7 @@ node_t *node_loop_forin_new(node_t *init, node_t *target, node_t *body)
     node->type = LOOP_FORIN;
     node->init = init;
     node->cond = target;
+    node->inc = NULL;
     node->body = body;
     return (node_t*)node;
 }
@@ -251,6 +252,7 @@ static void free_node_loop(astwalker_t *self, node_loop_t *node)
     if (node->cond) walk_ast(self, node->cond);
     if (node->inc) walk_ast(self, node->inc);
     if (node->body) walk_ast(self, node->body);
+    if (node->iterator) free(node->iterator);
     free(node);
 }
 

@@ -4,3 +4,13 @@ for (var i in array)
 {
 	println(i);
 }
+
+func foreach(a, f)
+{
+	for (var i in a)
+	{
+		f(i);
+	}
+}
+
+foreach(array, func(x) { println(x * x); });

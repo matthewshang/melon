@@ -431,7 +431,8 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
         case OP_LOOP: vm->ip -= *vm->ip; break;
         case OP_JIF: 
         {
-            if (!AS_BOOL(STACK_POP)) vm->ip += *vm->ip;
+            value_t v = STACK_POP;
+            if (IS_BOOL(v) && !AS_BOOL(v)) vm->ip += *vm->ip;
             else vm->ip++;
 
             break;

@@ -144,7 +144,7 @@ static void gen_node_if(astwalker_t *self, node_if_t *node)
     }
 }
 
-static void gen_node_loop(astwalker_t *self, node_loop_t *node)
+static void gen_loop_while_cfor(astwalker_t *self, node_loop_t *node)
 {
     if (node->init)
     {
@@ -168,6 +168,68 @@ static void gen_node_loop(astwalker_t *self, node_loop_t *node)
 
     int jif_jmp = vector_size(*CODE) - jif_idx;
     vector_set(*CODE, jif_idx, (uint8_t)jif_jmp);
+}
+
+static void gen_loop_forin(astwalker_t *self, node_loop_t *node)
+{
+    uint8_t it_k = cpool_add_constant(CONSTANTS, FROM_CSTR(CORE_ITERATOR_STRING));
+    uint8_t itval_k = cpool_add_constant(CONSTANTS, FROM_CSTR(CORE_ITER_VAL_STRING));
+    walk_ast(self, node->init);
+
+    // target
+    walk_ast(self, node->cond);
+    emit_loadstore(CODE, node->loc, node->target_idx, true);
+    emit_loadstore(CODE, node->loc, node->target_idx, false);
+    emit_bytes(CODE, OP_LOADK, it_k);
+    emit_bytes(CODE, OP_LOADF, 1);
+    emit_bytes(CODE, OP_CALL, 1);
+
+    //iterator
+    emit_loadstore(CODE, node->loc, node->it_idx, true);
+
+    int loop_idx = vector_size(*CODE) - 1;
+    emit_loadstore(CODE, node->loc, node->it_idx, false);
+    emit_bytes(CODE, (uint8_t)OP_JIF, 0);
+    int jif_idx = vector_size(*CODE) - 1;
+
+    // iterator value
+    node_var_decl_t *val = (node_var_decl_t*)node->init;
+    emit_loadstore(CODE, node->loc, node->target_idx, false);
+    emit_bytes(CODE, OP_LOADK, itval_k);
+    emit_bytes(CODE, OP_LOADF, 1);
+    emit_loadstore(CODE, node->loc, node->it_idx, false);
+    emit_bytes(CODE, OP_CALL, 2);
+    emit_loadstore(CODE, val->loc, val->idx, true);
+
+    // body
+    walk_ast(self, node->body);
+    
+    // iterator
+    emit_loadstore(CODE, node->loc, node->target_idx, false);
+    emit_bytes(CODE, OP_LOADK, it_k);
+    emit_bytes(CODE, OP_LOADF, 1);
+    emit_loadstore(CODE, node->loc, node->it_idx, false);
+    emit_bytes(CODE, OP_CALL, 2);
+    emit_loadstore(CODE, node->loc, node->it_idx, true);
+
+    int loop_jmp = vector_size(*CODE) - loop_idx;
+    emit_bytes(CODE, (uint8_t)OP_LOOP, (uint8_t)loop_jmp);
+
+    int jif_jmp = vector_size(*CODE) - jif_idx;
+    vector_set(*CODE, jif_idx, (uint8_t)jif_jmp);
+}
+
+static void gen_node_loop(astwalker_t *self, node_loop_t *node)
+{
+    switch (node->type)
+    {
+    case LOOP_CFOR:
+    case LOOP_WHILE:
+        gen_loop_while_cfor(self, node); break;
+    case LOOP_FORIN:
+        gen_loop_forin(self, node); break;
+    default: break;
+    }
 }
 
 static void gen_node_return(astwalker_t *self, node_return_t *node)

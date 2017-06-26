@@ -473,6 +473,30 @@ static bool array_map(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
     }
 }
 
+static bool array_iterator(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+{
+    if (nargs <= 1)
+        RETURN_VALUE(FROM_INT(0));
+    
+    if (!IS_INT(args[1]))
+        RUNTIME_ERROR("array_iterator: argument must be an int\n");
+
+    array_t *a = AS_ARRAY(args[0]);
+    int next = AS_INT(args[1]) + 1;
+    if (next >= a->size)
+        RETURN_VALUE(FROM_BOOL(false));
+    else
+        RETURN_VALUE(FROM_INT(next));
+}
+
+static bool array_iterator_val(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+{
+    array_t *a = AS_ARRAY(args[0]);
+    int idx = AS_INT(args[1]);
+
+    RETURN_VALUE(vector_get(a->arr, idx));
+}
+
 // temp stuff
 static closure_t *core_println_cl;
 static closure_t *core_print_cl;
@@ -571,6 +595,8 @@ void core_init_classes()
     class_bind(melon_class_array, "add", NATIVE_CLOSURE(array_add));
     class_bind(melon_class_array, "get", NATIVE_CLOSURE(array_loadat));
     class_bind(melon_class_array, "map", NATIVE_CLOSURE(array_map));
+    class_bind(melon_class_array, CORE_ITERATOR_STRING, NATIVE_CLOSURE(array_iterator));
+    class_bind(melon_class_array, CORE_ITER_VAL_STRING, NATIVE_CLOSURE(array_iterator_val));
 
     class_t *array_meta = melon_class_array->metaclass;
     class_bind(array_meta, CORE_NEW_STRING, NATIVE_CLOSURE(array_new_inst));

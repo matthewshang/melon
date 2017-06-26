@@ -74,12 +74,16 @@ typedef struct
 {
     node_t base;
     loop_type type;
-
     node_t *init;
     node_t *cond;
     node_t *inc;
     node_t *body;
 
+    const char *iterator;
+    uint8_t it_idx;
+    const char *target;
+    uint8_t target_idx;
+    location_e loc;
 } node_loop_t;
 
 typedef struct

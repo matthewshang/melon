@@ -1,5 +1,6 @@
 #include "semantic.h"
 
+#include <stdio.h>
 #include <stdarg.h>
 
 #include "astwalker.h"
@@ -257,6 +258,30 @@ static void visit_if(struct astwalker *self, node_if_t *node)
     if (node->els) walk_ast(self, node->els);
 }
 
+static const char *make_tmp_symbol(symtable_t *symtable, node_t *target, const char *str)
+{
+    char buffer[32];
+    int tries = 0;
+
+    while (tries < 8)
+    {
+        if (target->type == NODE_VAR)
+        {
+            sprintf(buffer, "$%s_%s%d", ((node_var_t*)target)->identifier, str, tries);
+        }
+
+        if (symtable_lookup(symtable, buffer, NULL)) tries++;
+        else break;
+    }
+
+    if (tries >= 8)
+    {
+        report_error("Could not make unique identifier\n");
+        return NULL;
+    }
+    return _strdup(buffer);
+}
+
 static void visit_loop(struct astwalker *self, node_loop_t *node)
 {
     node_t *context = GET_CONTEXT;
@@ -265,7 +290,18 @@ static void visit_loop(struct astwalker *self, node_loop_t *node)
 
     walk_ast(self, node->init);
     walk_ast(self, node->cond);
-    walk_ast(self, node->inc);
+    
+    if (node->type == LOOP_FORIN)
+    {
+        bool env_global = context->type == NODE_BLOCK;
+        node->target = make_tmp_symbol(env_symtable, node->cond, "target");
+        node->target_idx = symtable_add_local(env_symtable, node->target);
+        node->iterator = make_tmp_symbol(env_symtable, node->cond, "iterator");
+        node->it_idx = symtable_add_local(env_symtable, node->iterator);
+        node->loc = env_global ? LOC_GLOBAL : LOC_LOCAL;
+    }
+
+    if (node->inc) walk_ast(self, node->inc);
     walk_ast(self, node->body);
 
     symtable_exit_scope(env_symtable);
