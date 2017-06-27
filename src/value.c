@@ -467,3 +467,18 @@ string_t *string_copy(string_t *s)
     str->hash = s->hash;
     return str;
 }
+
+range_t *range_new(int start, int end, int step)
+{
+    range_t *range = (range_t*)calloc(1, sizeof(range_t));
+    range->start = start;
+    range->end = end;
+    range->step = step;
+    range->end_greater = end > start;
+    return range;
+}
+
+void range_free(range_t *range)
+{
+    free(range);
+}

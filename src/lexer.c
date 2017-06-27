@@ -91,18 +91,17 @@ static token_t scan_number(charstream_t *source)
         {
             if (dot_found)
             {
-                if (source->offset - dot_offset == 1)
-                {
-                    return token_create(TOK_INT, start, bytes - 1, source->line, source->col);
-                }
                 printf("Error: float cannot have more than one decimal point\n");
                 return token_error();
             }
             dot_found = true;
             dot_offset = source->offset;
         }
-        charstream_next(source);
+
         bytes++;
+        charstream_next(source);
+        if (*(source->pos) == '.' && *(source->pos + 1) == '.') break;
+        
         if (charstream_eof(source)) break;
     }
 
@@ -181,7 +180,9 @@ static token_t scan_punc(charstream_t *source)
     char next = charstream_peek(source);
     if (c == '.' && next == '.')
     {
-        return token_create(TOK_RANGE, source->offset - 2, 2, source->line, source->col - 1);
+        token_t t = token_create(TOK_RANGE, source->offset - 1, 2, source->line, source->col - 1);
+        charstream_next(source);
+        return t;
     }
     return token_create(token_punc(c), source->offset - 1, 1, source->line, source->col);
 }
@@ -280,7 +281,7 @@ lexer_t lexer_create(const char *source)
     token_t current = read_next(&lexer);
     while (current.type != TOK_EOF)
     {
-        //printf("arg: %d %.*s\n", current.type, current.length, source + current.offset);
+        printf("arg: %d %.*s\n", current.type, current.length, source + current.offset);
         if (current.type != TOK_ERROR) vector_push(token_t, tokens, current);
         else lexer.nerrors++;
         current = read_next(&lexer);

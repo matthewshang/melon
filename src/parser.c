@@ -260,6 +260,11 @@ static node_t *parse_postfix(lexer_t *lexer, node_t *node, token_t token)
     return node_postfix_new(node, exprs);
 }
 
+static node_t *parse_range(lexer_t *lexer, node_t *node, token_t token)
+{
+    return node_range_new(node, parse_expression(lexer));
+}
+
 static node_var_r *parse_func_params(lexer_t *lexer)
 {
     if (lexer_check(lexer, TOK_CLOSED_PAREN)) return NULL;
@@ -357,6 +362,7 @@ static void init_parse_rules()
     rules[TOK_OPEN_PAREN] = RULE(parse_nested_expr, parse_postfix, PREC_CALL);
     rules[TOK_OPEN_BRACKET] = RULE(parse_array, parse_postfix, PREC_CALL);
     rules[TOK_DOT] = INFIX_RULE(PREC_CALL, parse_postfix);
+    rules[TOK_RANGE] = INFIX_RULE(PREC_CALL, parse_range);
 
     rules[TOK_TRUE] = PREFIX_RULE(PREC_LOWEST, parse_bool);
     rules[TOK_FALSE] = PREFIX_RULE(PREC_LOWEST, parse_bool);

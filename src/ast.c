@@ -186,6 +186,14 @@ node_t *node_list_new(node_r *items)
     return (node_t*)node;
 }
 
+node_t *node_range_new(node_t *start, node_t *end)
+{
+    node_range_t *node = (node_range_t*)calloc(1, sizeof(node_range_t));
+    NODE_SETBASE(node, NODE_RANGE);
+    node->start = start;
+    node->end = end;
+}
+
 node_t *node_literal_int_new(int value)
 {
     node_literal_t *node = (node_literal_t*)calloc(1, sizeof(node_literal_t));
@@ -369,6 +377,13 @@ static void free_node_list(astwalker_t *self, node_list_t *node)
     free(node);
 }
 
+static void free_node_range(astwalker_t *self, node_range_t *node)
+{
+    walk_ast(self, node->start);
+    walk_ast(self, node->end);
+    free(node);
+}
+
 static void free_node_literal(astwalker_t *self, node_literal_t *node)
 {
     if (node->type == LITERAL_STR) free(node->u.s);
@@ -392,6 +407,7 @@ void ast_free(node_t *root)
         .visit_postfix = free_node_postfix,
         .visit_var = free_node_var,
         .visit_list = free_node_list,
+        .visit_range = free_node_range,
         .visit_literal = free_node_literal
     };
     walk_ast(&visitor, root);
@@ -650,6 +666,21 @@ static void print_node_list(astwalker_t *self, node_list_t *node)
     self->depth = depth;
 }
 
+static void print_node_range(astwalker_t *self, node_range_t *node)
+{
+    printf("[range] start: ");
+    int depth = self->depth;
+    
+    self->depth = depth + 1;
+    walk_ast(self, node->start);
+
+    print_tabs(depth); printf("end: ");
+    self->depth = depth + 1;
+    walk_ast(self, node->end);
+
+    self->depth = depth;
+}
+
 static void print_node_literal(astwalker_t *self, node_literal_t *node)
 {
     switch (node->type)
@@ -686,6 +717,7 @@ void ast_print(node_t *root)
         .visit_postfix = print_node_postfix,
         .visit_var = print_node_var,
         .visit_list = print_node_list,
+        .visit_range = print_node_range,
         .visit_literal = print_node_literal
     };
     walk_ast(&visitor, root);

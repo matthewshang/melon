@@ -25,6 +25,7 @@ class_t *melon_class_string;
 class_t *melon_class_closure;
 class_t *melon_class_instance;
 class_t *melon_class_array;
+class_t *melon_class_range;
 
 typedef struct
 {
@@ -33,7 +34,6 @@ typedef struct
     {
         int i;
         double d;
-        const char *s;
         void *o;
     };
 } value_t;
@@ -116,6 +116,14 @@ typedef struct
     uint32_t hash;
 } string_t;
 
+typedef struct
+{
+    int start;
+    int end;
+    int step;
+    bool end_greater;
+} range_t;
+
 #define FROM_BOOL(x) (value_t){.type = melon_class_bool, .i = x}
 #define FROM_INT(x) (value_t){.type = melon_class_int, .i = x}
 #define FROM_FLOAT(x) (value_t){.type = melon_class_float, .d = x}
@@ -126,6 +134,7 @@ typedef struct
 #define FROM_INSTANCE(x) (value_t){.type = melon_class_instance, .o = (void*)x}
 #define FROM_ARRAY(x) (value_t){.type = melon_class_array, .o = (void*)x}
 #define FROM_NULL (value_t){.type = melon_class_null, .i = 0}
+#define FROM_RANGE(x) (value_t){.type = melon_class_range, .o = (void*)x};
 
 #define AS_BOOL(x) (x).i
 #define AS_INT(x) (x).i
@@ -135,6 +144,7 @@ typedef struct
 #define AS_CLASS(x) ((class_t*)(x).o)
 #define AS_INSTANCE(x) ((instance_t*)(x).o)
 #define AS_ARRAY(x) ((array_t*)(x).o)
+#define AS_RANGE(x) ((range_t*)(x).o)
 
 #define IS_BOOL(x) ((x).type == melon_class_bool)
 #define IS_INT(x) ((x).type == melon_class_int)
@@ -187,5 +197,8 @@ void array_print(array_t *a);
 string_t *string_new(const char *s);
 void string_free(string_t *s);
 string_t *string_copy(string_t *s);
+
+range_t *range_new(int start, int end, int step);
+void range_free(range_t *range);
 
 #endif
