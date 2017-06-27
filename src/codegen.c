@@ -494,6 +494,13 @@ static void gen_node_list(struct astwalker *self, node_list_t *node)
     emit_bytes(CODE, OP_NEWARR, len);
 }
 
+static void gen_node_range(struct astwalker *self, node_range_t *node)
+{
+    walk_ast(self, node->start);
+    walk_ast(self, node->end);
+    emit_byte(CODE, OP_NEWRNG);
+}
+
 static void gen_node_literal(astwalker_t *self, node_literal_t *node)
 {
     function_t *context = AS_CLOSURE(GET_CONTEXT)->f;
@@ -577,6 +584,7 @@ bool codegen_run(codegen_t *gen, node_t *ast)
         .visit_postfix = gen_node_postfix,
         .visit_var = gen_node_var,
         .visit_list = gen_node_list,
+        .visit_range = gen_node_range,
         .visit_literal = gen_node_literal
     };
 

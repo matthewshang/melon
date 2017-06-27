@@ -49,6 +49,7 @@ const char *op_to_str(opcode op)
     case OP_NEQ: return "neq";
 
     case OP_NEWARR: return "newarr";
+    case OP_NEWRNG: return "newrng";
 
     case OP_HALT: return "halt";
     }

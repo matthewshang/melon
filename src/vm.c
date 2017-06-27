@@ -542,6 +542,20 @@ static void vm_run(vm_t *vm, bool is_main, uint32_t ret_bp, value_t **ret_val)
             break;
         }
 
+        case OP_NEWRNG:
+        {
+            value_t end = STACK_POP;
+            value_t start = STACK_POP;
+            if (!IS_INT(end) || !IS_INT(start))
+                RUNTIME_ERROR("Range start and end must be integers\n");
+            
+            int step = AS_INT(end) - AS_INT(start) > 0 ? 1 : -1;
+            value_t range = FROM_RANGE(range_new(AS_INT(start), AS_INT(end), step));
+            vm_push_mem(vm, range);
+            STACK_PUSH(range);
+            break;
+        }
+
         case OP_HALT: return;
         default: continue;
 

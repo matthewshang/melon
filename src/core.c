@@ -497,6 +497,60 @@ static bool array_iterator_val(vm_t *vm, value_t *args, uint8_t nargs, uint32_t 
     RETURN_VALUE(vector_get(a->arr, idx));
 }
 
+static int sign(int val)
+{
+    return (0 < val) - (val < 0);
+}
+
+static bool range_new_inst(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+{
+    if (nargs < 2)
+        RUNTIME_ERROR("range_new: start and end must be specified\n");
+
+    if (!IS_INT(args[0]) || !IS_INT(args[1]))
+        RUNTIME_ERROR("range_new: start and end must be ints\n");
+
+    int start = AS_INT(args[0]);
+    int end = AS_INT(args[1]);
+    int step = 1;
+    if (nargs > 2)
+    {
+        if (IS_INT(args[2])) step = AS_INT(args[2]);
+        else RUNTIME_ERROR("range_new: step must be an int\n");
+    }
+
+    if (sign(end - start) != sign(step))
+        RUNTIME_ERROR("range_new: mismatched signs between step and start/end\n");
+
+    value_t range = FROM_RANGE(range_new(start, end, step));
+    vm_push_mem(vm, range);
+    RETURN_VALUE(range);
+}
+
+static bool range_iterator(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+{
+    range_t *range = AS_RANGE(args[0]);
+    if (nargs <= 1)
+        RETURN_VALUE(FROM_INT(0));
+
+    if (!IS_INT(args[1]))
+        RUNTIME_ERROR("range_iterator: argument must be an int\n");
+
+    int next = AS_INT(args[1]) + 1;
+    if (next >= range->iterations)
+        RETURN_VALUE(FROM_BOOL(false));
+    else
+        RETURN_VALUE(FROM_INT(next));
+}
+
+static bool range_iterator_val(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
+{
+    range_t *range = AS_RANGE(args[0]);
+    int idx = AS_INT(args[1]);
+
+    RETURN_VALUE(FROM_INT(idx * range->step + range->start));
+}
+
 // temp stuff
 static closure_t *core_println_cl;
 static closure_t *core_print_cl;
@@ -523,6 +577,7 @@ void core_register_semantic(symtable_t *globals)
     symtable_add_local(globals, "Closure");
     symtable_add_local(globals, "Instance");
     symtable_add_local(globals, "Array");
+    symtable_add_local(globals, "Range");
 }
 
 void core_register_vm(vm_t *vm)
@@ -546,6 +601,7 @@ void core_register_vm(vm_t *vm)
     vm_set_global(vm, FROM_CLASS(melon_class_closure), 9);
     vm_set_global(vm, FROM_CLASS(melon_class_instance), 10);
     vm_set_global(vm, FROM_CLASS(melon_class_array), 11);
+    vm_set_global(vm, FROM_CLASS(melon_class_range), 12);
 }
 
 void core_init_classes()
@@ -565,6 +621,7 @@ void core_init_classes()
     melon_class_closure = class_new_with_meta(strdup("Closure"), 0, 0, melon_class_object);
     melon_class_instance = class_new_with_meta(strdup("Instance"), 0, 0, melon_class_object);
     melon_class_array = class_new_with_meta(strdup("Array"), 0, 0, melon_class_object);
+    melon_class_range = class_new_with_meta(strdup("Range"), 0, 0, melon_class_object);
 
     class_bind(melon_class_object, "class", NATIVE_CLOSURE(object_class));
     class_bind(melon_class_object, CORE_LOADF_STRING, NATIVE_CLOSURE(object_loadfield));
@@ -600,6 +657,12 @@ void core_init_classes()
 
     class_t *array_meta = melon_class_array->metaclass;
     class_bind(array_meta, CORE_NEW_STRING, NATIVE_CLOSURE(array_new_inst));
+
+    class_bind(melon_class_range, CORE_ITERATOR_STRING, NATIVE_CLOSURE(range_iterator));
+    class_bind(melon_class_range, CORE_ITER_VAL_STRING, NATIVE_CLOSURE(range_iterator_val));
+
+    class_t *range_meta = melon_class_range->metaclass;
+    class_bind(range_meta, CORE_NEW_STRING, NATIVE_CLOSURE(range_new_inst));
 }
 
 void core_free_vm()
@@ -625,4 +688,5 @@ void core_free_classes()
     class_free(melon_class_closure);
     class_free(melon_class_instance);
     class_free(melon_class_array);
+    class_free(melon_class_range);
 }

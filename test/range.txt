@@ -1,4 +1,17 @@
+println("Counting up");
 for (var i in 1..10)
+{
+	println(i);
+}
+
+println("Counting down");
+for (var i in 5..0)
+{
+	println(i);
+}
+
+println("Custom step");
+for (var i in Range(10, -10, -2))
 {
 	println(i);
 }

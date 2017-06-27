@@ -50,6 +50,7 @@ typedef enum
     OP_NEQ,
 
     OP_NEWARR,
+    OP_NEWRNG,
 
     OP_HALT
 } opcode;

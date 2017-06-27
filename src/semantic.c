@@ -529,6 +529,19 @@ static void visit_list(struct astwalker *self, node_list_t *node)
     }
 }
 
+static void visit_range(struct astwalker *self, node_range_t *node)
+{
+    if (node->start->type == NODE_LITERAL)
+        if (((node_literal_t*)node->start)->type != LITERAL_INT)
+            report_error("Range start must be an integer");    
+    if (node->end->type == NODE_LITERAL)
+        if (((node_literal_t*)node->end)->type != LITERAL_INT)
+            report_error("Range end must be an integer");
+
+    walk_ast(self, node->start);
+    walk_ast(self, node->end);
+}
+
 static bool sema_build_local_symtables(node_t *ast, lexer_t *lexer)
 {
     semantic_t sema;
@@ -554,6 +567,7 @@ static bool sema_build_local_symtables(node_t *ast, lexer_t *lexer)
         .visit_postfix = visit_postfix,
         .visit_var = visit_var,
         .visit_list = visit_list,
+        .visit_range = visit_range,
         .visit_literal = NULL
     };
 

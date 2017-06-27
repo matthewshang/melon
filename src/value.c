@@ -1,6 +1,7 @@
 #include "value.h"
 
 #include <stdio.h>
+#include <math.h>
 
 #include "debug.h"
 #include "hash.h"
@@ -18,6 +19,8 @@ void value_destroy(value_t val)
         instance_free(AS_INSTANCE(val));
     else if (IS_ARRAY(val))
         array_free(AS_ARRAY(val));
+    else if (IS_RANGE(val))
+        range_free(AS_RANGE(val));
 }
 
 void value_print_notag(value_t v)
@@ -472,9 +475,8 @@ range_t *range_new(int start, int end, int step)
 {
     range_t *range = (range_t*)calloc(1, sizeof(range_t));
     range->start = start;
-    range->end = end;
     range->step = step;
-    range->end_greater = end > start;
+    range->iterations = ceil((float) abs(end - start) / (float) abs(step));
     return range;
 }
 

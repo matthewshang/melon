@@ -122,6 +122,7 @@ typedef struct
     int end;
     int step;
     bool end_greater;
+    int iterations;
 } range_t;
 
 #define FROM_BOOL(x) (value_t){.type = melon_class_bool, .i = x}
@@ -155,6 +156,7 @@ typedef struct
 #define IS_INSTANCE(x) ((x).type == melon_class_instance)
 #define IS_ARRAY(x) ((x).type == melon_class_array)
 #define IS_NULL(x) ((x).type == melon_class_null)
+#define IS_RANGE(x) ((x).type == melon_class_range)
 
 void value_destroy(value_t val);
 void value_print(value_t val);
