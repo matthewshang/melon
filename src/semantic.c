@@ -269,6 +269,10 @@ static const char *make_tmp_symbol(symtable_t *symtable, node_t *target, const c
         {
             sprintf(buffer, "$%s_%s%d", ((node_var_t*)target)->identifier, str, tries);
         }
+        else if (target->type == NODE_RANGE)
+        {
+            sprintf(buffer, "$range_%s%d", str, tries);
+        }
 
         if (symtable_lookup(symtable, buffer, NULL)) tries++;
         else break;
@@ -358,6 +362,11 @@ static void visit_func_decl(struct astwalker *self, node_func_decl_t *node)
     node->symtable = symtable_new();
     symtable_t *symtable = node->symtable;
     symtable_enter_scope(symtable);
+
+    if (GET_CONTEXT->type == NODE_CLASS_DECL)
+    {
+        symtable_add_local(symtable, "$object");
+    }
 
     if (node->params)
     {
@@ -502,7 +511,7 @@ static void visit_var(struct astwalker *self, node_var_t *node)
                 }
                 
                 node->location = LOC_LOCAL;
-                node->idx = decl.idx + is_method;
+                node->idx = decl.idx;
             }
             return;
         }

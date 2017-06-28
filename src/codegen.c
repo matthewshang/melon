@@ -174,7 +174,10 @@ static void gen_loop_forin(astwalker_t *self, node_loop_t *node)
 {
     uint8_t it_k = cpool_add_constant(CONSTANTS, FROM_CSTR(CORE_ITERATOR_STRING));
     uint8_t itval_k = cpool_add_constant(CONSTANTS, FROM_CSTR(CORE_ITER_VAL_STRING));
+    uint8_t null_k = cpool_add_constant(CONSTANTS, FROM_NULL);
     walk_ast(self, node->init);
+    emit_bytes(CODE, OP_LOADK, null_k);
+    emit_bytes(CODE, OP_LOADK, null_k);
 
     // target
     walk_ast(self, node->cond);
@@ -378,7 +381,7 @@ static void gen_node_class_decl(struct astwalker *self, node_class_decl_t *node)
         node_func_decl_t *constr_node = (node_func_decl_t*)constructor->init;
         emit_bytes(&init->f->bytecode, (uint8_t)OP_LOADI, constructor->idx);
         emit_bytes(&init->f->bytecode, (uint8_t)OP_LOADF, 1);
-        uint8_t nparams = vector_size(*constr_node->params);
+        uint8_t nparams = constr_node->params ? vector_size(*constr_node->params) : 0;
         for (size_t i = 0; i < nparams; i++)
         {
             emit_bytes(&init->f->bytecode, (uint8_t)OP_LOADL, i + 1);

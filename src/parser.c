@@ -253,7 +253,7 @@ static node_t *parse_postfix(lexer_t *lexer, node_t *node, token_t token)
         token_t previous = lexer_previous(lexer);
         if (previous.type == TOK_DOT) current = parse_postfix_access(lexer);
         else if (previous.type == TOK_OPEN_PAREN) current = parse_postfix_call(lexer);
-        else if (token.type == TOK_OPEN_BRACKET) current = parse_postfix_subscript(lexer);
+        else if (previous.type == TOK_OPEN_BRACKET) current = parse_postfix_subscript(lexer);
         vector_push(postfix_expr_t*, *exprs, current);
     }
 
