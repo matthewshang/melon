@@ -5,20 +5,21 @@
 
 #include "value.h"
 
-typedef struct hash_entry_s
+typedef struct hash_entry_t
 {
     value_t key;
     value_t value;
-    struct hash_entry_s *next;
+    struct hash_entry_t *next;
 } hash_entry_t;
 
-typedef struct
+struct hashtable_t
 {
     uint32_t size;
     hash_entry_t **table;
     uint32_t nentrys;
+};
 
-} hashtable_t;
+typedef struct hashtable_t hashtable_t;
 
 typedef void(*hash_iterator_func)(hash_entry_t *node);
 

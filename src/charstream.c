@@ -6,7 +6,7 @@ charstream_t charstream_create(const char *source)
 {
     charstream_t stream;
     stream.buffer = source;
-    stream.pos = stream.buffer;
+    stream.pos = (char*)stream.buffer;
     stream.line = 1;
     stream.col = 0;
     stream.offset = 0;

@@ -1,5 +1,7 @@
 #include "hash.h"
 
+#include <stdio.h>
+
 #define HASH_SEED 4759
 
 // https://en.wikipedia.org/wiki/MurmurHash
@@ -101,7 +103,7 @@ void hashtable_dump(hashtable_t *htable)
 
 uint32_t hash_string(const char *s)
 {
-    return murmur3_32(s, strlen(s), HASH_SEED);
+    return murmur3_32((const uint8_t*)s, strlen(s), HASH_SEED);
 }
 
 static uint32_t hash_value(value_t v)
@@ -110,6 +112,8 @@ static uint32_t hash_value(value_t v)
     {
         return AS_STR(v)->hash;
     }
+    // Not implemented if v is not a string.
+    return 0;
 }
 
 void hashtable_set(hashtable_t *htable, value_t key, value_t value)

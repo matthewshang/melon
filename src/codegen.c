@@ -267,7 +267,7 @@ static void store_decl(astwalker_t *self, value_t decl, bool isstatic, node_func
         {
             function_t *f = AS_CLOSURE(decl)->f;
 
-            vector_t(ast_upvalue_t) *upvalues = node->upvalues;
+            ast_upvalue_r *upvalues = node->upvalues;
             f->nupvalues = vector_size(*upvalues);
             emit_byte(CODE, (uint8_t)OP_CLOSURE);
 

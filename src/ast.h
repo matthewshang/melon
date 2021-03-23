@@ -80,9 +80,9 @@ typedef struct
     node_t *inc;
     node_t *body;
 
-    char *iterator;
+    const char *iterator;
     uint8_t it_idx;
-    char *target;
+    const char *target;
     uint8_t target_idx;
     location_e loc;
 } node_loop_t;
@@ -96,7 +96,7 @@ typedef struct
 typedef struct
 {
     node_t base;
-    char *ident;
+    const char *ident;
     node_t *init;
     token_t storage;
 
@@ -108,20 +108,22 @@ typedef struct
 {
     bool is_direct;
     uint8_t idx;
-    char *symbol;
+    const char *symbol;
 } ast_upvalue_t;
 
 typedef struct node_var_s node_var_t;
 
+typedef vector_t(ast_upvalue_t) ast_upvalue_r;
+
 typedef struct
 {
     node_t base;
-    char *identifier;
+    const char *identifier;
     node_var_r *params;
     node_block_t *body;
 
     symtable_t *symtable;
-    vector_t(ast_upvalue_t) *upvalues;
+    ast_upvalue_r *upvalues;
     location_e loc;
     uint32_t idx;
     node_var_decl_t *parent;
@@ -130,7 +132,7 @@ typedef struct
 typedef struct
 {
     node_t base;
-    char *identifier;
+    const char *identifier;
     node_r *decls;
 
     symtable_t *symtable;
@@ -181,7 +183,7 @@ typedef struct
 typedef struct node_var_s
 {
     node_t base;
-    char *identifier;
+    const char *identifier;
 
     uint8_t idx;
     location_e location;
@@ -211,7 +213,7 @@ typedef struct
     {
         int i;
         double d;
-        char *s;
+        const char *s;
     } u;
 } node_literal_t;
 
@@ -223,9 +225,9 @@ node_t *node_loop_cfor_new(node_t *init, node_t *cond, node_t *inc, node_t *body
 node_t *node_loop_forin_new(node_t *init, node_t *target, node_t *body);
 node_t *node_return_new(node_t *expr);
 
-node_t *node_var_decl_new(token_t token, token_t storage, char *identifier, node_t *init);
-node_t *node_func_decl_new(token_t token, char *identifier, node_var_r *params, node_block_t *body);
-node_t *node_class_decl_new(token_t token, char *identifier, node_r *decls);
+node_t *node_var_decl_new(token_t token, token_t storage, const char *identifier, node_t *init);
+node_t *node_func_decl_new(token_t token, const char *identifier, node_var_r *params, node_block_t *body);
+node_t *node_class_decl_new(token_t token, const char *identifier, node_r *decls);
 
 node_t *node_binary_new(token_t op, node_t *left, node_t *right);
 node_t *node_unary_new(token_t op, node_t *right);
@@ -233,12 +235,12 @@ postfix_expr_t *postfix_call_new(node_r *args);
 postfix_expr_t *postfix_access_new(node_t *accessor);
 postfix_expr_t *postfix_subscript_new(node_t *subscript);
 node_t *node_postfix_new(node_t *target, postfix_expr_r *exprs);
-node_t *node_var_new(token_t token, char *identifier);
+node_t *node_var_new(token_t token, const char *identifier);
 node_t *node_list_new(node_r *items);
 node_t *node_range_new(node_t *start, node_t *end);
 node_t *node_literal_int_new(int value);
 node_t *node_literal_float_new(double value);
-node_t *node_literal_str_new(char *value, int len);
+node_t *node_literal_str_new(const char *value, int len);
 node_t *node_literal_bool_new(bool value);
 
 void ast_free(node_t *root);

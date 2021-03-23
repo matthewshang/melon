@@ -132,7 +132,7 @@ static void fix_constructor_name(const char *classname, node_var_decl_t *decl)
     {
         if (strcmp(classname, decl->ident) == 0)
         {
-            free(decl->ident);
+            free((char*)decl->ident);
             decl->ident = strdup(CORE_CONSTRUCT_STRING);
         }
     }
@@ -446,7 +446,7 @@ static void visit_postfix(struct astwalker *self, node_postfix_t *node)
 
 static uint8_t add_upvalue(node_func_decl_t *f, uint16_t distance, decl_info_t decl, const char *symbol)
 {
-    vector_t(ast_upvalue_t) *upvalues = f->upvalues;
+    ast_upvalue_r *upvalues = f->upvalues;
     for (uint8_t i = 0; i < vector_size(*upvalues); i++)
     {
         ast_upvalue_t upvalue = vector_get(*upvalues, i);
@@ -501,21 +501,13 @@ static void visit_var(struct astwalker *self, node_var_t *node)
 
                 while (d > 1)
                 {
-                    node_func_decl_t *f = vector_get(context_stack, j);
+                    node_func_decl_t *f = (node_func_decl_t*)vector_get(context_stack, j);
                     add_upvalue(f, d--, decl, node->identifier);
                     --j;
                 }
             }
             else
             {
-                bool is_method = false;
-                while (i >= 0)
-                {
-                    if (vector_get(context_stack, i)->type == NODE_CLASS_DECL)
-                        is_method = true;
-                    i--;
-                }
-                
                 node->location = LOC_LOCAL;
                 node->idx = decl.idx;
             }

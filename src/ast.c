@@ -73,7 +73,7 @@ node_t *node_return_new(node_t *expr)
     return (node_t*)node;
 }
 
-node_t *node_var_decl_new(token_t token, token_t storage, char *identifier, node_t *init)
+node_t *node_var_decl_new(token_t token, token_t storage, const char *identifier, node_t *init)
 {
     node_var_decl_t *node = (node_var_decl_t*)calloc(1, sizeof(node_var_decl_t));
     NODE_SETBASE(node, NODE_VAR_DECL);
@@ -85,7 +85,7 @@ node_t *node_var_decl_new(token_t token, token_t storage, char *identifier, node
     return (node_t*)node;
 }
 
-node_t *node_func_decl_new(token_t token, char *identifier, node_var_r *params, node_block_t *body)
+node_t *node_func_decl_new(token_t token, const char *identifier, node_var_r *params, node_block_t *body)
 {
     node_func_decl_t *node = (node_func_decl_t*)calloc(1, sizeof(node_func_decl_t));
     NODE_SETBASE(node, NODE_FUNC_DECL);
@@ -95,13 +95,13 @@ node_t *node_func_decl_new(token_t token, char *identifier, node_var_r *params, 
     node->body = body;
     node->params = params;
 
-    node->upvalues = (vector_t(ast_upvalue_t)*)calloc(1, sizeof(*node->upvalues));
+    node->upvalues = (ast_upvalue_r*)calloc(1, sizeof(*node->upvalues));
     vector_init(*node->upvalues);
     node->parent = NULL;
     return (node_t*)node;
 }
 
-node_t *node_class_decl_new(token_t token, char *identifier, node_r *decls)
+node_t *node_class_decl_new(token_t token, const char *identifier, node_r *decls)
 {
     node_class_decl_t *node = (node_class_decl_t*)calloc(1, sizeof(node_class_decl_t));
     NODE_SETBASE(node, NODE_CLASS_DECL);
@@ -170,7 +170,7 @@ node_t *node_postfix_new(node_t *target, postfix_expr_r *exprs)
     return (node_t*)node;
 }
 
-node_t *node_var_new(token_t token, char *identifier)
+node_t *node_var_new(token_t token, const char *identifier)
 {
     node_var_t *node = (node_var_t*)calloc(1, sizeof(node_var_t));
     NODE_SETBASE(node, NODE_VAR);
@@ -214,7 +214,7 @@ node_t *node_literal_float_new(double value)
     return (node_t*)node;
 }
 
-node_t *node_literal_str_new(char *value, int len)
+node_t *node_literal_str_new(const char *value, int len)
 {
     node_literal_t *node = (node_literal_t*)calloc(1, sizeof(node_literal_t));
     NODE_SETBASE(node, NODE_LITERAL);
@@ -264,7 +264,7 @@ static void free_node_loop(astwalker_t *self, node_loop_t *node)
     if (node->cond) walk_ast(self, node->cond);
     if (node->inc) walk_ast(self, node->inc);
     if (node->body) walk_ast(self, node->body);
-    if (node->iterator) free(node->iterator);
+    if (node->iterator) free((char*)node->iterator);
     free(node);
 }
 
@@ -276,7 +276,7 @@ static void free_node_return(astwalker_t *self, node_return_t *node)
 
 static void free_node_var_decl(astwalker_t *self, node_var_decl_t *node)
 {
-    if (node->ident) free(node->ident);
+    if (node->ident) free((char*)node->ident);
     if (node->init) walk_ast(self, node->init);
     free(node);
 }
@@ -305,7 +305,7 @@ static void free_node_func_decl(astwalker_t *self, node_func_decl_t *node)
 
 static void free_node_class_decl(astwalker_t *self, node_class_decl_t *node)
 {
-    if (node->identifier) free(node->identifier);
+    if (node->identifier) free((char*)node->identifier);
     if (node->symtable) symtable_free(node->symtable);
     if (node->decls)
     {
@@ -365,7 +365,7 @@ static void free_node_postfix(astwalker_t *self, node_postfix_t *node)
 
 static void free_node_var(astwalker_t *self, node_var_t *node)
 {
-    if (node->identifier) free(node->identifier);
+    if (node->identifier) free((char*)node->identifier);
     free(node);
 }
 
@@ -392,7 +392,7 @@ static void free_node_range(astwalker_t *self, node_range_t *node)
 
 static void free_node_literal(astwalker_t *self, node_literal_t *node)
 {
-    if (node->type == LITERAL_STR) free(node->u.s);
+    if (node->type == LITERAL_STR) free((char*)node->u.s);
     free(node);
 }
 

@@ -57,7 +57,7 @@ typedef struct function_s
     {
         struct
         {
-            char *identifier;
+            const char *identifier;
             value_r constpool;
             byte_r bytecode;
         };
@@ -66,13 +66,13 @@ typedef struct function_s
     };
 } function_t;
 
-typedef struct hashtable_t;
+typedef struct hashtable_t hashtable_t;
 typedef struct class_s
 {
     const char *identifier;
     class_t *superclass;
 
-    struct hashtable_t *htable;
+    hashtable_t *htable;
     uint16_t nvars;
 
     class_t *metaclass;
@@ -165,7 +165,7 @@ bool value_equals(value_t v1, value_t v2);
 class_t *value_get_class(value_t v);
 
 function_t *function_native_new(melon_c_func func);
-function_t *function_new(char *identifier);
+function_t *function_new(const char *identifier);
 void function_free(function_t *func);
 value_t function_cpool_get(function_t *func, int idx);
 void function_cpool_dump(function_t *func);

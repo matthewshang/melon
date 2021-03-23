@@ -100,7 +100,7 @@ function_t *function_native_new(melon_c_func cfunc)
     return func;
 }
 
-function_t *function_new(char *identifier)
+function_t *function_new(const char *identifier)
 {
     function_t *func = (function_t*)calloc(1, sizeof(function_t));
     func->type = FUNC_MELON;
@@ -116,7 +116,7 @@ void function_free(function_t *func)
     if (!func) return;
     if (func->type == FUNC_MELON)
     {
-        free(func->identifier);
+        free((char*)func->identifier);
         for (int i = 0; i < vector_size(func->constpool); i++)
         {
             value_t val = vector_get(func->constpool, i);
@@ -338,7 +338,7 @@ void class_free(class_t *c)
 {
     if (c)
     {
-        if (c->identifier) free(c->identifier);
+        if (c->identifier) free((char*)c->identifier);
         if (c->metaclass) class_free(c->metaclass);
         if (c->static_vars) free(c->static_vars);
         hashtable_iterate(c->htable, free_class_iterate);
@@ -458,7 +458,7 @@ string_t *string_new(const char *s)
 
 void string_free(string_t *s)
 {
-    free(s->s);
+    free((char*)s->s);
     free(s);
 }
 

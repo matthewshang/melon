@@ -308,7 +308,7 @@ static node_t *parse_infix(lexer_t *lexer, node_t *node, token_t token)
         // This leads to node being double-freed later. As a temporary workaround, assume that
         // node is always a node_var_t and clone it.
         node_var_t* as_var = (node_var_t*)node;
-        node_var_t* copy = node_var_new(as_var->base.token, strdup(as_var->identifier));
+        node_var_t* copy = (node_var_t*)node_var_new(as_var->base.token, strdup(as_var->identifier));
         right = node_binary_new(token, (node_t*)copy, right);
         token.type = TOK_EQ;
     }
@@ -517,7 +517,7 @@ static node_t *parse_var_decl(lexer_t *lexer, token_t storage)
 
     lexer_match(lexer, TOK_SEMICOLON);
 
-    return node_var_decl_new(token, storage, (const char*)ident, init);
+    return node_var_decl_new(token, storage, ident, init);
 }
 
 static const char *op_to_core_str(token_type op)
@@ -563,8 +563,8 @@ static node_t *parse_func_decl(lexer_t *lexer, token_t storage, bool is_operator
 
     node_t *body = parse_block(lexer);
 
-    return node_var_decl_new(token, storage, (const char*)ident,
-        node_func_decl_new(token, (const char*)strdup(ident), params, (node_block_t*)body));
+    return node_var_decl_new(token, storage, ident,
+        node_func_decl_new(token, strdup(ident), params, (node_block_t*)body));
 }
 
 static node_t *parse_class_decl(lexer_t *lexer)

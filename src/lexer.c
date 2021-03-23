@@ -32,11 +32,6 @@ static bool is_op(char c)
         c == '|' || c == '<' || c == '>' || c == '!' || c == '/'; 
 }
 
-static bool is_semicolon(char c)
-{
-    return c == ';';
-}
-
 static bool is_string(char c)
 {
     return c == '"' || c == '\'';
@@ -83,7 +78,6 @@ static token_t scan_number(charstream_t *source)
     int start = source->offset;
     int bytes = 0;
     bool dot_found = false;
-    uint32_t dot_offset = 0;
 
     while (is_number(charstream_peek(source)))
     {
@@ -95,7 +89,6 @@ static token_t scan_number(charstream_t *source)
                 return token_error();
             }
             dot_found = true;
-            dot_offset = source->offset;
         }
 
         bytes++;
@@ -122,7 +115,7 @@ static bool strequals(const char *s1, int len, const char *s2)
 
 static token_type get_keyword(charstream_t *source, int start, int bytes)
 {
-    char *iden = source->buffer + start;
+    char *iden = (char*)source->buffer + start;
     if (bytes == 2)
     {
         if (strequals(iden, bytes, "if")) return TOK_IF;
@@ -305,7 +298,6 @@ void lexer_destroy(lexer_t *lexer)
 token_t lexer_consume(lexer_t *lexer, token_type type)
 {
     if (lexer_check(lexer, type)) return lexer_advance(lexer);
-    token_t error = lexer_peek(lexer);
     lexer->nerrors++;
     return token_error();
 }

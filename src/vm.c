@@ -136,7 +136,8 @@ void callstack_push(callstack_t *stack, uint8_t *ret, closure_t *closure, uint32
 
 uint8_t *callstack_ret(callstack_t *stack, closure_t **closure, uint32_t *bp)
 {
-    callframe_t frame = vector_pop(*stack);
+    callframe_t frame = vector_peek(*stack);
+    vector_pop(*stack);
     uint8_t *ret = frame.ret;
     *closure = frame.closure;
     *bp = frame.bp;
