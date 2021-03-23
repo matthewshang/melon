@@ -1,6 +1,7 @@
 #include "vm.h"
 
 #include <stddef.h>
+#include <stdio.h>
 
 #include "core.h"
 #include "debug.h"
@@ -123,7 +124,7 @@
             CALL_FUNC_NOSTACK(_cl, STACK_SIZE - 2, 2, 1);                            \
         } while (0)
 
-void callstack_push(callstack_t *stack, uint8_t *ret, closure_t *closure, uint16_t bp, bool caller_stack)
+void callstack_push(callstack_t *stack, uint8_t *ret, closure_t *closure, uint32_t bp, bool caller_stack)
 {
     callframe_t newframe;
     newframe.ret = ret;
@@ -133,7 +134,7 @@ void callstack_push(callstack_t *stack, uint8_t *ret, closure_t *closure, uint16
     vector_push(callframe_t, *stack, newframe);
 }
 
-uint8_t *callstack_ret(callstack_t *stack, closure_t **closure, uint16_t *bp)
+uint8_t *callstack_ret(callstack_t *stack, closure_t **closure, uint32_t *bp)
 {
     callframe_t frame = vector_pop(*stack);
     uint8_t *ret = frame.ret;
@@ -149,7 +150,7 @@ bool caller_on_stack(callstack_t *stack)
 
 void callstack_print(callstack_t stack)
 {
-    printf("Printing callstack %d\n", vector_size(stack));
+    printf("Printing callstack %ld\n", vector_size(stack));
     for (size_t i = 0; i < vector_size(stack); i++)
     {
         callframe_t frame = vector_get(stack, i);
@@ -196,7 +197,7 @@ void vm_destroy(vm_t *vm)
     free(vm->stack);
     vector_destroy(vm->globals);
     vector_destroy(vm->callstack);
-    printf("Allocated: %d\n", vector_size(vm->mem));
+    printf("Allocated: %ld\n", vector_size(vm->mem));
     for (size_t i = 0; i < vector_size(vm->mem); i++)
     {
         value_destroy(vector_get(vm->mem, i));

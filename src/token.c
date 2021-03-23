@@ -1,5 +1,6 @@
 #include "token.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 
 token_t token_create(token_type type, uint32_t offset, uint32_t length, uint32_t line, uint32_t col)
@@ -58,9 +59,9 @@ opcode token_to_binary_op(token_t token)
     case TOK_GTE: return OP_GTE;
     case TOK_AND: return OP_AND;
     case TOK_OR: return OP_OR;
+    default: printf("Unrecognized token type %d\n", token.type);
     }
-
-    printf("Unrecognized token type %d\n", token.type);
+    
     return OP_NOP;
 }
 
@@ -70,9 +71,9 @@ opcode token_to_unary_op(token_t token)
     {
     case TOK_BANG: return OP_NOT;
     case TOK_SUB: return OP_NEG;
+    default: printf("Unrecognized token type %d\n", token.type);
     }
-
-    printf("Unrecognized token type %d\n", token.type);
+    
     return OP_NOP;
 }
 

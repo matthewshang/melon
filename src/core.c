@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include "ast.h"
+#include "symtable.h"
 #include "value.h"
 
 #define PRINTLN_SLOT 0
@@ -249,6 +250,7 @@ static bool class_name(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
         vm_push_mem(vm, name);
         RETURN_VALUE(name);
     }
+    RETURN_VALUE(FROM_CSTR("undefined"));
 }
 
 static bool int_add(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)
@@ -367,6 +369,7 @@ static bool closure_name(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx
         vm_push_mem(vm, name);
         RETURN_VALUE(name);
     }
+    RETURN_VALUE(FROM_CSTR("undefined"));
 }
 
 static bool array_new_inst(vm_t *vm, value_t *args, uint8_t nargs, uint32_t retidx)

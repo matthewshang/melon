@@ -338,7 +338,7 @@ static void gen_node_func_decl(astwalker_t *self, node_func_decl_t *node)
 
     PUSH_CONTEXT(FROM_CLOSURE(cl));
 
-    walk_ast(self, node->body);
+    walk_ast(self, (node_t*)node->body);
     if (vector_get(*CODE, vector_size(*CODE) - 1) != OP_RETURN)
         emit_byte(CODE, (uint8_t)OP_RET0);
 
@@ -429,7 +429,7 @@ static void gen_node_postfix(astwalker_t *self, node_postfix_t *node)
 {
     walk_ast(self, node->target);
 
-    bool is_method = vector_get(*node->exprs, 0)->type == POST_ACCESS;
+    // bool is_method = vector_get(*node->exprs, 0)->type == POST_ACCESS;
     int len = vector_size(*node->exprs);
 
     for (int i = 0; i < len; i++)

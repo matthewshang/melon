@@ -6,8 +6,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-typedef vector_t(node_var_t*) node_var_r;
-
 typedef enum {
     PREC_LOWEST,    // literals
     PREC_ASSIGN,    // =
@@ -64,7 +62,7 @@ static void print_error_line(const char *buffer, token_t token)
 
     char linestr[128];
     sprintf(linestr, "        ");
-    printf(linestr);
+    printf("%s", linestr);
     while (start < end)
     {
         putchar(buffer[start++]);
@@ -113,7 +111,7 @@ static void parser_error(lexer_t *lexer, token_t token, const char *msg, ...)
 
 static char *substr(const char *s, int offset, int length)
 {
-    char *sub = (const char*)calloc(length + 1, sizeof(char));
+    char *sub = (char*)calloc(length + 1, sizeof(char));
     sub[length] = '\0';
 
     for (int i = 0; i < length; i++)
@@ -132,7 +130,7 @@ static bool parse_required(lexer_t *lexer, token_type type, bool report)
         if (report)
         {
             token_t next = lexer_advance(lexer);
-            const char *value = substr(lexer->source.buffer, next.offset, next.length);
+            char *value = substr(lexer->source.buffer, next.offset, next.length);
             parser_error(lexer, next, "Expected token %s but got value %s\n", token_type_string(type), value);
             free(value);
         }
@@ -141,9 +139,9 @@ static bool parse_required(lexer_t *lexer, token_type type, bool report)
     return true;
 }
 
-node_t *parse_expression(lexer_t *lexer);
-node_t *parse_precedence(lexer_t *lexer, precedence_t prec);
-node_t *parse_block(lexer_t *lexer);
+static node_t *parse_expression(lexer_t *lexer);
+static node_t *parse_precedence(lexer_t *lexer, precedence_t prec);
+static node_t *parse_block(lexer_t *lexer);
 
 static node_t *parse_num(lexer_t *lexer, token_t token)
 {
@@ -165,7 +163,7 @@ static node_t *parse_num(lexer_t *lexer, token_t token)
 static node_t *parse_str(lexer_t *lexer, token_t token)
 {
     char *str = substr(lexer->source.buffer, token.offset, token.length);
-    return node_literal_str_new((const char*)str, token.length);
+    return node_literal_str_new(str, token.length);
 }
 
 static node_t *parse_bool(lexer_t *lexer, token_t token)
@@ -195,7 +193,7 @@ static node_t *parse_array(lexer_t *lexer, token_t token)
 static node_t *parse_identifier(lexer_t *lexer, token_t token)
 {
     char *name = substr(lexer->source.buffer, token.offset, token.length);
-    return node_var_new(token, (const char*)name);
+    return node_var_new(token, name);
 }
 
 static node_t *parse_nested_expr(lexer_t *lexer, token_t token)
@@ -223,13 +221,13 @@ static postfix_expr_t *parse_postfix_call(lexer_t *lexer)
     return postfix_call_new(args);
 }
 
-static node_t *parse_postfix_access(lexer_t *lexer)
+static postfix_expr_t *parse_postfix_access(lexer_t *lexer)
 {
     node_t *expr = parse_identifier(lexer, lexer_advance(lexer));
     return postfix_access_new(expr);
 }
 
-static node_t *parse_postfix_subscript(lexer_t *lexer)
+static postfix_expr_t *parse_postfix_subscript(lexer_t *lexer)
 {
     node_t *expr = parse_expression(lexer);
     parse_required(lexer, TOK_CLOSED_BRACKET, true);
@@ -285,7 +283,7 @@ static node_var_r *parse_func_params(lexer_t *lexer)
 static node_t *parse_func_expr(lexer_t *lexer, token_t token)
 {
     parse_required(lexer, TOK_OPEN_PAREN, true);
-    vector_t(node_var_t*) *params = parse_func_params(lexer);
+    node_var_r *params = parse_func_params(lexer);
     parse_required(lexer, TOK_CLOSED_PAREN, true);
 
     node_t *body = parse_block(lexer);
@@ -307,7 +305,11 @@ static node_t *parse_infix(lexer_t *lexer, node_t *node, token_t token)
     if (token_is_op_assign(token))
     {
         token.type = token_op_assign_to_op(token);
-        right = node_binary_new(token, node, right);
+        // This leads to node being double-freed later. As a temporary workaround, assume that
+        // node is always a node_var_t and clone it.
+        node_var_t* as_var = (node_var_t*)node;
+        node_var_t* copy = node_var_new(as_var->base.token, strdup(as_var->identifier));
+        right = node_binary_new(token, (node_t*)copy, right);
         token.type = TOK_EQ;
     }
 
@@ -405,24 +407,24 @@ static node_t *parse_if(lexer_t *lexer)
 {
     node_t *cond = NULL;
     node_t *then = NULL;
-node_t *els = NULL;
+    node_t *els = NULL;
 
-parse_required(lexer, TOK_OPEN_PAREN, true);
-cond = parse_expression(lexer);
-parse_required(lexer, TOK_CLOSED_PAREN, true);
+    parse_required(lexer, TOK_OPEN_PAREN, true);
+    cond = parse_expression(lexer);
+    parse_required(lexer, TOK_CLOSED_PAREN, true);
 
-then = parse_block(lexer);
+    then = parse_block(lexer);
 
-if (lexer_match(lexer, TOK_ELSE))
-{
-    // Handles else if {...
-    if (lexer_match(lexer, TOK_IF))
-        els = parse_if(lexer);
-    else
-        els = parse_block(lexer);
-}
+    if (lexer_match(lexer, TOK_ELSE))
+    {
+        // Handles else if {...
+        if (lexer_match(lexer, TOK_IF))
+            els = parse_if(lexer);
+        else
+            els = parse_block(lexer);
+    }
 
-return node_if_new(cond, then, els);
+    return node_if_new(cond, then, els);
 }
 
 static node_t *parse_while(lexer_t *lexer)
@@ -435,7 +437,7 @@ static node_t *parse_while(lexer_t *lexer)
     parse_required(lexer, TOK_CLOSED_PAREN, true);
 
     body = parse_block(lexer);
-    return node_loop_while_new(NULL, cond, NULL, body);
+    return node_loop_while_new(cond, body);
 }
 
 static node_t *parse_var_decl(lexer_t *lexer, token_t storage);
@@ -552,17 +554,17 @@ static node_t *parse_func_decl(lexer_t *lexer, token_t storage, bool is_operator
     }
 
     token_t token = lexer_previous(lexer);
-    char *ident = is_operator ? _strdup(op_to_core_str(token.type)) : 
+    char *ident = is_operator ? strdup(op_to_core_str(token.type)) : 
         substr(lexer->source.buffer, token.offset, token.length);
 
     parse_required(lexer, TOK_OPEN_PAREN, true);
-    vector_t(node_var_t*) *params = parse_func_params(lexer);
+    node_var_r *params = parse_func_params(lexer);
     parse_required(lexer, TOK_CLOSED_PAREN, true);
 
     node_t *body = parse_block(lexer);
 
     return node_var_decl_new(token, storage, (const char*)ident,
-        node_func_decl_new(token, (const char*)_strdup(ident), params, (node_block_t*)body));
+        node_func_decl_new(token, (const char*)strdup(ident), params, (node_block_t*)body));
 }
 
 static node_t *parse_class_decl(lexer_t *lexer)

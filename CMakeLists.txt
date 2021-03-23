@@ -1,4 +1,7 @@
-cmake_minimum_required(VERSION 2.6)
-project (melon)
+cmake_minimum_required(VERSION 3.10)
 
-add_executable(melon src/main.c)
+project(melon)
+set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_C_STANDARD 11)
+
+add_subdirectory(src)

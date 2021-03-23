@@ -1,5 +1,6 @@
 #include "ast.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "astwalker.h"
@@ -72,19 +73,19 @@ node_t *node_return_new(node_t *expr)
     return (node_t*)node;
 }
 
-node_t *node_var_decl_new(token_t token, token_t storage, const char *ident, node_t *init)
+node_t *node_var_decl_new(token_t token, token_t storage, char *identifier, node_t *init)
 {
     node_var_decl_t *node = (node_var_decl_t*)calloc(1, sizeof(node_var_decl_t));
     NODE_SETBASE(node, NODE_VAR_DECL);
     node->base.token = token;
 
     node->storage = storage;
-    node->ident = ident;
+    node->ident = identifier;
     node->init = init;
     return (node_t*)node;
 }
 
-node_t *node_func_decl_new(token_t token, const char *identifier, vector_t(node_var_t*) *params, node_block_t *body)
+node_t *node_func_decl_new(token_t token, char *identifier, node_var_r *params, node_block_t *body)
 {
     node_func_decl_t *node = (node_func_decl_t*)calloc(1, sizeof(node_func_decl_t));
     NODE_SETBASE(node, NODE_FUNC_DECL);
@@ -100,7 +101,7 @@ node_t *node_func_decl_new(token_t token, const char *identifier, vector_t(node_
     return (node_t*)node;
 }
 
-node_t *node_class_decl_new(token_t token, const char *identifier, node_r *decls)
+node_t *node_class_decl_new(token_t token, char *identifier, node_r *decls)
 {
     node_class_decl_t *node = (node_class_decl_t*)calloc(1, sizeof(node_class_decl_t));
     NODE_SETBASE(node, NODE_CLASS_DECL);
@@ -169,7 +170,7 @@ node_t *node_postfix_new(node_t *target, postfix_expr_r *exprs)
     return (node_t*)node;
 }
 
-node_t *node_var_new(token_t token, const char *identifier)
+node_t *node_var_new(token_t token, char *identifier)
 {
     node_var_t *node = (node_var_t*)calloc(1, sizeof(node_var_t));
     NODE_SETBASE(node, NODE_VAR);
@@ -192,6 +193,7 @@ node_t *node_range_new(node_t *start, node_t *end)
     NODE_SETBASE(node, NODE_RANGE);
     node->start = start;
     node->end = end;
+    return (node_t*)node;
 }
 
 node_t *node_literal_int_new(int value)
@@ -212,7 +214,7 @@ node_t *node_literal_float_new(double value)
     return (node_t*)node;
 }
 
-node_t *node_literal_str_new(const char *value, int len)
+node_t *node_literal_str_new(char *value, int len)
 {
     node_literal_t *node = (node_literal_t*)calloc(1, sizeof(node_literal_t));
     NODE_SETBASE(node, NODE_LITERAL);
@@ -237,7 +239,9 @@ static void free_node_block(astwalker_t *self, node_block_t *node)
     {
         for (int i = 0; i < vector_size(*node->stmts); i++)
         {
-            walk_ast(self, vector_get(*node->stmts, i));
+            node_t* child = vector_get(*node->stmts, i);
+            if (child)
+                walk_ast(self, child);
         }
         vector_destroy(*node->stmts);
         free(node->stmts);
@@ -279,12 +283,12 @@ static void free_node_var_decl(astwalker_t *self, node_var_decl_t *node)
 
 static void free_node_func_decl(astwalker_t *self, node_func_decl_t *node)
 {
-    if (node->body) walk_ast(self, node->body);
+    if (node->body) walk_ast(self, (node_t*)node->body);
     if (node->params)
     {
         for (int i = 0; i < vector_size(*node->params); i++)
         {
-            walk_ast(self, vector_get(*node->params, i));
+            walk_ast(self, (node_t*)vector_get(*node->params, i));
         }
         vector_destroy(*node->params);
         free(node->params);
@@ -320,6 +324,8 @@ static void free_node_binary(astwalker_t *self, node_binary_t *node)
 {
     if (node->left) walk_ast(self, node->left);
     if (node->right) walk_ast(self, node->right);
+    node->left = NULL;
+    node->right = NULL;
     free(node);
 }
 
@@ -423,7 +429,7 @@ static void print_tabs(int depth)
 
 static void print_node_block(astwalker_t *self, node_block_t *node)
 {
-    printf("[block] nstmts: %d\n", vector_size(*node->stmts));
+    printf("[block] nstmts: %ld\n", vector_size(*node->stmts));
     int depth = self->depth;
 
     for (int i = 0; i < vector_size(*node->stmts); i++)
@@ -544,7 +550,7 @@ static void print_node_func_decl(astwalker_t *self, node_func_decl_t *node)
 
     print_tabs(depth); printf("func-body: ");
     self->depth = depth + 1;
-    walk_ast(self, node->body);
+    walk_ast(self, (node_t*)node->body);
 
     self->depth = depth;
 }
@@ -608,7 +614,7 @@ static void print_node_postfix(astwalker_t *self, node_postfix_t *node)
     if (node->exprs)
     {
         print_tabs(depth);
-        printf("postfix-exprs (%d):\n", vector_size(*node->exprs));
+        printf("postfix-exprs (%ld):\n", vector_size(*node->exprs));
         for (size_t i = 0; i < vector_size(*node->exprs); i++)
         {
             postfix_expr_t *expr = vector_get(*node->exprs, i);
@@ -620,7 +626,7 @@ static void print_node_postfix(astwalker_t *self, node_postfix_t *node)
                     printf("[post-call] args: 0\n");
                     continue;
                 }
-                printf("[post-call] args: %d\n", vector_size(*expr->args));
+                printf("[post-call] args: %ld\n", vector_size(*expr->args));
                 for (size_t j = 0; j < vector_size(*expr->args); j++)
                 {
                     print_tabs(depth + 2);
@@ -653,7 +659,7 @@ static void print_node_var(astwalker_t *self, node_var_t *node)
 
 static void print_node_list(astwalker_t *self, node_list_t *node)
 {
-    printf("[list] nitems: %d\n", vector_size(*node->items));
+    printf("[list] nitems: %ld\n", vector_size(*node->items));
     int depth = self->depth;
 
     for (int i = 0; i < vector_size(*node->items); i++)

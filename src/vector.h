@@ -43,5 +43,7 @@ typedef vector_t(const char*) string_r;
 
 typedef struct node_s node_t;
 typedef vector_t(node_t*) node_r;
+typedef struct node_var_s node_var_t;
+typedef vector_t(node_var_t*) node_var_r;
 
 #endif

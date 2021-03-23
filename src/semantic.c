@@ -44,7 +44,7 @@ static void print_error_line(const char *buffer, token_t token)
 
     char linestr[128];
     sprintf(linestr, "        ");
-    printf(linestr);
+    printf("%s", linestr);
     while (start < end)
     {
         putchar(buffer[start++]);
@@ -132,9 +132,8 @@ static void fix_constructor_name(const char *classname, node_var_decl_t *decl)
     {
         if (strcmp(classname, decl->ident) == 0)
         {
-            int x = 0;
             free(decl->ident);
-            decl->ident = _strdup(CORE_CONSTRUCT_STRING);
+            decl->ident = strdup(CORE_CONSTRUCT_STRING);
         }
     }
 }
@@ -237,7 +236,7 @@ static void visit_block(struct astwalker *self, node_block_t *node)
     else
     {
         //symtable_dump(node->symtable);
-        PUSH_CONTEXT(node);
+        PUSH_CONTEXT((node_t*)node);
     }
 
     for (size_t i = 0; i < vector_size(*node->stmts); i++)
@@ -263,7 +262,8 @@ static const char *make_tmp_symbol(symtable_t *symtable, node_t *target, const c
     char buffer[32];
     int tries = 0;
 
-    while (tries < 8)
+    const int TRY_LIMIT = 256;
+    while (tries < TRY_LIMIT)
     {
         if (target->type == NODE_VAR)
         {
@@ -272,18 +272,22 @@ static const char *make_tmp_symbol(symtable_t *symtable, node_t *target, const c
         else if (target->type == NODE_RANGE)
         {
             sprintf(buffer, "$range_%s%d", str, tries);
+        } 
+        else 
+        {
+            sprintf(buffer, "$tmp_%s%d", str, tries);
         }
 
         if (symtable_lookup(symtable, buffer, NULL)) tries++;
         else break;
     }
 
-    if (tries >= 8)
+    if (tries >= TRY_LIMIT)
     {
         report_error("Could not make unique identifier\n");
         return NULL;
     }
-    return _strdup(buffer);
+    return strdup(buffer);
 }
 
 static void visit_loop(struct astwalker *self, node_loop_t *node)
@@ -292,8 +296,10 @@ static void visit_loop(struct astwalker *self, node_loop_t *node)
     symtable_t *env_symtable = node_get_symtable(context);
     symtable_enter_scope(env_symtable);
 
-    walk_ast(self, node->init);
-    walk_ast(self, node->cond);
+    if (node->init)
+        walk_ast(self, node->init);
+    if (node->cond)
+        walk_ast(self, node->cond);
     
     if (node->type == LOOP_FORIN)
     {
@@ -377,7 +383,7 @@ static void visit_func_decl(struct astwalker *self, node_func_decl_t *node)
         }
     }
 
-    PUSH_CONTEXT(node);
+    PUSH_CONTEXT((node_t*)node);
 
     for (size_t i = 0; i < vector_size(*node->body->stmts); i++)
     {
@@ -394,7 +400,7 @@ static void visit_func_decl(struct astwalker *self, node_func_decl_t *node)
 
 static void visit_class_decl(struct astwalker *self, node_class_decl_t *node)
 {
-    PUSH_CONTEXT(node);
+    PUSH_CONTEXT((node_t*)node);
     for (size_t i = 0; i < vector_size(*node->decls); i++)
     {
         walk_ast(self, vector_get(*node->decls, i));

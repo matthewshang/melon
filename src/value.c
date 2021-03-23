@@ -1,7 +1,7 @@
 #include "value.h"
 
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
 
 #include "debug.h"
 #include "hash.h"
@@ -100,7 +100,7 @@ function_t *function_native_new(melon_c_func cfunc)
     return func;
 }
 
-function_t *function_new(const char *identifier)
+function_t *function_new(char *identifier)
 {
     function_t *func = (function_t*)calloc(1, sizeof(function_t));
     func->type = FUNC_MELON;
@@ -146,7 +146,7 @@ static void internal_disassemble(function_t *func, uint8_t depth)
     if (func->type == FUNC_MELON)
     {
         print_tabs(depth); printf("disassembly of function \"%s\"\n", func->identifier);
-        print_tabs(depth); printf("bytes: %d\n", vector_size(func->bytecode));
+        print_tabs(depth); printf("bytes: %ld\n", vector_size(func->bytecode));
 
         uint32_t ninsts = 0;
         for (int i = 0; i < vector_size(func->bytecode); i++)
@@ -450,7 +450,7 @@ void array_print(array_t *a)
 string_t *string_new(const char *s)
 {
     string_t *str = (string_t*)calloc(1, sizeof(string_t));
-    str->s = _strdup(s);
+    str->s = strdup(s);
     str->len = strlen(s);
     str->hash = hash_string(s);
     return str;
@@ -465,7 +465,7 @@ void string_free(string_t *s)
 string_t *string_copy(string_t *s)
 {
     string_t *str = (string_t*)calloc(1, sizeof(string_t));
-    str->s = _strdup(s->s);
+    str->s = strdup(s->s);
     str->len = s->len;
     str->hash = s->hash;
     return str;
