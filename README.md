@@ -1,25 +1,24 @@
 # melon
 
-## About
-Melon is a small stack-based programming language that I made to learn about the inner workings of compilers. It compiles to a custom bytecode, which is then run by the melon virtual machine. Although it is not quite complete, you can find example programs that it can successfully 
-compile and run in the test folder, including a brute force sudoku solver.
+melon is a dynamically typed programming language implemented in C with no external dependencies. The syntax is inspired by JavaScript; a collection of code samples can be found under the [test](test/) directory, including a [backtracking Sudoku solver](test/sudoku.txt).
 
-Here is hello world in melon:
-```
-println("Hello, World!");
-```
+Here is a list of noteworthy features:
+* multipass compiler that emits a custom bytecode
+* stack-based virtual machine
+* classes: objects, static variables, constructors, operator overloading
+* first class functions and closures
+* lexical scope
+* recursive descent parsing
+* builtin datatypes: arrays, ranges, strings, hash tables
+* helpful error reporting
 
-I was inspired to write this after seeing the Gravity language on github. The overall design of melon is based on Gravity, although the
-implementation is different. This project has been a great learning experience for me, especially since going into it I had no idea
-how programming languages worked on the inside.
-
-## Links
-Here are some resources I found helpful while writing melon.
-
-https://github.com/marcobambini/gravity <br />
-interpreters: https://ruslanspivak.com/lsbasi-part12/ <br />
-lua design: http://www.lua.org/doc/jucs05.pdf <br />
-precedence parsing: http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/ <br />
-vm: http://andreabergia.com/stack-based-virtual-machines-5/ <br />
-hash: https://en.wikipedia.org/wiki/MurmurHash <br />
-metaclasses: http://hokstad.com/compiler/43-eigenclasses <br />
+## Helpful Links and Sources
+The overall design of melon is based on the Gravity programming language and Crafting Interpreters. Here are some more resources I found helpful while writing melon: 
+* [Gravity](https://github.com/marcobambini/gravity)
+* [Crafting Interpreters](https://craftinginterpreters.com/)
+* [More on interpreters](https://ruslanspivak.com/lsbasi-part12/)
+* [Lua design](http://www.lua.org/doc/jucs05.pdf)
+* [Precedence parsing](http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/)
+* [Virtual machines](http://andreabergia.com/stack-based-virtual-machines-5/)
+* [MurmurHash](https://en.wikipedia.org/wiki/MurmurHash)
+* [Metaclasses](http://hokstad.com/compiler/43-eigenclasses)
