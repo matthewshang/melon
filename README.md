@@ -12,7 +12,10 @@ Here is a list of noteworthy features:
 * builtin datatypes: arrays, ranges, strings, hash tables
 * helpful error reporting
 
-## Helpful Links and Sources
+## Compiling
+Clone the repository, run CMake in the desired build directory to generate a Makefile, and the rest should work automatically. Although melon has only been tested on Ubuntu, it should work on any platform with a C11 compiler. By default, melon builds in release mode; add `-DCMAKE_BUILD_TYPE=Debug` for a debug build. There are no external dependencies.
+
+## Helpful Links
 The overall design of melon is based on the Gravity programming language and Crafting Interpreters. Here are some more resources I found helpful while writing melon: 
 * [Gravity](https://github.com/marcobambini/gravity)
 * [Crafting Interpreters](https://craftinginterpreters.com/)
